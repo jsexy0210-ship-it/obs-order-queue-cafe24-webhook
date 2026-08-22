@@ -1,0 +1,144 @@
+.page {
+  min-height: 100vh;
+  padding: 32px 20px 60px;
+  background: #0f1115;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.headerRow {
+  max-width: 960px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headerRow h1 {
+  margin: 0 0 4px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.refreshButton {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #28b7ff;
+  color: #04121c;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.headerButtons {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+.resetButton {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 77, 95, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 77, 95, 0.15);
+  color: #ff8a95;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resetButton:hover {
+  background: rgba(255, 77, 95, 0.25);
+}
+
+.tableWrap {
+  max-width: 960px;
+  margin: 0 auto 28px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.sectionTitle {
+  max-width: 960px;
+  margin: 0 auto 10px;
+  font-size: 14px;
+  opacity: 0.75;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.table th {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.55;
+  letter-spacing: 0.03em;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.product {
+  white-space: normal;
+  max-width: 260px;
+}
+
+.statusBadge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.statusWaiting {
+  background: rgba(98, 227, 255, 0.15);
+  color: #62e3ff;
+}
+
+.statusOpening {
+  background: rgba(139, 97, 255, 0.2);
+  color: #b79bff;
+}
+
+.statusDone {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.statusCancelled {
+  background: rgba(255, 77, 95, 0.15);
+  color: #ff8a95;
+}
+
+.sourceTag {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.empty {
+  padding: 40px 14px;
+  text-align: center;
+  opacity: 0.5;
+  font-size: 13px;
+}
