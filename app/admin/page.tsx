@@ -198,6 +198,17 @@ export default function AdminPage() {
       </section>
 
       <section className={styles.block}>
+        <h2>대기 주문 ({waiting.length})</h2>
+        {waiting.length === 0 && <p className={styles.empty}>대기 중인 주문 없음</p>}
+        {waiting.slice(0, WAITING_PREVIEW_COUNT).map(renderWaitingRow)}
+        {waiting.length > WAITING_PREVIEW_COUNT && (
+          <button className={styles.moreButton} onClick={() => setShowAllWaiting(true)}>
+            더보기 ({waiting.length - WAITING_PREVIEW_COUNT}건 더)
+          </button>
+        )}
+      </section>
+
+      <section className={styles.block}>
         <h2>히트 카드 등록</h2>
         <form className={styles.form} onSubmit={addHit}>
           <div className={styles.field}>
@@ -239,17 +250,6 @@ export default function AdminPage() {
             </li>
           ))}
         </ul>
-      </section>
-
-      <section className={styles.block}>
-        <h2>대기 주문 ({waiting.length})</h2>
-        {waiting.length === 0 && <p className={styles.empty}>대기 중인 주문 없음</p>}
-        {waiting.slice(0, WAITING_PREVIEW_COUNT).map(renderWaitingRow)}
-        {waiting.length > WAITING_PREVIEW_COUNT && (
-          <button className={styles.moreButton} onClick={() => setShowAllWaiting(true)}>
-            더보기 ({waiting.length - WAITING_PREVIEW_COUNT}건 더)
-          </button>
-        )}
       </section>
 
       <section className={styles.block}>
