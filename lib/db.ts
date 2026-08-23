@@ -42,6 +42,8 @@ db.exec(`
     completed_at TEXT,                              -- '오픈 완료' 처리된 시각
     youtube_nickname TEXT,                          -- 주문서 추가입력의 유튜브 닉네임
     timer_seconds INTEGER,                          -- 오픈 타이머 길이(초)
+    paid_at TEXT,                                   -- 카페24 입금완료 웹훅이 들어온 시각
+    payment_method TEXT,                            -- 카페24 결제방식 원본 코드 (cash, card 등). 수동 주문은 NULL
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -62,6 +64,12 @@ if (!orderColumns.some((col) => col.name === "completed_at")) {
 }
 if (!orderColumns.some((col) => col.name === "youtube_nickname")) {
   db.exec("ALTER TABLE orders ADD COLUMN youtube_nickname TEXT");
+}
+if (!orderColumns.some((col) => col.name === "paid_at")) {
+  db.exec("ALTER TABLE orders ADD COLUMN paid_at TEXT");
+}
+if (!orderColumns.some((col) => col.name === "payment_method")) {
+  db.exec("ALTER TABLE orders ADD COLUMN payment_method TEXT");
 }
 
 const hitCardColumns = db.prepare("PRAGMA table_info(hit_cards)").all() as { name: string }[];

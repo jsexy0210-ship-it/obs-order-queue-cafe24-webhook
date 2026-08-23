@@ -1,12 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
 import OrderHistoryContent from "@/app/order-history/OrderHistoryContent";
 import styles from "./admin.module.css";
 
 const DEFAULT_TIMER_SECONDS = 60;
 const WAITING_PREVIEW_COUNT = 5;
+const TOAST_DISPLAY_MS = 5000;
+
+type Toast = { id: number; userId: string; product: string };
 
 export default function AdminPage() {
   const { opening, waiting, hitCards } = useLiveCardBreak();
@@ -22,6 +25,45 @@ export default function AdminPage() {
   const [hitForm, setHitForm] = useState({ userId: "", card: "", youtubeNickname: "" });
   const [showHistory, setShowHistory] = useState(false);
   const [showAllWaiting, setShowAllWaiting] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const seenOrderIds = useRef<Set<number> | null>(null);
+
+  // 신규 주문 토스트 알림: 처음 로드될 때 있던 주문은 알리지 않고,
+  // 그 이후 새로 들어온 주문(대기열에 새 id)만 감지해서 알려줍니다.
+  useEffect(() => {
+    const currentIds = new Set(waiting.map((o) => o.id));
+
+    if (seenOrderIds.current === null) {
+      seenOrderIds.current = currentIds;
+      return;
+    }
+
+    const newOrders = waiting.filter((o) => !seenOrderIds.current!.has(o.id));
+    seenOrderIds.current = currentIds;
+
+    if (newOrders.length === 0) return;
+
+    setToasts((prev) => [
+      ...prev,
+      ...newOrders.map((o) => ({ id: o.id, userId: o.user_id, product: o.product })),
+    ]);
+
+    newOrders.forEach((o) => {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== o.id));
+      }, TOAST_DISPLAY_MS);
+    });
+  }, [waiting]);
+
+  // 주문 이력/대기 주문 팝업이 열려 있는 동안에는 뒤쪽 관리자 화면이 같이 스크롤되지 않도록 막습니다.
+  useEffect(() => {
+    const locked = showHistory || showAllWaiting;
+    document.body.style.overflow = locked ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showHistory, showAllWaiting]);
 
   async function startOpening(id: number) {
     if (!window.confirm("지금 카드를 오픈하시겠습니까?")) return;
@@ -146,11 +188,57 @@ export default function AdminPage() {
             <span>
               {opening.product} × {opening.quantity}
             </span>
-            <button onClick={() => completeOrder(opening.id)}>오픈 완료</button>
+            <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>
+              오픈 완료
+            </button>
           </div>
         ) : (
           <p className={styles.empty}>없음</p>
         )}
+      </section>
+
+      <section className={styles.block}>
+        <h2>히트 카드 등록</h2>
+        <form className={styles.form} onSubmit={addHit}>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>구매자</label>
+            <input
+              placeholder="구매자명 입력"
+              value={hitForm.userId}
+              onChange={(e) => setHitForm({ ...hitForm, userId: e.target.value })}
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>유튜브 닉네임</label>
+            <input
+              placeholder="유튜브 닉네임 입력(선택)"
+              value={hitForm.youtubeNickname}
+              onChange={(e) => setHitForm({ ...hitForm, youtubeNickname: e.target.value })}
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>카드명</label>
+            <input
+              placeholder="카드명 입력"
+              value={hitForm.card}
+              onChange={(e) => setHitForm({ ...hitForm, card: e.target.value })}
+            />
+          </div>
+          <button type="submit">등록</button>
+        </form>
+        <ul className={styles.hitList}>
+          {hitCards.map((h) => (
+            <li key={h.id} className={styles.hitItem}>
+              <span>
+                {h.user_id}
+                {h.youtube_nickname ? ` (YT: ${h.youtube_nickname})` : ""} — {h.card}
+              </span>
+              <button className={styles.hitDelete} onClick={() => removeHit(h.id)}>
+                삭제
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className={styles.block}>
@@ -223,49 +311,18 @@ export default function AdminPage() {
         </form>
       </section>
 
-      <section className={styles.block}>
-        <h2>히트 카드 등록</h2>
-        <form className={styles.form} onSubmit={addHit}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>구매자</label>
-            <input
-              placeholder="구매자명 입력"
-              value={hitForm.userId}
-              onChange={(e) => setHitForm({ ...hitForm, userId: e.target.value })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>유튜브 닉네임</label>
-            <input
-              placeholder="유튜브 닉네임 입력(선택)"
-              value={hitForm.youtubeNickname}
-              onChange={(e) => setHitForm({ ...hitForm, youtubeNickname: e.target.value })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>카드명</label>
-            <input
-              placeholder="카드명 입력"
-              value={hitForm.card}
-              onChange={(e) => setHitForm({ ...hitForm, card: e.target.value })}
-            />
-          </div>
-          <button type="submit">등록</button>
-        </form>
-        <ul className={styles.hitList}>
-          {hitCards.map((h) => (
-            <li key={h.id} className={styles.hitItem}>
+      {toasts.length > 0 && (
+        <div className={styles.toastStack}>
+          {toasts.map((t) => (
+            <div key={t.id} className={styles.toast}>
+              <strong>🔔 새 주문 접수</strong>
               <span>
-                {h.user_id}
-                {h.youtube_nickname ? ` (YT: ${h.youtube_nickname})` : ""} — {h.card}
+                {t.userId} · {t.product}
               </span>
-              <button className={styles.hitDelete} onClick={() => removeHit(h.id)}>
-                삭제
-              </button>
-            </li>
+            </div>
           ))}
-        </ul>
-      </section>
+        </div>
+      )}
 
       {showAllWaiting && (
         <div className={styles.modalOverlay} onClick={() => setShowAllWaiting(false)}>

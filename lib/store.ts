@@ -18,6 +18,8 @@ export type OrderRow = {
   cancelled_at: string | null;
   started_at: string | null;
   completed_at: string | null;
+  paid_at: string | null;
+  payment_method: string | null;
   youtube_nickname: string | null;
   timer_seconds: number | null;
   created_at: string;
@@ -92,10 +94,11 @@ export function insertOrder(input: {
   unitPrice?: number;
   tier?: string;
   youtubeNickname?: string | null;
+  paymentMethod?: string | null;
 }) {
   const stmt = db.prepare(`
-    INSERT INTO orders (source, external_order_id, user_id, product, quantity, unit_price, tier, youtube_nickname, status)
-    VALUES (@source, @externalOrderId, @userId, @product, @quantity, @unitPrice, @tier, @youtubeNickname, 'waiting')
+    INSERT INTO orders (source, external_order_id, user_id, product, quantity, unit_price, tier, youtube_nickname, payment_method, status)
+    VALUES (@source, @externalOrderId, @userId, @product, @quantity, @unitPrice, @tier, @youtubeNickname, @paymentMethod, 'waiting')
   `);
 
   try {
@@ -108,6 +111,7 @@ export function insertOrder(input: {
       unitPrice: input.unitPrice ?? 15000,
       tier: input.tier ?? "",
       youtubeNickname: input.youtubeNickname ?? null,
+      paymentMethod: input.paymentMethod ?? null,
     });
   } catch (err) {
     // external_order_id UNIQUE 충돌 = 카페24가 같은 웹훅을 재전송한 경우 → 조용히 무시
@@ -184,6 +188,21 @@ export function cancelOrder(
      WHERE id = ?`
   ).run(order.status, reason, order.id);
 
+  broadcastUpdate();
+  return true;
+}
+
+/**
+ * 카페24 입금완료(입금상태 변경) 웹훅이 들어왔을 때 호출합니다.
+ * 이미 입금완료 처리됐거나 큐에 없는 주문이면 false를 반환합니다.
+ */
+export function markOrderPaid(externalOrderId: string): boolean {
+  const order = db
+    .prepare("SELECT * FROM orders WHERE external_order_id = ?")
+    .get(externalOrderId) as OrderRow | undefined;
+  if (!order) return false;
+  if (order.paid_at) return false;
+  db.prepare("UPDATE orders SET paid_at = datetime('now') WHERE id = ?").run(order.id);
   broadcastUpdate();
   return true;
 }

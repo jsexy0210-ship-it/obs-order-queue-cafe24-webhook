@@ -73,7 +73,7 @@ export default function CardBreakFrame() {
 
         <div className={styles.panelBox}>
           <div className={styles.panelHeader}>
-            <strong>오늘의 히트 카드</strong>
+            <strong>오늘의 히트카드</strong>
           </div>
 
           <div className={styles.hitList}>
@@ -99,7 +99,7 @@ export default function CardBreakFrame() {
         <div className={styles.nowBox}>
           <div className={styles.nowHeader}>
             <div>
-              <strong>오픈 대기 중</strong>
+              <strong>지금 오픈 중</strong>
             </div>
             <span className={styles.timer}>{formatTimer(remaining)}</span>
           </div>

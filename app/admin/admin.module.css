@@ -55,7 +55,7 @@
 
 .modalCard {
   width: 100%;
-  max-width: 960px;
+  max-width: 1320px;
   max-height: 85vh;
   overflow-y: auto;
   background: #0f1115;
@@ -166,6 +166,63 @@
   margin-left: 6px;
   background: #ff4d5f;
   color: #fff;
+}
+
+.completeButton {
+  margin-left: auto;
+  padding: 14px 26px !important;
+  font-size: 16px;
+  border-radius: 10px;
+  background: #35d07f !important;
+  color: #04241a !important;
+  font-weight: 900;
+}
+
+.completeButton:hover {
+  background: #4ee394 !important;
+}
+
+.toastStack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 320px;
+}
+
+.toast {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #1a2e22;
+  border: 1px solid rgba(53, 208, 127, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  animation: toastIn 0.25s ease-out;
+}
+
+.toast strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #4ee394;
+}
+
+.toast span {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+@keyframes toastIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .moreButton {

@@ -57,6 +57,27 @@
   flex: 0 0 auto;
 }
 
+/* 모바일(좁은 화면)에서는 leftPanel 너비가 좁아져 "주문 접수 · mangotcg.com" 글자가
+   overflow: hidden에 잘리므로, 폭을 넓히고 글자 크기를 줄여 잘리지 않게 합니다. */
+@media (max-width: 480px) {
+  .leftPanel {
+    width: 46%;
+    max-width: none;
+  }
+
+  .orderLink {
+    padding: 7px 8px;
+    font-size: 7px;
+    gap: 4px;
+  }
+
+  .linkIcon {
+    width: 10px;
+    height: 10px;
+    font-size: 7px;
+  }
+}
+
 .panelBox,
 .nowBox {
   position: relative;

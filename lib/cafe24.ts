@@ -5,6 +5,7 @@ type Cafe24Normalized = {
   quantity: number;
   unitPrice: number;
   youtubeNickname: string | null;
+  paymentMethod: string | null;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,6 +114,9 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
   const additionalInfoRaw = pick(resource, ["additional_order_info_list"]);
   const youtubeNickname = extractYoutubeNickname(additionalInfoRaw);
 
+  const paymentMethodRaw = pick(resource, ["payment_method", "payment_method_name"]);
+  const paymentMethod = paymentMethodRaw ? String(paymentMethodRaw) : null;
+
   if (!orderId || !buyerName) {
     return null;
   }
@@ -127,6 +131,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
     quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
     unitPrice: Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 15000,
     youtubeNickname,
+    paymentMethod,
   };
 }
 

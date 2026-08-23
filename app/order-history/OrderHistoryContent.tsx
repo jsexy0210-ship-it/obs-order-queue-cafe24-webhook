@@ -15,6 +15,7 @@ type OrderRow = {
   status: "waiting" | "opening" | "done" | "cancelled";
   cancel_reason: string | null;
   completed_at: string | null;
+  payment_method: string | null;
   youtube_nickname: string | null;
   created_at: string;
 };
@@ -27,7 +28,33 @@ type HitCardRow = {
   created_at: string;
 };
 
+const PAGE_SIZE = 10;
+
+// 카페24 결제방식 원본 코드 -> 화면에 보여줄 한글 라벨.
+// 목록에 없는 코드가 들어오면(카페24가 새 결제수단을 추가하는 등) 원본 코드를 그대로 보여줍니다.
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "무통장입금",
+  card: "신용카드",
+  escrow: "에스크로",
+  escrow_cash: "에스크로(무통장)",
+  vbank: "가상계좌",
+  mobile: "휴대폰결제",
+  cellphone: "휴대폰결제",
+  point: "적립금",
+  bank: "계좌이체",
+};
+
 const formatPrice = (value: number) => value.toLocaleString("ko-KR") + "원";
+
+function formatPaymentMethod(method: string | null) {
+  if (!method) return "-";
+  return PAYMENT_METHOD_LABELS[method] ?? method;
+}
+
+// 출처(거래방식): 카페24 웹훅으로 들어온 주문은 "사이트", 관리자가 직접 입력한 주문은 "직접등록"으로 표시합니다.
+function formatSource(source: string) {
+  return source === "cafe24" ? "사이트" : "직접등록";
+}
 
 function statusInfo(order: OrderRow): { label: string; className: string } {
   if (order.status === "cancelled") {
@@ -53,6 +80,42 @@ function formatDate(value: string) {
 }
 
 /**
+ * 페이지네이션 버튼 UI. 목록 컴포넌트 하나로 주문 이력 / 히트카드 이력 양쪽에서 재사용합니다.
+ */
+function Pager({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className={styles.pager}>
+      <button
+        className={styles.pagerButton}
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+      >
+        이전
+      </button>
+      <span className={styles.pagerInfo}>
+        {page} / {totalPages}
+      </span>
+      <button
+        className={styles.pagerButton}
+        disabled={page >= totalPages}
+        onClick={() => onChange(page + 1)}
+      >
+        다음
+      </button>
+    </div>
+  );
+}
+
+/**
  * 주문 이력 + 히트카드 등록 이력을 보여주는 재사용 가능한 컴포넌트.
  * /order-history 단독 페이지와, 관리자 화면의 팝업 양쪽에서 씁니다.
  */
@@ -60,6 +123,8 @@ export default function OrderHistoryContent() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [hitCards, setHitCards] = useState<HitCardRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderPage, setOrderPage] = useState(1);
+  const [hitPage, setHitPage] = useState(1);
 
   async function load() {
     try {
@@ -80,11 +145,31 @@ export default function OrderHistoryContent() {
     await load();
   }
 
+  async function deleteOrderRow(id: number) {
+    if (!window.confirm("이 주문 이력을 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
+    await fetch(`/api/orders/${id}`, { method: "DELETE" });
+    await load();
+  }
+
   useEffect(() => {
     load();
     const interval = setInterval(load, 10000); // 10초마다 자동 새로고침
     return () => clearInterval(interval);
   }, []);
+
+  // 새로고침 등으로 목록 길이가 줄어들어 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정합니다.
+  const orderTotalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+  useEffect(() => {
+    if (orderPage > orderTotalPages) setOrderPage(orderTotalPages);
+  }, [orderTotalPages, orderPage]);
+
+  const hitTotalPages = Math.max(1, Math.ceil(hitCards.length / PAGE_SIZE));
+  useEffect(() => {
+    if (hitPage > hitTotalPages) setHitPage(hitTotalPages);
+  }, [hitTotalPages, hitPage]);
+
+  const pagedOrders = orders.slice((orderPage - 1) * PAGE_SIZE, orderPage * PAGE_SIZE);
+  const pagedHitCards = hitCards.slice((hitPage - 1) * PAGE_SIZE, hitPage * PAGE_SIZE);
 
   return (
     <>
@@ -110,45 +195,57 @@ export default function OrderHistoryContent() {
         ) : orders.length === 0 ? (
           <div className={styles.empty}>주문 이력이 없습니다.</div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>주문일시</th>
-                <th>구매자</th>
-                <th>유튜브 닉네임</th>
-                <th>상품명</th>
-                <th>수량</th>
-                <th>금액</th>
-                <th>상태</th>
-                <th>완료일시</th>
-                <th>출처</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => {
-                const { label, className } = statusInfo(order);
-                return (
-                  <tr key={order.id}>
-                    <td>{formatDate(order.created_at)}</td>
-                    <td>{order.user_id}</td>
-                    <td>{order.youtube_nickname ?? "-"}</td>
-                    <td className={styles.product}>{order.product}</td>
-                    <td>{order.quantity}</td>
-                    <td>{formatPrice(order.unit_price * order.quantity)}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${className}`}>{label}</span>
-                    </td>
-                    <td>{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
-                    <td className={styles.sourceTag}>
-                      {order.source === "cafe24" ? "카페24" : "수동"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className={styles.scrollArea}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>주문일시</th>
+                  <th>구매자</th>
+                  <th>유튜브 닉네임</th>
+                  <th>상품명</th>
+                  <th>수량</th>
+                  <th>금액</th>
+                  <th>결제방식</th>
+                  <th>상태</th>
+                  <th>완료일시</th>
+                  <th>거래방식</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedOrders.map((order) => {
+                  const { label, className } = statusInfo(order);
+                  return (
+                    <tr key={order.id}>
+                      <td>{formatDate(order.created_at)}</td>
+                      <td>{order.user_id}</td>
+                      <td>{order.youtube_nickname ?? "-"}</td>
+                      <td className={styles.product}>{order.product}</td>
+                      <td>{order.quantity}</td>
+                      <td>{formatPrice(order.unit_price * order.quantity)}</td>
+                      <td>{formatPaymentMethod(order.payment_method)}</td>
+                      <td>
+                        <span className={`${styles.statusBadge} ${className}`}>{label}</span>
+                      </td>
+                      <td>{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
+                      <td className={styles.sourceTag}>{formatSource(order.source)}</td>
+                      <td>
+                        <button
+                          className={styles.rowDeleteButton}
+                          onClick={() => deleteOrderRow(order.id)}
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
+      <Pager page={orderPage} totalPages={orderTotalPages} onChange={setOrderPage} />
 
       <h2 className={styles.sectionTitle}>히트카드 등록 이력 ({hitCards.length})</h2>
       <div className={styles.tableWrap}>
@@ -157,28 +254,31 @@ export default function OrderHistoryContent() {
         ) : hitCards.length === 0 ? (
           <div className={styles.empty}>등록된 히트카드가 없습니다.</div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>등록일시</th>
-                <th>구매자</th>
-                <th>유튜브 닉네임</th>
-                <th>카드명</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hitCards.map((hit) => (
-                <tr key={hit.id}>
-                  <td>{formatDate(hit.created_at)}</td>
-                  <td>{hit.user_id}</td>
-                  <td>{hit.youtube_nickname ?? "-"}</td>
-                  <td className={styles.product}>{hit.card}</td>
+          <div className={styles.scrollArea}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>등록일시</th>
+                  <th>구매자</th>
+                  <th>유튜브 닉네임</th>
+                  <th>카드명</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {pagedHitCards.map((hit) => (
+                  <tr key={hit.id}>
+                    <td>{formatDate(hit.created_at)}</td>
+                    <td>{hit.user_id}</td>
+                    <td>{hit.youtube_nickname ?? "-"}</td>
+                    <td className={styles.product}>{hit.card}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
+      <Pager page={hitPage} totalPages={hitTotalPages} onChange={setHitPage} />
     </>
   );
 }

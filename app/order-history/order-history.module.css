@@ -7,7 +7,7 @@
 }
 
 .headerRow {
-  max-width: 960px;
+  max-width: 1320px;
   margin: 0 auto 20px;
   display: flex;
   align-items: center;
@@ -58,16 +58,75 @@
 }
 
 .tableWrap {
-  max-width: 960px;
-  margin: 0 auto 28px;
+  max-width: 1320px;
+  margin: 0 auto;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
-  overflow: hidden;
+  /* 페이지를 넘기면서 행 수가 달라져도(마지막 페이지 등) 전체 레이아웃이
+     들썩이지 않도록 최소 높이를 잡아둡니다. (헤더 1줄 + 데이터 10줄 기준) */
+  min-height: 460px;
+}
+
+/* 테이블이 컨테이너보다 넓어지면 테이블만 가로 스크롤되고,
+   페이지 자체는 가로로 넘치지 않도록 감쌉니다. */
+.scrollArea {
+  overflow-x: auto;
+}
+
+.pager {
+  max-width: 1320px;
+  margin: 10px auto 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.pagerButton {
+  padding: 6px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pagerButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pagerButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pagerInfo {
+  font-size: 13px;
+  opacity: 0.7;
+  min-width: 48px;
+  text-align: center;
+}
+
+.rowDeleteButton {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #ff4d5f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rowDeleteButton:hover {
+  background: #ff6b7a;
 }
 
 .sectionTitle {
-  max-width: 960px;
+  max-width: 1320px;
   margin: 0 auto 10px;
   font-size: 14px;
   opacity: 0.75;
@@ -75,6 +134,7 @@
 
 .table {
   width: 100%;
+  min-width: 920px;
   border-collapse: collapse;
   font-size: 13px;
 }

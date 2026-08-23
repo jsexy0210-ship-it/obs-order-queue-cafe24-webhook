@@ -72,6 +72,10 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
+# 실제 주문 데이터가 담긴 로컬 SQLite DB. 절대 커밋하면 안 됩니다.
+# (커밋되면 나중에 서버에서 git pull 할 때 운영 DB가 빈 로컬 DB로 덮어써질 위험이 있습니다.)
+data/
+
 # dotenv environment variable files
 .env
 .env.development.local

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cancelOrder, insertOrder } from "@/lib/store";
+import { cancelOrder, insertOrder, markOrderPaid } from "@/lib/store";
 import { extractCafe24OrderId, normalizeCafe24Order } from "@/lib/cafe24";
 
 export const runtime = "nodejs";
@@ -46,6 +46,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, matched });
   }
 
+  if (event === "paid") {
+    const orderId = extractCafe24OrderId(payload);
+    if (!orderId) {
+      console.warn(
+        `[cafe24 webhook][paid] 주문번호를 찾지 못했습니다 - lib/cafe24.ts의 extractCafe24OrderId() 확인 필요`
+      );
+      return NextResponse.json({ ok: true, warning: "order_id_not_found" });
+    }
+
+    const matched = markOrderPaid(orderId);
+    if (!matched) {
+      console.warn(`[cafe24 webhook][paid] 큐에 없거나 이미 입금완료 처리된 주문(${orderId}) - 무시`);
+    }
+
+    return NextResponse.json({ ok: true, matched });
+  }
+
   // 기본값: 주문 접수(생성)
   const normalized = normalizeCafe24Order(payload);
 
@@ -64,6 +81,7 @@ export async function POST(req: NextRequest) {
     quantity: normalized.quantity,
     unitPrice: normalized.unitPrice,
     youtubeNickname: normalized.youtubeNickname,
+    paymentMethod: normalized.paymentMethod,
   });
 
   return NextResponse.json({ ok: true });
