@@ -43,6 +43,10 @@ export async function GET(req: NextRequest) {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
+      // nginx는 기본적으로 프록시 응답을 버퍼링해서 SSE 이벤트가 바로 전달되지 않고
+      // 버퍼가 찰 때까지(혹은 연결 종료 시까지) 지연될 수 있습니다.
+      // 이 헤더로 이 응답만큼은 nginx가 버퍼링하지 않도록 지정합니다.
+      "X-Accel-Buffering": "no",
     },
   });
 }
