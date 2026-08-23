@@ -20,6 +20,7 @@ export type LiveOrder = {
   started_at: string | null;
   timer_seconds: number | null;
   youtube_nickname: string | null;
+  paid_at: string | null;
   created_at: string;
 };
 

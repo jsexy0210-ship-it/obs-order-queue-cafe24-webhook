@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cancelOrder, insertOrder, markOrderPaid } from "@/lib/store";
-import { extractCafe24OrderId, normalizeCafe24Order } from "@/lib/cafe24";
+import { extractCafe24OrderId, normalizeCafe24Order, redactPiiForLogging } from "@/lib/cafe24";
 
 export const runtime = "nodejs";
 
@@ -25,8 +25,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  // 실 연동 전 필수: 콘솔에 찍히는 원본 payload를 보고 lib/cafe24.ts 필드 매핑을 확인/조정하세요.
-  console.log(`[cafe24 webhook][${event}] payload:`, JSON.stringify(payload));
+  // 구매자 이름/이메일/연락처/주소 등은 로그에서 가리고, 필드 매핑 디버깅에 필요한
+  // 구조(주문번호/상품/결제방식 등)만 남깁니다. (pm2 logs에 무기한 남는 로그라 PII 최소화 필요)
+  console.log(
+    `[cafe24 webhook][${event}] payload:`,
+    JSON.stringify(redactPiiForLogging(payload))
+  );
 
   if (event === "cancelled" || event === "refunded") {
     const orderId = extractCafe24OrderId(payload);

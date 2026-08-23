@@ -16,6 +16,7 @@ type OrderRow = {
   cancel_reason: string | null;
   completed_at: string | null;
   payment_method: string | null;
+  paid_at: string | null;
   youtube_nickname: string | null;
   created_at: string;
 };
@@ -206,6 +207,7 @@ export default function OrderHistoryContent() {
                   <th>수량</th>
                   <th>금액</th>
                   <th>결제방식</th>
+                  <th>입금여부</th>
                   <th>상태</th>
                   <th>완료일시</th>
                   <th>거래방식</th>
@@ -224,6 +226,13 @@ export default function OrderHistoryContent() {
                       <td>{order.quantity}</td>
                       <td>{formatPrice(order.unit_price * order.quantity)}</td>
                       <td>{formatPaymentMethod(order.payment_method)}</td>
+                      <td>
+                        {order.paid_at ? (
+                          <span className={styles.paidBadge}>입금완료</span>
+                        ) : (
+                          <span className={styles.notPaid}>-</span>
+                        )}
+                      </td>
                       <td>
                         <span className={`${styles.statusBadge} ${className}`}>{label}</span>
                       </td>

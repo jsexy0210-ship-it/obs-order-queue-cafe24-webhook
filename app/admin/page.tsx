@@ -136,6 +136,12 @@ export default function AdminPage() {
     await fetch(`/api/hit-cards/${id}`, { method: "DELETE" });
   }
 
+  async function logout() {
+    if (!window.confirm("로그아웃하시겠습니까?")) return;
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
+  }
+
   function renderWaitingRow(order: LiveOrder) {
     const cancelled = order.status === "cancelled";
     return (
@@ -147,16 +153,17 @@ export default function AdminPage() {
         <span>
           {order.product} × {order.quantity}
         </span>
+        {order.paid_at && <span className={styles.paidBadge}>입금완료</span>}
         <span className={styles.badge}>
           {cancelled
             ? order.cancel_reason === "refunded"
               ? "환불됨"
               : "취소됨"
             : order.source === "cafe24"
-              ? "카페24"
+              ? "사이트"
               : "수동"}
         </span>
-        {!cancelled && <button onClick={() => startOpening(order.id)}>오픈 시작</button>}
+        {!cancelled && <button onClick={() => startOpening(order.id)}>오픈시작</button>}
         <button className={styles.danger} onClick={() => removeOrder(order.id)}>
           삭제
         </button>
@@ -168,9 +175,22 @@ export default function AdminPage() {
     <main className={styles.page}>
       <div className={styles.headerRow}>
         <h1>망고TCG 관리자</h1>
-        <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
-          🗂️ 주문 이력 보기
-        </button>
+        <div className={styles.headerButtons}>
+          <a
+            className={styles.historyButton}
+            href="https://dhdudals5555.cafe24.com/disp/admin/shop1/main/dashboard"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            🏪 카페24 관리자
+          </a>
+          <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
+            🗂️ 주문이력 보기
+          </button>
+          <button className={styles.logoutButton} onClick={logout}>
+            로그아웃
+          </button>
+        </div>
       </div>
       <p className={styles.hint}>
         카페24 웹훅은 &quot;주문 접수&quot;까지만 알려줍니다. 지금 오픈 중인 주문 지정과
@@ -188,8 +208,9 @@ export default function AdminPage() {
             <span>
               {opening.product} × {opening.quantity}
             </span>
+            {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
             <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>
-              오픈 완료
+              오픈완료
             </button>
           </div>
         ) : (

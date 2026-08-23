@@ -145,3 +145,44 @@ export function extractCafe24OrderId(payload: any): string | null {
   const orderId = pick(resource, ["order_id", "order_no", "orderId", "orderNo"]);
   return orderId ? String(orderId) : null;
 }
+
+/**
+ * 웹훅 payload에서 구매자 개인정보(이름/이메일/연락처/주소 등)로 보이는 키를 찾아냅니다.
+ * 카페24 웹훅 필드는 보통 "buyer_", "orderer_", "receiver_", "member_" 접두어를 쓰므로
+ * 이 접두어들과, 접두어 없이도 개인정보임이 명확한 email/phone/address류 키를 대상으로 합니다.
+ * (order_id, product_name, payment_method 같은 주문/상품 정보는 건드리지 않습니다.)
+ */
+function isPiiKey(key: string): boolean {
+  const k = key.toLowerCase();
+  return (
+    k.startsWith("buyer_") ||
+    k.startsWith("orderer_") ||
+    k.startsWith("receiver_") ||
+    k.startsWith("member_") ||
+    k === "email" ||
+    k === "phone" ||
+    k === "cellphone" ||
+    k === "hp" ||
+    k.includes("address") ||
+    k.includes("zipcode") ||
+    k.includes("zonecode")
+  );
+}
+
+/**
+ * 로그용으로 payload를 재귀적으로 훑어 개인정보 필드값을 "[REDACTED]"로 가려줍니다.
+ * 필드 매핑 디버깅에 필요한 구조/키 이름은 그대로 남기고, 값만 가립니다.
+ */
+export function redactPiiForLogging(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(redactPiiForLogging);
+  }
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      out[key] = isPiiKey(key) ? "[REDACTED]" : redactPiiForLogging(v);
+    }
+    return out;
+  }
+  return value;
+}

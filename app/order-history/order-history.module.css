@@ -196,6 +196,20 @@
   opacity: 0.55;
 }
 
+.paidBadge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+  background: rgba(53, 208, 127, 0.18);
+  color: #4ee394;
+}
+
+.notPaid {
+  opacity: 0.35;
+}
+
 .empty {
   padding: 40px 14px;
   text-align: center;
