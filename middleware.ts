@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADMIN_AUTH_COOKIE, computeAdminAuthToken } from "@/lib/adminAuth";
+import {
+  ADMIN_AUTH_COOKIE,
+  areAdminAccountsConfigured,
+  getValidAdminAuthTokens,
+} from "@/lib/adminAuth";
 
 // 비밀번호로 보호할 대상:
 //  - 관리자 화면 페이지: /admin, /order-history
@@ -34,16 +38,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  // ADMIN_PASSWORD 환경변수가 아직 설정되지 않았다면(예: 배포 직후) 기존처럼 그대로 열어둡니다.
-  if (!adminPassword) {
-    return NextResponse.next();
-  }
-
   const cookieToken = req.cookies.get(ADMIN_AUTH_COOKIE)?.value;
-  const expectedToken = await computeAdminAuthToken(adminPassword);
-  const authed = !!cookieToken && cookieToken === expectedToken;
+  const validTokens = areAdminAccountsConfigured() ? await getValidAdminAuthTokens() : [];
+  const authed = !!cookieToken && validTokens.includes(cookieToken);
 
   if (authed) {
     return NextResponse.next();
