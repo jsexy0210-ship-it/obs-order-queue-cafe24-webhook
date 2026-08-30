@@ -26,6 +26,11 @@ export async function PUT(req: NextRequest) {
       hit: clamp(body.scales.hit, 0.6, 1.8),
       right: clamp(body.scales.right, 0.6, 1.8),
     },
+    widths: {
+      order: clamp(body.widths?.order ?? DEFAULT_OVERLAY_SETTINGS.widths.order, 28, 90),
+      hit: clamp(body.widths?.hit ?? DEFAULT_OVERLAY_SETTINGS.widths.hit, 28, 90),
+      right: clamp(body.widths?.right ?? DEFAULT_OVERLAY_SETTINGS.widths.right, 28, 90),
+    },
     position: {
       orderX: clamp(body.position.orderX, -100, 100),
       orderY: clamp(body.position.orderY, -100, 100),

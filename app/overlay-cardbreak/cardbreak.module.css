@@ -2,6 +2,9 @@
   --order-scale: 1;
   --hit-scale: 1;
   --right-scale: 1;
+  --order-width: 52%;
+  --hit-width: 46%;
+  --right-width: 63%;
   --order-x: 0vw;
   --order-y: 0vh;
   --hit-x: 0vw;
@@ -42,21 +45,20 @@
 .hitPanel {
   position: absolute;
   left: 5px;
-  width: 30%;
-  max-width: 162px;
+  max-width: calc(100% - 10px);
   z-index: 10;
   transform-origin: top left;
 }
 
 .orderPanel {
   top: 8px;
-  width: max-content;
-  max-width: none;
+  width: var(--order-width);
   transform: translate(var(--order-x), var(--order-y)) scale(var(--order-scale));
 }
 
 .hitPanel {
   top: 54px;
+  width: var(--hit-width);
   transform: translate(var(--hit-x), var(--hit-y)) scale(var(--hit-scale));
 }
 
@@ -64,8 +66,8 @@
   position: absolute;
   top: 8px;
   right: 5px;
-  width: 63%;
-  max-width: 330px;
+  width: var(--right-width);
+  max-width: calc(100% - 10px);
   z-index: 10;
   transform: translate(var(--right-x), var(--right-y)) scale(var(--right-scale));
   transform-origin: top right;
@@ -151,6 +153,28 @@
   touch-action: none;
 }
 
+.widthHandle {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  z-index: 31;
+  width: 14px;
+  height: 38px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+  background: #ffb21a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  transform: translateY(-50%);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.rightPanel > .widthHandle {
+  right: auto;
+  left: -7px;
+}
+
 .orderLink {
   margin-bottom: 7px;
   display: flex;
@@ -166,9 +190,9 @@
   font-weight: 900;
   letter-spacing: .01em;
   white-space: nowrap;
-  width: max-content;
-  max-width: none;
-  overflow: visible;
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
 }
 
@@ -193,7 +217,7 @@
   }
 
   .orderPanel {
-    width: max-content;
+    width: var(--order-width);
   }
 
   .orderLink {

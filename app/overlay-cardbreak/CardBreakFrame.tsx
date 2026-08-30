@@ -87,6 +87,7 @@ type PanelPosition = {
 
 type PanelSide = "order" | "hit" | "right";
 type PanelScales = { order: number; hit: number; right: number };
+type PanelWidths = { order: number; hit: number; right: number };
 
 const DEFAULT_POSITION: PanelPosition = {
   orderX: 0,
@@ -205,6 +206,8 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   const remaining = useCountdown(opening?.started_at ?? null, opening?.timer_seconds ?? null);
   const [scales, setScales] = useState<PanelScales>({ order: DEFAULT_SCALE, hit: DEFAULT_SCALE, right: DEFAULT_SCALE });
   const scalesRef = useRef<PanelScales>({ order: DEFAULT_SCALE, hit: DEFAULT_SCALE, right: DEFAULT_SCALE });
+  const [widths, setWidths] = useState<PanelWidths>(overlaySettings.widths);
+  const widthsRef = useRef<PanelWidths>(overlaySettings.widths);
   const [position, setPosition] = useState<PanelPosition>(DEFAULT_POSITION);
   const positionRef = useRef<PanelPosition>(DEFAULT_POSITION);
   const [dragging, setDragging] = useState<PanelSide | null>(null);
@@ -227,6 +230,11 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     width: number;
     height: number;
   } | null>(null);
+  const widthResizeRef = useRef<{
+    side: PanelSide;
+    startX: number;
+    originWidth: number;
+  } | null>(null);
 
   useEffect(() => {
     const initialScales = readInitialScales();
@@ -241,8 +249,10 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   useEffect(() => {
     const safePosition = clampPosition(overlaySettings.position);
     scalesRef.current = overlaySettings.scales;
+    widthsRef.current = overlaySettings.widths;
     positionRef.current = safePosition;
     setScales(overlaySettings.scales);
+    setWidths(overlaySettings.widths);
     setPosition(safePosition);
     setOrderVisible(overlaySettings.orderVisible);
     colorsRef.current = overlaySettings.colors;
@@ -253,6 +263,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     const settings: OverlaySettings = {
       orderVisible,
       scales: scalesRef.current,
+      widths: widthsRef.current,
       position: positionRef.current,
       colors: colorsRef.current,
     };
@@ -349,6 +360,33 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     persistScales(scalesRef.current);
   }
 
+  function startWidthResizing(side: PanelSide, event: ReactPointerEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    widthResizeRef.current = {
+      side,
+      startX: event.clientX,
+      originWidth: widthsRef.current[side],
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function resizePanelWidth(event: ReactPointerEvent<HTMLButtonElement>) {
+    const resize = widthResizeRef.current;
+    if (!resize) return;
+    const delta = ((event.clientX - resize.startX) / Math.max(window.innerWidth, 1)) * 100;
+    const direction = resize.side === "right" ? -1 : 1;
+    const nextWidth = Math.min(90, Math.max(28, resize.originWidth + delta * direction));
+    const nextWidths = { ...widthsRef.current, [resize.side]: nextWidth };
+    widthsRef.current = nextWidths;
+    setWidths(nextWidths);
+  }
+
+  function stopWidthResizing(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!widthResizeRef.current) return;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    widthResizeRef.current = null;
+  }
+
   function persistPosition(nextPosition: PanelPosition) {
     const safePosition = clampPosition(nextPosition);
     positionRef.current = safePosition;
@@ -420,6 +458,9 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     "--order-scale": scales.order,
     "--hit-scale": scales.hit,
     "--right-scale": scales.right,
+    "--order-width": `${widths.order}%`,
+    "--hit-width": `${widths.hit}%`,
+    "--right-width": `${widths.right}%`,
     "--order-x": `${position.orderX}vw`,
     "--order-y": `${position.orderY}vh`,
     "--hit-x": `${position.hitX}vw`,
@@ -491,15 +532,26 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
         onPointerCancel={stopDragging}
       >
         {showScaleControls && (
-          <button
-            type="button"
-            className={styles.resizeHandle}
-            aria-label="주문 접수 카드 크기 조절"
-            onPointerDown={(event) => startResizing("order", event)}
-            onPointerMove={resizePanel}
-            onPointerUp={stopResizing}
-            onPointerCancel={stopResizing}
-          />
+          <>
+            <button
+              type="button"
+              className={styles.resizeHandle}
+              aria-label="주문 접수 카드 전체 크기 조절"
+              onPointerDown={(event) => startResizing("order", event)}
+              onPointerMove={resizePanel}
+              onPointerUp={stopResizing}
+              onPointerCancel={stopResizing}
+            />
+            <button
+              type="button"
+              className={styles.widthHandle}
+              aria-label="주문 접수 카드 좌우 너비 조절"
+              onPointerDown={(event) => startWidthResizing("order", event)}
+              onPointerMove={resizePanelWidth}
+              onPointerUp={stopWidthResizing}
+              onPointerCancel={stopWidthResizing}
+            />
+          </>
         )}
         <div className={styles.orderLink}>
           <span className={styles.linkIcon}>◎</span>
@@ -515,15 +567,26 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
         onPointerCancel={stopDragging}
       >
         {showScaleControls && (
-          <button
-            type="button"
-            className={styles.resizeHandle}
-            aria-label="오늘의 히트카드 크기 조절"
-            onPointerDown={(event) => startResizing("hit", event)}
-            onPointerMove={resizePanel}
-            onPointerUp={stopResizing}
-            onPointerCancel={stopResizing}
-          />
+          <>
+            <button
+              type="button"
+              className={styles.resizeHandle}
+              aria-label="오늘의 히트카드 전체 크기 조절"
+              onPointerDown={(event) => startResizing("hit", event)}
+              onPointerMove={resizePanel}
+              onPointerUp={stopResizing}
+              onPointerCancel={stopResizing}
+            />
+            <button
+              type="button"
+              className={styles.widthHandle}
+              aria-label="오늘의 히트카드 좌우 너비 조절"
+              onPointerDown={(event) => startWidthResizing("hit", event)}
+              onPointerMove={resizePanelWidth}
+              onPointerUp={stopWidthResizing}
+              onPointerCancel={stopWidthResizing}
+            />
+          </>
         )}
         <div className={styles.panelBox}>
           <div className={styles.panelHeader}>
@@ -557,15 +620,26 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
         onPointerCancel={stopDragging}
       >
         {showScaleControls && (
-          <button
-            type="button"
-            className={styles.resizeHandle}
-            aria-label="오른쪽 카드덱 크기 조절"
-            onPointerDown={(event) => startResizing("right", event)}
-            onPointerMove={resizePanel}
-            onPointerUp={stopResizing}
-            onPointerCancel={stopResizing}
-          />
+          <>
+            <button
+              type="button"
+              className={styles.resizeHandle}
+              aria-label="오른쪽 카드덱 전체 크기 조절"
+              onPointerDown={(event) => startResizing("right", event)}
+              onPointerMove={resizePanel}
+              onPointerUp={stopResizing}
+              onPointerCancel={stopResizing}
+            />
+            <button
+              type="button"
+              className={styles.widthHandle}
+              aria-label="오른쪽 카드덱 좌우 너비 조절"
+              onPointerDown={(event) => startWidthResizing("right", event)}
+              onPointerMove={resizePanelWidth}
+              onPointerUp={stopWidthResizing}
+              onPointerCancel={stopWidthResizing}
+            />
+          </>
         )}
         <div className={styles.nowBox}>
           <div className={styles.nowHeader}>

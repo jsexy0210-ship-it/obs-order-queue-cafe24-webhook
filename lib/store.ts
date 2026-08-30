@@ -52,6 +52,7 @@ export function getOverlaySettings(): OverlaySettings {
       ...DEFAULT_OVERLAY_SETTINGS,
       ...saved,
       scales: { ...DEFAULT_OVERLAY_SETTINGS.scales, ...saved.scales },
+      widths: { ...DEFAULT_OVERLAY_SETTINGS.widths, ...saved.widths },
       position: { ...DEFAULT_OVERLAY_SETTINGS.position, ...saved.position },
       colors: { ...DEFAULT_OVERLAY_SETTINGS.colors, ...saved.colors },
     } as OverlaySettings;
