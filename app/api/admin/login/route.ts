@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30일
+    maxAge: 60 * 60 * 24 * 365, // 한 번 로그인하면 1년간 인증 유지
   });
   return res;
 }

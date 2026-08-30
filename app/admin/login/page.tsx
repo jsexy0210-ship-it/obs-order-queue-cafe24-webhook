@@ -46,6 +46,8 @@ function LoginForm() {
         <p className={styles.hint}>관리자 계정으로 로그인하세요.</p>
         <form className={styles.loginForm} onSubmit={handleSubmit}>
           <input
+            id="admin-username"
+            name="username"
             type="text"
             placeholder="아이디 입력"
             value={id}
@@ -55,6 +57,8 @@ function LoginForm() {
             required
           />
           <input
+            id="admin-password"
+            name="password"
             type="password"
             placeholder="비밀번호 입력"
             value={password}

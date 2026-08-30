@@ -19,6 +19,10 @@ type AdminAccount = {
   password: string;
 };
 
+function normalizeCredential(value: string): string {
+  return value.toLocaleLowerCase("en-US");
+}
+
 function getConfiguredAdminAccounts(): AdminAccount[] {
   const accounts = [
     { id: process.env.ADMIN_PRIMARY_ID, password: process.env.ADMIN_PRIMARY_PASSWORD },
@@ -32,7 +36,9 @@ function getConfiguredAdminAccounts(): AdminAccount[] {
 
 /** 로그인 성공 시 쿠키에 저장할 계정별 인증 토큰을 계산합니다. */
 export async function computeAdminAuthToken(id: string, password: string): Promise<string> {
-  return sha256Hex(`${id}\u0000${password}`);
+  return sha256Hex(
+    `${normalizeCredential(id.trim())}\u0000${normalizeCredential(password)}`
+  );
 }
 
 /**
