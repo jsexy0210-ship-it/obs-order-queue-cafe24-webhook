@@ -54,6 +54,12 @@ db.exec(`
     youtube_nickname TEXT,                          -- 히트카드 등록 시 입력한 유튜브 닉네임
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS overlay_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 // 이미 만들어져 있던 기존 DB 파일에는 completed_at 컬럼이 없을 수 있으므로,

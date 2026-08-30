@@ -1,21 +1,63 @@
 .stage {
+  --order-scale: 1;
+  --hit-scale: 1;
+  --right-scale: 1;
+  --order-x: 0vw;
+  --order-y: 0vh;
+  --hit-x: 0vw;
+  --hit-y: 0vh;
+  --right-x: 0vw;
+  --right-y: 0vh;
+  --order-accent: #ffffff;
+  --hit-accent: #ecba17;
+  --live-accent: #6838ea;
+  --panel-background: #05090f;
+  --primary-text: #ffffff;
+  --order-text: #ffffff;
+  --hit-header-text: #ffffff;
+  --hit-buyer-text: #fff06a;
+  --hit-card-text: #ffffff;
+  --live-header-text: #ffffff;
+  --live-buyer-text: #fff45c;
+  --live-product-text: #ffffff;
+  --queue-buyer-text: #fff06a;
+  --queue-product-text: #ffffff;
+  --quantity-text: #e8ff42;
+  --timer-text: #ffffff;
   position: absolute;
   inset: 0;
   overflow: hidden;
   background: transparent;
-  color: #f8fafc;
+  color: var(--primary-text);
   font-family: Arial, Helvetica, sans-serif;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  text-shadow:
+    0 1px 1px #000,
+    0 2px 4px rgba(0, 0, 0, 0.95);
   pointer-events: none;
 }
 
-.leftPanel {
+.orderPanel,
+.hitPanel {
   position: absolute;
-  top: 8px;
   left: 5px;
   width: 30%;
   max-width: 162px;
   z-index: 10;
+  transform-origin: top left;
+}
+
+.orderPanel {
+  top: 8px;
+  width: max-content;
+  max-width: none;
+  transform: translate(var(--order-x), var(--order-y)) scale(var(--order-scale));
+}
+
+.hitPanel {
+  top: 54px;
+  transform: translate(var(--hit-x), var(--hit-y)) scale(var(--hit-scale));
 }
 
 .rightPanel {
@@ -23,8 +65,90 @@
   top: 8px;
   right: 5px;
   width: 63%;
-  max-width: 340px;
+  max-width: 330px;
   z-index: 10;
+  transform: translate(var(--right-x), var(--right-y)) scale(var(--right-scale));
+  transform-origin: top right;
+}
+
+.scaleControls {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(12, 16, 24, 0.88);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  transform: translateX(-50%);
+  pointer-events: auto;
+  text-shadow: none;
+}
+
+.scaleControls button {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: #263042;
+  color: #fff;
+  font: 800 15px/1 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+
+.scaleControls button:hover:not(:disabled) {
+  border-color: #28b7ff;
+  background: #34445d;
+}
+
+.scaleControls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.scaleControls .scaleValue {
+  min-width: 66px;
+  color: #7de1ff;
+  font-size: 12px;
+}
+
+.scaleControls .resetPosition {
+  min-width: 78px;
+  color: #ffffff;
+  font-size: 11px;
+}
+
+.movablePanel {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.draggingPanel {
+  cursor: grabbing;
+  filter: brightness(1.12);
+}
+
+.resizeHandle {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  z-index: 30;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #28b7ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  cursor: nwse-resize;
+  touch-action: none;
 }
 
 .orderLink {
@@ -34,15 +158,17 @@
   gap: 6px;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.72);
-  color: #fff7ff;
-  font-size: 9px;
-  line-height: 1;
+  border: 2px solid var(--order-accent);
+  background: var(--panel-background);
+  color: var(--order-text);
+  font-size: 12px;
+  line-height: 1.15;
   font-weight: 900;
   letter-spacing: .01em;
   white-space: nowrap;
-  overflow: hidden;
+  width: max-content;
+  max-width: none;
+  overflow: visible;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
 }
 
@@ -60,14 +186,19 @@
 /* 모바일(좁은 화면)에서는 leftPanel 너비가 좁아져 "주문 접수 · mangotcg.com" 글자가
    overflow: hidden에 잘리므로, 폭을 넓히고 글자 크기를 줄여 잘리지 않게 합니다. */
 @media (max-width: 480px) {
-  .leftPanel {
+  .orderPanel,
+  .hitPanel {
     width: 46%;
     max-width: none;
   }
 
+  .orderPanel {
+    width: max-content;
+  }
+
   .orderLink {
     padding: 7px 8px;
-    font-size: 7px;
+    font-size: 11px;
     gap: 4px;
   }
 
@@ -83,7 +214,7 @@
   position: relative;
   border: 2px solid #28b7ff;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.72);
+  background: var(--panel-background);
   box-shadow:
     0 0 0 1px rgba(255,255,255,.08) inset,
     0 10px 24px rgba(0, 0, 0, 0.24);
@@ -101,23 +232,36 @@
 }
 
 .panelHeader {
-  background: linear-gradient(180deg, #f7d34b 0%, #ecba17 100%);
+  background: var(--hit-accent);
+}
+
+.panelBox {
+  border-color: var(--hit-accent);
+}
+
+.nowBox,
+.heroCard,
+.timer {
+  border-color: var(--live-accent);
 }
 
 .nowHeader {
   justify-content: space-between;
-  background: linear-gradient(180deg, #8b61ff 0%, #6838ea 100%);
+  background: var(--live-accent);
 }
 
 .panelHeader strong,
 .nowHeader strong {
   display: block;
-  font-size: 8px;
-  line-height: 1;
-  letter-spacing: .16em;
+  font-size: 12px;
+  line-height: 1.15;
+  letter-spacing: .08em;
   font-weight: 900;
-  color: #ffffff;
+  color: var(--primary-text);
 }
+
+.panelHeader strong { color: var(--hit-header-text); }
+.nowHeader strong { color: var(--live-header-text); }
 
 .headerEyebrow {
   display: none;
@@ -128,10 +272,10 @@
   padding: 6px 8px;
   border-radius: 8px;
   border: 2px solid #28b7ff;
-  background: rgba(0,0,0,.72);
+  background: rgba(0,0,0,.92);
   text-align: center;
-  color: #ffffff;
-  font-size: 8px;
+  color: var(--timer-text);
+  font-size: 12px;
   line-height: 1;
   font-weight: 900;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
@@ -142,29 +286,31 @@
 }
 
 .hitList {
-  padding: 7px 8px 8px;
+  padding: 9px 10px 10px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .hitRow {
   min-width: 0;
   display: grid;
-  grid-template-columns: 10px auto minmax(0, 1fr);
+  grid-template-columns: 12px auto minmax(0, 1fr);
   align-items: center;
-  gap: 4px;
-  font-size: 7px;
-  line-height: 1.15;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 700;
 }
 
 .rowIcon {
   color: #ffcd52;
-  font-size: 7px;
+  font-size: 10px;
   text-align: center;
 }
 
 .hitRow strong {
-  color: #ffe04f;
+  color: var(--hit-buyer-text);
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -173,14 +319,14 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: rgba(255,255,255,.92);
+  color: var(--hit-card-text);
 }
 
 .heroCard {
   margin: 7px;
   padding: 8px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.72);
+  background: var(--panel-background);
   border: 2px solid #28b7ff;
 }
 
@@ -194,9 +340,9 @@
 .gradeTag {
   padding: 5px 7px;
   border-radius: 5px;
-  background: rgba(0, 0, 0, 0.72);
-  color: #5ed9ff;
-  font-size: 6px;
+  background: rgba(0, 0, 0, 0.94);
+  color: #75e5ff;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: .03em;
   white-space: nowrap;
@@ -204,13 +350,20 @@
 
 .currentUser {
   min-width: 0;
-  color: #ffe74b;
-  font-size: 11px;
-  line-height: 1;
+  color: var(--live-buyer-text);
+  font-size: 16px;
+  line-height: 1.15;
   font-weight: 900;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.emptyMessage {
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 800;
 }
 
 .nowProduct {
@@ -219,9 +372,10 @@
   align-items: baseline;
   gap: 4px;
   flex-wrap: wrap;
-  font-size: 7px;
-  line-height: 1.25;
-  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 900;
+  color: var(--live-product-text);
 }
 
 .nowProductText {
@@ -229,8 +383,8 @@
 }
 
 .nowProduct b {
-  color: #e6ff43;
-  font-size: 10px;
+  color: var(--quantity-text);
+  font-size: 15px;
   white-space: nowrap;
 }
 
@@ -254,9 +408,9 @@
 }
 
 .queueList {
-  padding: 0 8px 8px;
+  padding: 2px 10px 10px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .queueRow {
@@ -264,11 +418,12 @@
   display: grid;
   grid-template-columns: auto auto auto minmax(0,1fr) auto auto;
   align-items: center;
-  gap: 4px;
-  padding: 0 0 4px;
+  gap: 6px;
+  padding: 0 0 6px;
   border-bottom: 1px solid rgba(255,255,255,.08);
-  font-size: 6px;
-  line-height: 1.1;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 800;
 }
 
 .queueRow:last-child {
@@ -281,29 +436,30 @@
 }
 
 .gradeMini {
-  color: #62e3ff;
-  font-size: 6px;
+  color: #75e8ff;
+  font-size: 9px;
   line-height: 1;
   font-weight: 900;
   white-space: nowrap;
 }
 
 .queueRow strong {
-  color: #f2db43;
+  color: var(--queue-buyer-text);
+  font-weight: 900;
   white-space: nowrap;
 }
 
 .product {
   min-width: 0;
-  color: rgba(255,255,255,.84);
+  color: var(--queue-product-text);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .queueRow b {
-  color: #e8ff42;
-  font-size: 7px;
+  color: var(--quantity-text);
+  font-size: 11px;
   white-space: nowrap;
 }
 

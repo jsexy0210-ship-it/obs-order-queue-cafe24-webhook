@@ -1,12 +1,15 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
 import OrderHistoryContent from "@/app/order-history/OrderHistoryContent";
+import CardBreakFrame, { type CardBreakFrameHandle } from "@/app/overlay-cardbreak/CardBreakFrame";
+import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "@/lib/overlaySettings";
 import styles from "./admin.module.css";
 
 const DEFAULT_TIMER_SECONDS = 60;
-const WAITING_PREVIEW_COUNT = 5;
+const WAITING_PAGE_SIZE = 5;
+const HIT_PAGE_SIZE = 5;
 const TOAST_DISPLAY_MS = 5000;
 
 type Toast = { id: number; userId: string; product: string };
@@ -24,10 +27,35 @@ export default function AdminPage() {
   });
   const [hitForm, setHitForm] = useState({ userId: "", card: "", youtubeNickname: "" });
   const [showHistory, setShowHistory] = useState(false);
-  const [showAllWaiting, setShowAllWaiting] = useState(false);
+  const [showOverlayPreview, setShowOverlayPreview] = useState(false);
+  const [editingOverlay, setEditingOverlay] = useState(false);
+  const [overlayEditorState, setOverlayEditorState] = useState({
+    orderVisible: true,
+    saving: false,
+    colors: DEFAULT_OVERLAY_SETTINGS.colors,
+  });
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [waitingPage, setWaitingPage] = useState(1);
+  const [hitPage, setHitPage] = useState(1);
+
+  const waitingPageCount = Math.max(1, Math.ceil(waiting.length / WAITING_PAGE_SIZE));
+  const hitPageCount = Math.max(1, Math.ceil(hitCards.length / HIT_PAGE_SIZE));
+  const pagedWaiting = waiting.slice(
+    (waitingPage - 1) * WAITING_PAGE_SIZE,
+    waitingPage * WAITING_PAGE_SIZE
+  );
+  const pagedHitCards = hitCards.slice((hitPage - 1) * HIT_PAGE_SIZE, hitPage * HIT_PAGE_SIZE);
 
   const seenOrderIds = useRef<Set<number> | null>(null);
+  const overlayEditorRef = useRef<CardBreakFrameHandle>(null);
+  const handleOverlayEditorState = useCallback(
+    (state: {
+      orderVisible: boolean;
+      saving: boolean;
+      colors: OverlaySettings["colors"];
+    }) => setOverlayEditorState(state),
+    []
+  );
 
   // 신규 주문 토스트 알림: 처음 로드될 때 있던 주문은 알리지 않고,
   // 그 이후 새로 들어온 주문(대기열에 새 id)만 감지해서 알려줍니다.
@@ -58,12 +86,25 @@ export default function AdminPage() {
 
   // 주문 이력/대기 주문 팝업이 열려 있는 동안에는 뒤쪽 관리자 화면이 같이 스크롤되지 않도록 막습니다.
   useEffect(() => {
-    const locked = showHistory || showAllWaiting;
+    const locked = showHistory || showOverlayPreview;
     document.body.style.overflow = locked ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showHistory, showAllWaiting]);
+  }, [showHistory, showOverlayPreview]);
+
+  useEffect(() => {
+    setWaitingPage((page) => Math.min(page, waitingPageCount));
+  }, [waitingPageCount]);
+
+  useEffect(() => {
+    setHitPage((page) => Math.min(page, hitPageCount));
+  }, [hitPageCount]);
+
+  function closeOverlayPreview() {
+    setEditingOverlay(false);
+    setShowOverlayPreview(false);
+  }
 
   async function startOpening(id: number) {
     if (!window.confirm("지금 카드를 오픈하시겠습니까?")) return;
@@ -136,12 +177,6 @@ export default function AdminPage() {
     await fetch(`/api/hit-cards/${id}`, { method: "DELETE" });
   }
 
-  async function logout() {
-    if (!window.confirm("로그아웃하시겠습니까?")) return;
-    await fetch("/api/admin/logout", { method: "POST" });
-    window.location.href = "/admin/login";
-  }
-
   function renderWaitingRow(order: LiveOrder) {
     const cancelled = order.status === "cancelled";
     return (
@@ -150,7 +185,7 @@ export default function AdminPage() {
         {order.youtube_nickname && (
           <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>
         )}
-        <span>
+        <span className={styles.orderDescription}>
           {order.product} × {order.quantity}
         </span>
         {order.paid_at && <span className={styles.paidBadge}>입금완료</span>}
@@ -174,7 +209,10 @@ export default function AdminPage() {
   return (
     <main className={styles.page}>
       <div className={styles.headerRow}>
-        <h1>망고TCG 관리자</h1>
+        <div className={styles.headerBrand}>
+          <span>LIVE OPERATIONS</span>
+          <h1>망고TCG 관리자</h1>
+        </div>
         <div className={styles.headerButtons}>
           <a
             className={styles.historyButton}
@@ -184,11 +222,11 @@ export default function AdminPage() {
           >
             🏪 카페24 관리자
           </a>
+          <button className={styles.historyButton} onClick={() => setShowOverlayPreview(true)}>
+            📺 오버레이 미리보기
+          </button>
           <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
             🗂️ 주문이력 보기
-          </button>
-          <button className={styles.logoutButton} onClick={logout}>
-            로그아웃
           </button>
         </div>
       </div>
@@ -197,7 +235,26 @@ export default function AdminPage() {
         히트카드 등록은 여기서 직접 조작하세요.
       </p>
 
-      <section className={styles.block}>
+      <section className={styles.statusGrid} aria-label="라이브 운영 현황">
+        <div className={`${styles.statusCard} ${opening ? styles.statusLive : ""}`}>
+          <span className={styles.statusLabel}>현재 방송</span>
+          <strong>{opening ? "오픈 진행 중" : "대기 상태"}</strong>
+          <small>{opening ? `${opening.user_id} · ${opening.product}` : "진행 중인 주문이 없습니다"}</small>
+        </div>
+        <div className={styles.statusCard}>
+          <span className={styles.statusLabel}>대기 주문</span>
+          <strong>{waiting.length}건</strong>
+          <small>{waiting.length > 0 ? "처리할 주문이 있습니다" : "대기열이 비어 있습니다"}</small>
+        </div>
+        <div className={styles.statusCard}>
+          <span className={styles.statusLabel}>오늘의 히트카드</span>
+          <strong>{hitCards.length}건</strong>
+          <small>최근 등록 기준</small>
+        </div>
+      </section>
+
+      <div className={styles.operationsGrid}>
+      <section className={`${styles.block} ${styles.primaryBlock}`}>
         <h2>지금 오픈 중</h2>
         {opening ? (
           <div className={styles.row}>
@@ -205,7 +262,7 @@ export default function AdminPage() {
             {opening.youtube_nickname && (
               <span className={styles.ytBadge}>YT: {opening.youtube_nickname}</span>
             )}
-            <span>
+            <span className={styles.orderDescription}>
               {opening.product} × {opening.quantity}
             </span>
             {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
@@ -221,14 +278,23 @@ export default function AdminPage() {
       <section className={styles.block}>
         <h2>대기 주문 ({waiting.length})</h2>
         {waiting.length === 0 && <p className={styles.empty}>대기 중인 주문 없음</p>}
-        {waiting.slice(0, WAITING_PREVIEW_COUNT).map(renderWaitingRow)}
-        {waiting.length > WAITING_PREVIEW_COUNT && (
-          <button className={styles.moreButton} onClick={() => setShowAllWaiting(true)}>
-            더보기 ({waiting.length - WAITING_PREVIEW_COUNT}건 더)
+        <div className={styles.pagedList}>{pagedWaiting.map(renderWaitingRow)}</div>
+        <div className={styles.pagination}>
+          <button disabled={waitingPage === 1} onClick={() => setWaitingPage((page) => page - 1)}>
+            이전
           </button>
-        )}
+          <span>{waitingPage} / {waitingPageCount}</span>
+          <button
+            disabled={waitingPage === waitingPageCount}
+            onClick={() => setWaitingPage((page) => page + 1)}
+          >
+            다음
+          </button>
+        </div>
       </section>
+      </div>
 
+      <div className={styles.toolsGrid}>
       <section className={styles.block}>
         <h2>히트 카드 등록</h2>
         <form className={styles.form} onSubmit={addHit}>
@@ -259,7 +325,7 @@ export default function AdminPage() {
           <button type="submit">등록</button>
         </form>
         <ul className={styles.hitList}>
-          {hitCards.map((h) => (
+          {pagedHitCards.map((h) => (
             <li key={h.id} className={styles.hitItem}>
               <span>
                 {h.user_id}
@@ -271,6 +337,15 @@ export default function AdminPage() {
             </li>
           ))}
         </ul>
+        <div className={styles.pagination}>
+          <button disabled={hitPage === 1} onClick={() => setHitPage((page) => page - 1)}>
+            이전
+          </button>
+          <span>{hitPage} / {hitPageCount}</span>
+          <button disabled={hitPage === hitPageCount} onClick={() => setHitPage((page) => page + 1)}>
+            다음
+          </button>
+        </div>
       </section>
 
       <section className={styles.block}>
@@ -331,6 +406,7 @@ export default function AdminPage() {
           <button type="submit">추가</button>
         </form>
       </section>
+      </div>
 
       {toasts.length > 0 && (
         <div className={styles.toastStack}>
@@ -345,16 +421,85 @@ export default function AdminPage() {
         </div>
       )}
 
-      {showAllWaiting && (
-        <div className={styles.modalOverlay} onClick={() => setShowAllWaiting(false)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalTopBarWithTitle}>
-              <h2 className={styles.modalTitle}>대기 주문 전체 ({waiting.length})</h2>
-              <button className={styles.modalCloseBtn} onClick={() => setShowAllWaiting(false)}>
-                닫기 ✕
-              </button>
+      {showOverlayPreview && (
+        <div className={styles.modalOverlay} onClick={closeOverlayPreview}>
+          <div
+            className={`${styles.modalCard} ${styles.overlayEditorModal}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={`${styles.modalTopBarWithTitle} ${styles.overlayModalHeader}`}>
+              <div className={styles.overlayModalHero}>
+                <h2 className={styles.modalTitle}>라이브 오버레이 미리보기</h2>
+              </div>
+              <div className={styles.overlayModalActions}>
+                <button
+                  className={`${styles.modalActionButton} ${editingOverlay ? styles.modalActionActive : ""}`}
+                  onClick={() => setEditingOverlay((value) => !value)}
+                >
+                  {editingOverlay ? "편집 취소" : "편집"}
+                </button>
+                {editingOverlay && (
+                  <>
+                    <button
+                      className={`${styles.modalActionButton} ${overlayEditorState.orderVisible ? styles.orderActive : styles.orderInactive}`}
+                      onClick={() => overlayEditorRef.current?.toggleOrderVisibility()}
+                    >
+                      주문 접수 {overlayEditorState.orderVisible ? "ON" : "OFF"}
+                    </button>
+                    <button
+                      className={`${styles.modalActionButton} ${styles.saveActionButton}`}
+                      onClick={() => overlayEditorRef.current?.saveSettings()}
+                      disabled={overlayEditorState.saving}
+                    >
+                      {overlayEditorState.saving ? "저장 중" : "저장"}
+                    </button>
+                  </>
+                )}
+                <button className={styles.modalCloseBtn} onClick={closeOverlayPreview}>
+                  닫기 ✕
+                </button>
+              </div>
             </div>
-            {waiting.map(renderWaitingRow)}
+            {editingOverlay && (
+              <div className={styles.colorEditor} aria-label="오버레이 색상 설정">
+                {([
+                  ["orderAccent", "주문 접수"],
+                  ["hitAccent", "히트카드"],
+                  ["liveAccent", "진행 카드"],
+                  ["panelBackground", "카드 배경"],
+                  ["primaryText", "등급·기본"],
+                  ["orderText", "주문 접수 글자"],
+                  ["hitHeaderText", "히트 제목"],
+                  ["hitBuyerText", "히트 구매자"],
+                  ["hitCardText", "히트 카드명"],
+                  ["liveHeaderText", "진행 제목"],
+                  ["liveBuyerText", "진행 구매자"],
+                  ["liveProductText", "진행 상품명"],
+                  ["queueBuyerText", "대기 구매자"],
+                  ["queueProductText", "대기 상품명"],
+                  ["quantityText", "수량"],
+                  ["timerText", "타이머"],
+                ] as const).map(([key, label]) => (
+                  <label className={styles.colorField} key={key}>
+                    <span>{label}</span>
+                    <input
+                      type="color"
+                      value={overlayEditorState.colors[key]}
+                      onChange={(event) => overlayEditorRef.current?.updateColor(key, event.target.value)}
+                    />
+                    <code>{overlayEditorState.colors[key].toUpperCase()}</code>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className={styles.overlayPreviewCanvas}>
+              <CardBreakFrame
+                ref={overlayEditorRef}
+                showScaleControls={editingOverlay}
+                onSaved={() => setEditingOverlay(false)}
+                onEditorStateChange={handleOverlayEditorState}
+              />
+            </div>
           </div>
         </div>
       )}

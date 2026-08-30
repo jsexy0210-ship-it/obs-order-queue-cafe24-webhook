@@ -5,7 +5,7 @@
   min-height: 960px;
   margin: 0 auto;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.72);
+  background: transparent;
 }
 
 .overlayFrame {

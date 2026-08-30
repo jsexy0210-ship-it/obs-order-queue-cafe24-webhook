@@ -18,6 +18,7 @@ function isProtectedApiRequest(pathname: string, method: string): boolean {
   if (pathname === "/api/hit-cards" && method === "POST") return true;
   if (pathname.startsWith("/api/hit-cards/") && method === "DELETE") return true;
   if (pathname === "/api/order-history" && method === "DELETE") return true;
+  if (pathname === "/api/overlay-settings" && method === "PUT") return true;
   return false;
 }
 
@@ -64,5 +65,6 @@ export const config = {
     "/api/orders/:path*",
     "/api/hit-cards/:path*",
     "/api/order-history",
+    "/api/overlay-settings",
   ],
 };

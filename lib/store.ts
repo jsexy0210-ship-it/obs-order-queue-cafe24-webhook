@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { broadcastUpdate } from "./events";
+import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "./overlaySettings";
 
 export type OrderStatus = "waiting" | "opening" | "done" | "cancelled";
 
@@ -37,7 +38,35 @@ export type LiveState = {
   opening: OrderRow | null;
   waiting: OrderRow[];
   hitCards: HitCardRow[];
+  overlaySettings: OverlaySettings;
 };
+
+export function getOverlaySettings(): OverlaySettings {
+  const row = db.prepare("SELECT value FROM overlay_settings WHERE id = 1").get() as
+    | { value: string }
+    | undefined;
+  if (!row) return DEFAULT_OVERLAY_SETTINGS;
+  try {
+    const saved = JSON.parse(row.value) as Partial<OverlaySettings>;
+    return {
+      ...DEFAULT_OVERLAY_SETTINGS,
+      ...saved,
+      scales: { ...DEFAULT_OVERLAY_SETTINGS.scales, ...saved.scales },
+      position: { ...DEFAULT_OVERLAY_SETTINGS.position, ...saved.position },
+      colors: { ...DEFAULT_OVERLAY_SETTINGS.colors, ...saved.colors },
+    } as OverlaySettings;
+  } catch {
+    return DEFAULT_OVERLAY_SETTINGS;
+  }
+}
+
+export function saveOverlaySettings(settings: OverlaySettings) {
+  db.prepare(
+    `INSERT INTO overlay_settings (id, value, updated_at) VALUES (1, ?, datetime('now'))
+     ON CONFLICT(id) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
+  ).run(JSON.stringify(settings));
+  broadcastUpdate();
+}
 
 // 취소/환불된 주문을 화면에 보여주는 시간(초). 이 시간이 지나면 자동으로 목록에서 삭제됩니다.
 const CANCEL_DISPLAY_SECONDS = 8;
@@ -63,7 +92,7 @@ export function getLiveState(): LiveState {
     .prepare("SELECT * FROM hit_cards ORDER BY id DESC LIMIT 20")
     .all() as HitCardRow[];
 
-  return { opening: opening ?? null, waiting, hitCards };
+  return { opening: opening ?? null, waiting, hitCards, overlaySettings: getOverlaySettings() };
 }
 
 /**

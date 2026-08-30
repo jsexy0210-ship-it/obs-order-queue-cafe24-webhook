@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "@/lib/overlaySettings";
 
 export type OrderStatus = "waiting" | "opening" | "done" | "cancelled";
 
@@ -36,9 +37,15 @@ export type LiveState = {
   opening: LiveOrder | null;
   waiting: LiveOrder[];
   hitCards: LiveHitCard[];
+  overlaySettings: OverlaySettings;
 };
 
-const EMPTY_STATE: LiveState = { opening: null, waiting: [], hitCards: [] };
+const EMPTY_STATE: LiveState = {
+  opening: null,
+  waiting: [],
+  hitCards: [],
+  overlaySettings: DEFAULT_OVERLAY_SETTINGS,
+};
 
 /**
  * /api/orders 로 초기 상태를 받아온 뒤 /api/stream(SSE)을 구독해서
