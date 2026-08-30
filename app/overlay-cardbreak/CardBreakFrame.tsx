@@ -101,6 +101,21 @@ function clampScale(value: number) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(value * 10) / 10));
 }
 
+function clampPosition(position: PanelPosition): PanelPosition {
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, Number.isFinite(value) ? value : 0));
+
+  return {
+    orderX: clamp(position.orderX, 0, 48),
+    orderY: clamp(position.orderY, 0, 82),
+    hitX: clamp(position.hitX, 0, 48),
+    hitY: clamp(position.hitY, 0, 82),
+    // 오른쪽 기준 패널은 양수 X 이동 시 즉시 화면 밖으로 밀립니다.
+    rightX: clamp(position.rightX, -32, 0),
+    rightY: clamp(position.rightY, 0, 82),
+  };
+}
+
 function readInitialScales(): PanelScales {
   const params = new URLSearchParams(window.location.search);
   const commonScale = Number(params.get("scale"));
@@ -149,14 +164,14 @@ function readInitialPosition(): PanelPosition {
     return Number.isFinite(storedValue) ? storedValue : 0;
   };
 
-  return {
+  return clampPosition({
     orderX: readValue("ox", "orderX") || readValue("lx", "orderX"),
     orderY: readValue("oy", "orderY") || readValue("ly", "orderY"),
     hitX: readValue("hx", "hitX") || readValue("lx", "hitX"),
     hitY: readValue("hy", "hitY") || readValue("ly", "hitY"),
     rightX: readValue("rx", "rightX"),
     rightY: readValue("ry", "rightY"),
-  };
+  });
 }
 
 function readInitialOrderVisibility() {
@@ -224,10 +239,11 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   }, []);
 
   useEffect(() => {
+    const safePosition = clampPosition(overlaySettings.position);
     scalesRef.current = overlaySettings.scales;
-    positionRef.current = overlaySettings.position;
+    positionRef.current = safePosition;
     setScales(overlaySettings.scales);
-    setPosition(overlaySettings.position);
+    setPosition(safePosition);
     setOrderVisible(overlaySettings.orderVisible);
     colorsRef.current = overlaySettings.colors;
     setColors(overlaySettings.colors);
@@ -334,17 +350,20 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   }
 
   function persistPosition(nextPosition: PanelPosition) {
-    window.localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(nextPosition));
+    const safePosition = clampPosition(nextPosition);
+    positionRef.current = safePosition;
+    setPosition(safePosition);
+    window.localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(safePosition));
 
     const url = new URL(window.location.href);
     url.searchParams.delete("lx");
     url.searchParams.delete("ly");
-    url.searchParams.set("ox", nextPosition.orderX.toFixed(2));
-    url.searchParams.set("oy", nextPosition.orderY.toFixed(2));
-    url.searchParams.set("hx", nextPosition.hitX.toFixed(2));
-    url.searchParams.set("hy", nextPosition.hitY.toFixed(2));
-    url.searchParams.set("rx", nextPosition.rightX.toFixed(2));
-    url.searchParams.set("ry", nextPosition.rightY.toFixed(2));
+    url.searchParams.set("ox", safePosition.orderX.toFixed(2));
+    url.searchParams.set("oy", safePosition.orderY.toFixed(2));
+    url.searchParams.set("hx", safePosition.hitX.toFixed(2));
+    url.searchParams.set("hy", safePosition.hitY.toFixed(2));
+    url.searchParams.set("rx", safePosition.rightX.toFixed(2));
+    url.searchParams.set("ry", safePosition.rightY.toFixed(2));
     window.history.replaceState({}, "", url);
   }
 
@@ -377,8 +396,9 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
         : drag.side === "hit"
           ? { ...current, hitX: nextX, hitY: nextY }
           : { ...current, rightX: nextX, rightY: nextY };
-      positionRef.current = nextPosition;
-      return nextPosition;
+      const safePosition = clampPosition(nextPosition);
+      positionRef.current = safePosition;
+      return safePosition;
     });
   }
 
