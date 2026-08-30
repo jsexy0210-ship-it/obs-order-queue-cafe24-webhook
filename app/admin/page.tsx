@@ -177,6 +177,13 @@ export default function AdminPage() {
     await fetch(`/api/hit-cards/${id}`, { method: "DELETE" });
   }
 
+  async function logout() {
+    if (!window.confirm("관리자 페이지에서 로그아웃하시겠습니까?")) return;
+
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
+  }
+
   function renderWaitingRow(order: LiveOrder) {
     const cancelled = order.status === "cancelled";
     return (
@@ -227,6 +234,9 @@ export default function AdminPage() {
           </button>
           <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
             🗂️ 주문이력 보기
+          </button>
+          <button className={styles.logoutButton} onClick={logout}>
+            로그아웃
           </button>
         </div>
       </div>

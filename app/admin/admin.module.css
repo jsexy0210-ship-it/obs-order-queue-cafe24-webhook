@@ -46,9 +46,13 @@
 }
 
 .logoutButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  padding: 8px 14px;
-  border-radius: 8px;
+  height: 40px;
+  padding: 0 15px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 77, 95, 0.35);
   background: transparent;
   color: #ff8a95;
@@ -72,44 +76,136 @@
 }
 
 .loginBox {
-  max-width: 360px;
-  margin: 80px auto 0;
-  padding: 28px 26px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  margin: 0;
+  padding: 42px 38px 32px;
+  border-radius: 24px;
+  background: rgba(15, 19, 28, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   text-align: center;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(20px);
 }
 
 .loginBox h1 {
-  font-size: 18px;
+  margin-top: 14px;
+  color: #f8fafc;
+  font-size: 28px;
+  letter-spacing: -0.05em;
+}
+
+.loginPage {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 28px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(104, 56, 234, 0.38), transparent 34%),
+    radial-gradient(circle at 88% 82%, rgba(40, 183, 255, 0.2), transparent 30%),
+    #07090e;
+}
+
+.loginPage::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent);
+  content: "";
+}
+
+.loginBrandMark {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(158, 128, 255, 0.7);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #8055f5, #4c2dac);
+  color: #fff;
+  font-size: 25px;
+  font-weight: 950;
+  box-shadow: 0 12px 30px rgba(104, 56, 234, 0.38);
+}
+
+.loginEyebrow {
+  margin-top: 18px;
+  color: #8edfff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.loginDescription {
+  margin: 10px 0 0;
+  color: #8e98a8;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .loginForm {
-  margin-top: 18px;
+  margin-top: 28px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 17px;
+  text-align: left;
+}
+
+.loginField {
+  display: grid;
+  gap: 8px;
+}
+
+.loginField > span {
+  color: #aeb7c5;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .loginForm input {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.05);
+  width: 100%;
+  min-height: 50px;
+  padding: 0 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(4, 7, 12, 0.72);
   color: #fff;
   font-size: 14px;
   box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.loginForm input:focus {
+  border-color: #8b68ff;
+  background: rgba(9, 11, 19, 0.95);
+  box-shadow: 0 0 0 4px rgba(113, 76, 226, 0.17);
 }
 
 .loginForm button {
-  padding: 12px;
+  min-height: 50px;
+  margin-top: 3px;
+  padding: 0 18px;
   border: none;
-  border-radius: 8px;
-  background: #6838ea;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8254f4, #5d37cf);
   color: #fff;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 900;
   cursor: pointer;
+  box-shadow: 0 12px 28px rgba(104, 56, 234, 0.26);
+  transition: filter 0.18s ease;
+}
+
+.loginForm button:hover:not(:disabled) {
+  filter: brightness(1.12);
 }
 
 .loginForm button:disabled {
@@ -118,9 +214,20 @@
 }
 
 .loginError {
-  margin: 14px 0 0;
-  color: #ff8a95;
-  font-size: 13px;
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 77, 95, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 77, 95, 0.1);
+  color: #ff9aa3;
+  font-size: 12px;
+}
+
+.loginSecurity {
+  margin: 22px 0 0;
+  color: #626d7d;
+  font-size: 10px;
+  letter-spacing: 0.03em;
 }
 
 .hint {
