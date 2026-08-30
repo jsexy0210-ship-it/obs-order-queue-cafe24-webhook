@@ -107,13 +107,14 @@ function clampPosition(position: PanelPosition): PanelPosition {
     Math.min(max, Math.max(min, Number.isFinite(value) ? value : 0));
 
   return {
-    orderX: clamp(position.orderX, 0, 48),
-    orderY: clamp(position.orderY, 0, 82),
-    hitX: clamp(position.hitX, 0, 48),
-    hitY: clamp(position.hitY, 0, 82),
-    // 오른쪽 기준 패널은 양수 X 이동 시 즉시 화면 밖으로 밀립니다.
-    rightX: clamp(position.rightX, -32, 0),
-    rightY: clamp(position.rightY, 0, 82),
+    // 두 카메라 어느 쪽 위에도 카드덱을 배치할 수 있도록 좌우 이동을 허용합니다.
+    // 패널이 완전히 사라지지는 않도록 화면 절반 범위에서만 이동시킵니다.
+    orderX: clamp(position.orderX, -48, 48),
+    orderY: clamp(position.orderY, -12, 88),
+    hitX: clamp(position.hitX, -48, 48),
+    hitY: clamp(position.hitY, -12, 88),
+    rightX: clamp(position.rightX, -48, 48),
+    rightY: clamp(position.rightY, -12, 88),
   };
 }
 
@@ -375,7 +376,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     if (!resize) return;
     const delta = ((event.clientX - resize.startX) / Math.max(window.innerWidth, 1)) * 100;
     const direction = resize.side === "right" ? -1 : 1;
-    const nextWidth = Math.min(90, Math.max(28, resize.originWidth + delta * direction));
+    const nextWidth = Math.min(100, Math.max(20, resize.originWidth + delta * direction));
     const nextWidths = { ...widthsRef.current, [resize.side]: nextWidth };
     widthsRef.current = nextWidths;
     setWidths(nextWidths);
