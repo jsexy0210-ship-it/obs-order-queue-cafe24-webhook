@@ -318,27 +318,32 @@
 .hitRow {
   min-width: 0;
   display: grid;
-  grid-template-columns: 12px auto minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 6px;
+  row-gap: 2px;
   font-size: 11px;
   line-height: 1.35;
   font-weight: 700;
 }
 
 .rowIcon {
+  grid-row: 1 / span 2;
   color: #ffcd52;
   font-size: 10px;
   text-align: center;
 }
 
 .hitRow strong {
+  min-width: 0;
   color: var(--hit-buyer-text);
   font-weight: 900;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .hitRow > span:last-child {
+  grid-column: 2;
   min-width: 0;
   overflow-wrap: anywhere;
   white-space: normal;
