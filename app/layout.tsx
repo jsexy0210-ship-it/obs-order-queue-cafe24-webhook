@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OBS Order Queue",
+  title: "망고TCG 관리자",
   description: "OBS Browser Source용 라이브 주문 대기열",
 };
 
