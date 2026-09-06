@@ -1,5 +1,6 @@
 export type OverlaySettings = {
   orderVisible: boolean;
+  panelBackgroundVisible: boolean;
   scales: { order: number; hit: number; right: number };
   widths: { order: number; hit: number; right: number };
   position: {
@@ -32,6 +33,7 @@ export type OverlaySettings = {
 
 export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
   orderVisible: true,
+  panelBackgroundVisible: true,
   scales: { order: 1, hit: 1, right: 1 },
   widths: { order: 52, hit: 46, right: 63 },
   position: { orderX: 0, orderY: 0, hitX: 0, hitY: 0, rightX: 0, rightY: 0 },

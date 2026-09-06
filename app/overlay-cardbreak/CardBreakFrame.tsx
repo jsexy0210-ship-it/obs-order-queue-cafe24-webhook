@@ -188,6 +188,7 @@ type CardBreakFrameProps = {
   onSaved?: () => void;
   onEditorStateChange?: (state: {
     orderVisible: boolean;
+    panelBackgroundVisible: boolean;
     saving: boolean;
     colors: OverlaySettings["colors"];
   }) => void;
@@ -195,6 +196,7 @@ type CardBreakFrameProps = {
 
 export type CardBreakFrameHandle = {
   toggleOrderVisibility: () => void;
+  togglePanelBackgroundVisibility: () => void;
   saveSettings: () => Promise<void>;
   updateColor: (key: keyof OverlaySettings["colors"], value: string) => void;
 };
@@ -213,6 +215,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   const positionRef = useRef<PanelPosition>(DEFAULT_POSITION);
   const [dragging, setDragging] = useState<PanelSide | null>(null);
   const [orderVisible, setOrderVisible] = useState(true);
+  const [panelBackgroundVisible, setPanelBackgroundVisible] = useState(true);
   const [saving, setSaving] = useState(false);
   const [colors, setColors] = useState(overlaySettings.colors);
   const colorsRef = useRef(overlaySettings.colors);
@@ -256,6 +259,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     setWidths(overlaySettings.widths);
     setPosition(safePosition);
     setOrderVisible(overlaySettings.orderVisible);
+    setPanelBackgroundVisible(overlaySettings.panelBackgroundVisible);
     colorsRef.current = overlaySettings.colors;
     setColors(overlaySettings.colors);
   }, [overlaySettings]);
@@ -263,6 +267,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   async function saveSettings() {
     const settings: OverlaySettings = {
       orderVisible,
+      panelBackgroundVisible,
       scales: scalesRef.current,
       widths: widthsRef.current,
       position: positionRef.current,
@@ -290,11 +295,16 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     setColors(nextColors);
   }
 
-  useImperativeHandle(ref, () => ({ toggleOrderVisibility, saveSettings, updateColor }));
+  useImperativeHandle(ref, () => ({
+    toggleOrderVisibility,
+    togglePanelBackgroundVisibility,
+    saveSettings,
+    updateColor,
+  }));
 
   useEffect(() => {
-    onEditorStateChange?.({ orderVisible, saving, colors });
-  }, [colors, onEditorStateChange, orderVisible, saving]);
+    onEditorStateChange?.({ orderVisible, panelBackgroundVisible, saving, colors });
+  }, [colors, onEditorStateChange, orderVisible, panelBackgroundVisible, saving]);
 
   function toggleOrderVisibility() {
     const nextVisible = !orderVisible;
@@ -303,6 +313,10 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     const url = new URL(window.location.href);
     url.searchParams.set("order", nextVisible ? "1" : "0");
     window.history.replaceState({}, "", url);
+  }
+
+  function togglePanelBackgroundVisibility() {
+    setPanelBackgroundVisible((visible) => !visible);
   }
 
   function persistScales(nextScales: PanelScales) {
@@ -471,7 +485,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     "--order-accent": colors.orderAccent,
     "--hit-accent": colors.hitAccent,
     "--live-accent": colors.liveAccent,
-    "--panel-background": colors.panelBackground,
+    "--panel-background": panelBackgroundVisible ? colors.panelBackground : "transparent",
     "--primary-text": colors.primaryText,
     "--order-text": colors.orderText,
     "--hit-header-text": colors.hitHeaderText,

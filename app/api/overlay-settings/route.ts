@@ -21,6 +21,7 @@ export async function PUT(req: NextRequest) {
 
   const settings: OverlaySettings = {
     orderVisible: body.orderVisible !== false,
+    panelBackgroundVisible: body.panelBackgroundVisible !== false,
     scales: {
       order: clamp(body.scales.order, 0.6, 1.8),
       hit: clamp(body.scales.hit, 0.6, 1.8),

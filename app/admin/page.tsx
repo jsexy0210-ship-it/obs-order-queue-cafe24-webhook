@@ -31,6 +31,7 @@ export default function AdminPage() {
   const [editingOverlay, setEditingOverlay] = useState(false);
   const [overlayEditorState, setOverlayEditorState] = useState({
     orderVisible: true,
+    panelBackgroundVisible: true,
     saving: false,
     colors: DEFAULT_OVERLAY_SETTINGS.colors,
   });
@@ -51,6 +52,7 @@ export default function AdminPage() {
   const handleOverlayEditorState = useCallback(
     (state: {
       orderVisible: boolean;
+      panelBackgroundVisible: boolean;
       saving: boolean;
       colors: OverlaySettings["colors"];
     }) => setOverlayEditorState(state),
@@ -455,6 +457,12 @@ export default function AdminPage() {
                       onClick={() => overlayEditorRef.current?.toggleOrderVisibility()}
                     >
                       주문 접수 {overlayEditorState.orderVisible ? "ON" : "OFF"}
+                    </button>
+                    <button
+                      className={`${styles.modalActionButton} ${overlayEditorState.panelBackgroundVisible ? styles.orderActive : styles.orderInactive}`}
+                      onClick={() => overlayEditorRef.current?.togglePanelBackgroundVisibility()}
+                    >
+                      카드 배경 {overlayEditorState.panelBackgroundVisible ? "ON" : "OFF"}
                     </button>
                     <button
                       className={`${styles.modalActionButton} ${styles.saveActionButton}`}
