@@ -6,7 +6,16 @@ type Cafe24Normalized = {
   unitPrice: number;
   youtubeNickname: string | null;
   paymentMethod: string | null;
+  paymentGatewayName: string | null;
+  easypayName: string | null;
+  paid: boolean;
+  paymentDate: string | null;
 };
+
+export type Cafe24PaymentInfo = Pick<
+  Cafe24Normalized,
+  "paymentMethod" | "paymentGatewayName" | "easypayName" | "paid" | "paymentDate"
+>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function pick(obj: any, keys: string[]): unknown {
@@ -116,6 +125,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
 
   const paymentMethodRaw = pick(resource, ["payment_method", "payment_method_name"]);
   const paymentMethod = paymentMethodRaw ? String(paymentMethodRaw) : null;
+  const paymentInfo = extractCafe24PaymentInfo(payload);
 
   if (!orderId || !buyerName) {
     return null;
@@ -132,6 +142,30 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
     unitPrice: Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 15000,
     youtubeNickname,
     paymentMethod,
+    paymentGatewayName: paymentInfo.paymentGatewayName,
+    easypayName: paymentInfo.easypayName,
+    paid: paymentInfo.paid,
+    paymentDate: paymentInfo.paymentDate,
+  };
+}
+
+// 주문생성/입금완료 웹훅 모두에서 결제 정보를 동일한 규칙으로 읽습니다.
+// 카드처럼 주문생성 시 이미 paid=T인 결제도 즉시 결제완료로 기록할 수 있습니다.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function extractCafe24PaymentInfo(payload: any): Cafe24PaymentInfo {
+  const resource = payload?.resource ?? payload?.order ?? payload ?? {};
+  const paymentMethodRaw = pick(resource, ["payment_method", "first_payment_method", "payment_method_name"]);
+  const paymentGatewayRaw = pick(resource, ["payment_gateway_name", "payment_gateway_names"]);
+  const easypayRaw = pick(resource, ["easypay_name", "sub_payment_method_name"]);
+  const paidRaw = pick(resource, ["paid", "payment_status"]);
+  const paymentDateRaw = pick(resource, ["payment_date", "paid_at", "paid_date"]);
+
+  return {
+    paymentMethod: paymentMethodRaw ? String(paymentMethodRaw) : null,
+    paymentGatewayName: paymentGatewayRaw ? String(paymentGatewayRaw) : null,
+    easypayName: easypayRaw ? String(easypayRaw) : null,
+    paid: paidRaw === true || paidRaw === 1 || String(paidRaw).toUpperCase() === "T",
+    paymentDate: paymentDateRaw ? String(paymentDateRaw) : null,
   };
 }
 
@@ -159,6 +193,9 @@ function isPiiKey(key: string): boolean {
     k.startsWith("orderer_") ||
     k.startsWith("receiver_") ||
     k.startsWith("member_") ||
+    k === "billing_name" ||
+    k.includes("bank_account") ||
+    k === "shipping_message" ||
     k === "email" ||
     k === "phone" ||
     k === "cellphone" ||

@@ -21,6 +21,8 @@ export type OrderRow = {
   completed_at: string | null;
   paid_at: string | null;
   payment_method: string | null;
+  payment_gateway_name: string | null;
+  easypay_name: string | null;
   youtube_nickname: string | null;
   timer_seconds: number | null;
   created_at: string;
@@ -125,10 +127,19 @@ export function insertOrder(input: {
   tier?: string;
   youtubeNickname?: string | null;
   paymentMethod?: string | null;
+  paymentGatewayName?: string | null;
+  easypayName?: string | null;
+  paid?: boolean;
+  paymentDate?: string | null;
 }) {
   const stmt = db.prepare(`
-    INSERT INTO orders (source, external_order_id, user_id, product, quantity, unit_price, tier, youtube_nickname, payment_method, status)
-    VALUES (@source, @externalOrderId, @userId, @product, @quantity, @unitPrice, @tier, @youtubeNickname, @paymentMethod, 'waiting')
+    INSERT INTO orders (
+      source, external_order_id, user_id, product, quantity, unit_price, tier,
+      youtube_nickname, payment_method, payment_gateway_name, easypay_name, paid_at, status
+    ) VALUES (
+      @source, @externalOrderId, @userId, @product, @quantity, @unitPrice, @tier,
+      @youtubeNickname, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting'
+    )
   `);
 
   try {
@@ -142,6 +153,9 @@ export function insertOrder(input: {
       tier: input.tier ?? "",
       youtubeNickname: input.youtubeNickname ?? null,
       paymentMethod: input.paymentMethod ?? null,
+      paymentGatewayName: input.paymentGatewayName ?? null,
+      easypayName: input.easypayName ?? null,
+      paidAt: input.paid ? toSqliteUtc(input.paymentDate) : null,
     });
   } catch (err) {
     // external_order_id UNIQUE 충돌 = 카페24가 같은 웹훅을 재전송한 경우 → 조용히 무시
@@ -226,15 +240,43 @@ export function cancelOrder(
  * 카페24 입금완료(입금상태 변경) 웹훅이 들어왔을 때 호출합니다.
  * 이미 입금완료 처리됐거나 큐에 없는 주문이면 false를 반환합니다.
  */
-export function markOrderPaid(externalOrderId: string): boolean {
+export function markOrderPaid(
+  externalOrderId: string,
+  payment?: {
+    paymentMethod?: string | null;
+    paymentGatewayName?: string | null;
+    easypayName?: string | null;
+    paymentDate?: string | null;
+  }
+): boolean {
   const order = db
     .prepare("SELECT * FROM orders WHERE external_order_id = ?")
     .get(externalOrderId) as OrderRow | undefined;
   if (!order) return false;
-  if (order.paid_at) return false;
-  db.prepare("UPDATE orders SET paid_at = datetime('now') WHERE id = ?").run(order.id);
+  db.prepare(
+    `UPDATE orders
+     SET paid_at = COALESCE(paid_at, ?),
+         payment_method = COALESCE(?, payment_method),
+         payment_gateway_name = COALESCE(?, payment_gateway_name),
+         easypay_name = COALESCE(?, easypay_name)
+     WHERE id = ?`
+  ).run(
+    toSqliteUtc(payment?.paymentDate),
+    payment?.paymentMethod ?? null,
+    payment?.paymentGatewayName ?? null,
+    payment?.easypayName ?? null,
+    order.id
+  );
   broadcastUpdate();
   return true;
+}
+
+function toSqliteUtc(value?: string | null): string {
+  if (value) {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 19).replace("T", " ");
+  }
+  return new Date().toISOString().slice(0, 19).replace("T", " ");
 }
 
 function cleanupExpiredCancellations() {

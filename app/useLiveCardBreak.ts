@@ -22,6 +22,9 @@ export type LiveOrder = {
   timer_seconds: number | null;
   youtube_nickname: string | null;
   paid_at: string | null;
+  payment_method: string | null;
+  payment_gateway_name: string | null;
+  easypay_name: string | null;
   created_at: string;
 };
 

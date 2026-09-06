@@ -16,6 +16,8 @@ type OrderRow = {
   cancel_reason: string | null;
   completed_at: string | null;
   payment_method: string | null;
+  payment_gateway_name: string | null;
+  easypay_name: string | null;
   paid_at: string | null;
   youtube_nickname: string | null;
   created_at: string;
@@ -43,6 +45,20 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cellphone: "휴대폰결제",
   point: "적립금",
   bank: "계좌이체",
+  tcash: "계좌이체",
+  icash: "가상계좌",
+  cell: "휴대폰결제",
+  prepaid: "선불금",
+  credit: "예치금",
+  pointfy: "통합포인트",
+  cvs: "편의점결제",
+  cod: "착불/후불",
+  deferpay: "후불결제",
+  coupon: "쿠폰",
+  market_discount: "마켓할인",
+  giftcard: "제휴상품권",
+  pointcard: "제휴포인트",
+  etc: "기타결제",
 };
 
 const formatPrice = (value: number) => value.toLocaleString("ko-KR") + "원";
@@ -50,6 +66,10 @@ const formatPrice = (value: number) => value.toLocaleString("ko-KR") + "원";
 function formatPaymentMethod(method: string | null) {
   if (!method) return "-";
   return PAYMENT_METHOD_LABELS[method] ?? method;
+}
+
+function formatPaymentProvider(order: OrderRow) {
+  return [order.easypay_name, order.payment_gateway_name].filter(Boolean).join(" · ") || "-";
 }
 
 // 출처(거래방식): 카페24 웹훅으로 들어온 주문은 "사이트", 관리자가 직접 입력한 주문은 "직접등록"으로 표시합니다.
@@ -207,6 +227,7 @@ export default function OrderHistoryContent() {
                   <th>수량</th>
                   <th>금액</th>
                   <th>결제방식</th>
+                  <th>PG·간편결제</th>
                   <th>입금여부</th>
                   <th>상태</th>
                   <th>완료일시</th>
@@ -226,6 +247,7 @@ export default function OrderHistoryContent() {
                       <td>{order.quantity}</td>
                       <td>{formatPrice(order.unit_price * order.quantity)}</td>
                       <td>{formatPaymentMethod(order.payment_method)}</td>
+                      <td>{formatPaymentProvider(order)}</td>
                       <td>
                         {order.paid_at ? (
                           <span className={styles.paidBadge}>입금완료</span>

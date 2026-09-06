@@ -44,6 +44,8 @@ db.exec(`
     timer_seconds INTEGER,                          -- 오픈 타이머 길이(초)
     paid_at TEXT,                                   -- 카페24 입금완료 웹훅이 들어온 시각
     payment_method TEXT,                            -- 카페24 결제방식 원본 코드 (cash, card 등). 수동 주문은 NULL
+    payment_gateway_name TEXT,                      -- PG사명 (예: cafe24payments)
+    easypay_name TEXT,                              -- 간편결제명 (네이버페이, 카카오페이 등)
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -76,6 +78,12 @@ if (!orderColumns.some((col) => col.name === "paid_at")) {
 }
 if (!orderColumns.some((col) => col.name === "payment_method")) {
   db.exec("ALTER TABLE orders ADD COLUMN payment_method TEXT");
+}
+if (!orderColumns.some((col) => col.name === "payment_gateway_name")) {
+  db.exec("ALTER TABLE orders ADD COLUMN payment_gateway_name TEXT");
+}
+if (!orderColumns.some((col) => col.name === "easypay_name")) {
+  db.exec("ALTER TABLE orders ADD COLUMN easypay_name TEXT");
 }
 
 const hitCardColumns = db.prepare("PRAGMA table_info(hit_cards)").all() as { name: string }[];
