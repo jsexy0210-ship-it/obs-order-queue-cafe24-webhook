@@ -240,27 +240,27 @@ export default function OrderHistoryContent() {
                   const { label, className } = statusInfo(order);
                   return (
                     <tr key={order.id}>
-                      <td>{formatDate(order.created_at)}</td>
-                      <td>{order.user_id}</td>
-                      <td>{order.youtube_nickname ?? "-"}</td>
-                      <td className={styles.product}>{order.product}</td>
-                      <td>{order.quantity}</td>
-                      <td>{formatPrice(order.unit_price * order.quantity)}</td>
-                      <td>{formatPaymentMethod(order.payment_method)}</td>
-                      <td>{formatPaymentProvider(order)}</td>
-                      <td>
+                      <td data-label="주문일시">{formatDate(order.created_at)}</td>
+                      <td data-label="구매자">{order.user_id}</td>
+                      <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
+                      <td data-label="상품명" className={styles.product}>{order.product}</td>
+                      <td data-label="수량">{order.quantity}</td>
+                      <td data-label="금액">{formatPrice(order.unit_price * order.quantity)}</td>
+                      <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
+                      <td data-label="PG·간편결제">{formatPaymentProvider(order)}</td>
+                      <td data-label="입금여부">
                         {order.paid_at ? (
                           <span className={styles.paidBadge}>입금완료</span>
                         ) : (
                           <span className={styles.notPaid}>-</span>
                         )}
                       </td>
-                      <td>
+                      <td data-label="상태">
                         <span className={`${styles.statusBadge} ${className}`}>{label}</span>
                       </td>
-                      <td>{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
-                      <td className={styles.sourceTag}>{formatSource(order.source)}</td>
-                      <td>
+                      <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
+                      <td data-label="거래방식" className={styles.sourceTag}>{formatSource(order.source)}</td>
+                      <td data-label="관리">
                         <button
                           className={styles.rowDeleteButton}
                           onClick={() => deleteOrderRow(order.id)}
@@ -298,10 +298,10 @@ export default function OrderHistoryContent() {
               <tbody>
                 {pagedHitCards.map((hit) => (
                   <tr key={hit.id}>
-                    <td>{formatDate(hit.created_at)}</td>
-                    <td>{hit.user_id}</td>
-                    <td>{hit.youtube_nickname ?? "-"}</td>
-                    <td className={styles.product}>{hit.card}</td>
+                    <td data-label="등록일시">{formatDate(hit.created_at)}</td>
+                    <td data-label="구매자">{hit.user_id}</td>
+                    <td data-label="유튜브 닉네임">{hit.youtube_nickname ?? "-"}</td>
+                    <td data-label="카드명" className={styles.product}>{hit.card}</td>
                   </tr>
                 ))}
               </tbody>

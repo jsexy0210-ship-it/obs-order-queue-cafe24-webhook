@@ -1,6 +1,9 @@
 .page {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
   padding: 32px 20px 60px;
+  overflow-x: hidden;
   background: #0f1115;
   color: #fff;
   font-family: Arial, Helvetica, sans-serif;
@@ -68,10 +71,9 @@
   min-height: 460px;
 }
 
-/* 테이블이 컨테이너보다 넓어지면 테이블만 가로 스크롤되고,
-   페이지 자체는 가로로 넘치지 않도록 감쌉니다. */
 .scrollArea {
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .pager {
@@ -134,7 +136,8 @@
 
 .table {
   width: 100%;
-  min-width: 920px;
+  min-width: 0;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -144,7 +147,8 @@
   padding: 10px 14px;
   text-align: left;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .table th {
@@ -161,6 +165,68 @@
 .product {
   white-space: normal;
   max-width: 260px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding-inline: 14px;
+  }
+
+  .headerRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tableWrap {
+    min-height: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .table,
+  .table tbody {
+    display: block;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .table td {
+    min-width: 0;
+    padding: 10px 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .table td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 10px;
+    font-weight: 700;
+    content: attr(data-label);
+  }
+
+  .product {
+    max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .table tr {
+    grid-template-columns: 1fr;
+  }
 }
 
 .statusBadge {
