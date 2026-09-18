@@ -11,6 +11,7 @@ const DEFAULT_TIMER_SECONDS = 60;
 const WAITING_PAGE_SIZE = 5;
 const HIT_PAGE_SIZE = 5;
 const TOAST_DISPLAY_MS = 5000;
+const ORDER_ALERT_NOTIFICATION_TITLE = "망고TCG 새 주문";
 
 type Toast = { id: number; userId: string; product: string };
 
@@ -36,6 +37,10 @@ export default function AdminPage() {
     colors: DEFAULT_OVERLAY_SETTINGS.colors,
   });
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [orderAlertsEnabled, setOrderAlertsEnabled] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("default");
   const [waitingPage, setWaitingPage] = useState(1);
   const [hitPage, setHitPage] = useState(1);
 
@@ -48,6 +53,7 @@ export default function AdminPage() {
   const pagedHitCards = hitCards.slice((hitPage - 1) * HIT_PAGE_SIZE, hitPage * HIT_PAGE_SIZE);
 
   const seenOrderIds = useRef<Set<number> | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const overlayEditorRef = useRef<CardBreakFrameHandle>(null);
   const handleOverlayEditorState = useCallback(
     (state: {
@@ -58,6 +64,89 @@ export default function AdminPage() {
     }) => setOverlayEditorState(state),
     []
   );
+
+  const playOrderChime = useCallback(() => {
+    const context = audioContextRef.current;
+    if (!context || context.state !== "running") return;
+
+    const now = context.currentTime;
+    const notes = [
+      { frequency: 659.25, delay: 0 },
+      { frequency: 987.77, delay: 0.16 },
+    ];
+
+    notes.forEach(({ frequency, delay }) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const start = now + delay;
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.18, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.32);
+    });
+  }, []);
+
+  async function toggleOrderAlerts() {
+    if (orderAlertsEnabled) {
+      setOrderAlertsEnabled(false);
+      const context = audioContextRef.current;
+      audioContextRef.current = null;
+      if (context && context.state !== "closed") {
+        await context.close().catch(() => undefined);
+      }
+      return;
+    }
+
+    if (!("AudioContext" in window)) {
+      window.alert("이 브라우저에서는 소리 알림을 사용할 수 없습니다.");
+      return;
+    }
+
+    const context = new window.AudioContext();
+    audioContextRef.current = context;
+
+    const permissionPromise: Promise<NotificationPermission | "unsupported"> =
+      "Notification" in window
+        ? Notification.permission === "default"
+          ? Notification.requestPermission()
+          : Promise.resolve(Notification.permission)
+        : Promise.resolve("unsupported");
+
+    const [, nextPermission] = await Promise.all([
+      context.resume().catch(() => undefined),
+      permissionPromise,
+    ]);
+
+    setNotificationPermission(nextPermission);
+    setOrderAlertsEnabled(context.state === "running");
+
+    if (context.state === "running") {
+      playOrderChime();
+    }
+  }
+
+  useEffect(() => {
+    if ("Notification" in window) {
+      setNotificationPermission(Notification.permission);
+    } else {
+      setNotificationPermission("unsupported");
+    }
+
+    return () => {
+      const context = audioContextRef.current;
+      audioContextRef.current = null;
+      if (context && context.state !== "closed") {
+        void context.close();
+      }
+    };
+  }, []);
 
   // 신규 주문 토스트 알림: 처음 로드될 때 있던 주문은 알리지 않고,
   // 그 이후 새로 들어온 주문(대기열에 새 id)만 감지해서 알려줍니다.
@@ -84,7 +173,44 @@ export default function AdminPage() {
         setToasts((prev) => prev.filter((t) => t.id !== o.id));
       }, TOAST_DISPLAY_MS);
     });
-  }, [waiting]);
+
+    const cafe24Orders = newOrders.filter(
+      (order) => order.source === "cafe24" && order.status === "waiting"
+    );
+
+    if (!orderAlertsEnabled || cafe24Orders.length === 0) return;
+
+    playOrderChime();
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      cafe24Orders.forEach((order) => {
+        const totalPrice = order.unit_price * order.quantity;
+        const notification = new Notification(ORDER_ALERT_NOTIFICATION_TITLE, {
+          body: `${order.user_id} · ${order.product} × ${order.quantity} · ${totalPrice.toLocaleString(
+            "ko-KR"
+          )}원`,
+          tag: `mangotcg-order-${order.external_order_id ?? order.id}`,
+          requireInteraction: true,
+          silent: true,
+        });
+
+        notification.onclick = () => {
+          window.focus();
+          const orderIndex = waiting.findIndex((item) => item.id === order.id);
+          if (orderIndex >= 0) {
+            setWaitingPage(Math.floor(orderIndex / WAITING_PAGE_SIZE) + 1);
+          }
+          requestAnimationFrame(() => {
+            document.getElementById("waiting-orders")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          });
+          notification.close();
+        };
+      });
+    }
+  }, [waiting, orderAlertsEnabled, playOrderChime]);
 
   // 주문 이력/대기 주문 팝업이 열려 있는 동안에는 뒤쪽 관리자 화면이 같이 스크롤되지 않도록 막습니다.
   useEffect(() => {
@@ -234,6 +360,22 @@ export default function AdminPage() {
           <button className={styles.historyButton} onClick={() => setShowOverlayPreview(true)}>
             📺 오버레이 미리보기
           </button>
+          <button
+            className={styles.historyButton}
+            onClick={toggleOrderAlerts}
+            aria-pressed={orderAlertsEnabled}
+            title={
+              notificationPermission === "denied"
+                ? "소리 알림은 사용할 수 있습니다. Windows 알림은 브라우저 알림 권한을 허용해야 합니다."
+                : "새 카페24 주문이 들어오면 알림음과 Windows 알림을 표시합니다."
+            }
+          >
+            {orderAlertsEnabled
+              ? notificationPermission === "granted"
+                ? "🔔 주문 알림 켜짐"
+                : "🔊 소리 알림 켜짐"
+              : "🔔 주문 알림 켜기"}
+          </button>
           <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
             🗂️ 주문이력 보기
           </button>
@@ -287,7 +429,7 @@ export default function AdminPage() {
         )}
       </section>
 
-      <section className={styles.block}>
+      <section className={styles.block} id="waiting-orders">
         <h2>대기 주문 ({waiting.length})</h2>
         {waiting.length === 0 && <p className={styles.empty}>대기 중인 주문 없음</p>}
         <div className={styles.pagedList}>{pagedWaiting.map(renderWaitingRow)}</div>
