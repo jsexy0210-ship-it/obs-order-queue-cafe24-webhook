@@ -37,7 +37,7 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'waiting',         -- 'waiting' | 'opening' | 'done' | 'cancelled'
     prev_status TEXT,                               -- 취소되기 직전 상태 ('waiting' | 'opening') - 화면 배치용
     cancel_reason TEXT,                             -- 'cancelled' | 'refunded'
-    cancelled_at TEXT,                              -- 취소/환불 처리된 시각 (자동 삭제 타이머 기준)
+    cancelled_at TEXT,                              -- 취소/환불 처리된 시각 (라이브 표시 만료 기준, 이력은 3개월 보관)
     started_at TEXT,                                -- status가 'opening'으로 바뀐 시각
     completed_at TEXT,                              -- '오픈 완료' 처리된 시각
     youtube_nickname TEXT,                          -- 주문서 추가입력의 유튜브 닉네임
@@ -62,6 +62,8 @@ db.exec(`
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 `);
 
 // 이미 만들어져 있던 기존 DB 파일에는 completed_at 컬럼이 없을 수 있으므로,

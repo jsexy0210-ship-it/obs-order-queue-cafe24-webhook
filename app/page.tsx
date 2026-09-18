@@ -7,7 +7,7 @@ export default function Home() {
         <a href="/overlay-cardbreak">카드브레이크 OBS 오버레이</a>
         <a href="/preview-cardbreak">카드브레이크 미리보기</a>
         <a href="/admin">🎛️ 망고TCG 관리자 (실시간 주문/히트카드 조작)</a>
-        <a href="/order-history">🗂️ 망고TCG 주문 이력 (최근 30건)</a>
+        <a href="/order-history">🗂️ 망고TCG 주문 이력 (최근 3개월)</a>
       </div>
     </main>
   );

@@ -71,25 +71,39 @@ export function saveOverlaySettings(settings: OverlaySettings) {
   broadcastUpdate();
 }
 
-// 취소/환불된 주문을 화면에 보여주는 시간(초). 이 시간이 지나면 자동으로 목록에서 삭제됩니다.
+// 취소/환불된 주문은 라이브 화면에서만 잠깐 보여주고, 주문 이력 DB에는 3개월 보관합니다.
 const CANCEL_DISPLAY_SECONDS = 8;
+const ORDER_HISTORY_RETENTION_MODIFIER = "-3 months";
+const ORDER_HISTORY_CLEANUP_MS = 60 * 60 * 1000;
 
 export function getLiveState(): LiveState {
   const opening = db
     .prepare(
       `SELECT * FROM orders
-       WHERE status = 'opening' OR (status = 'cancelled' AND prev_status = 'opening')
+       WHERE status = 'opening'
+          OR (
+            status = 'cancelled'
+            AND prev_status = 'opening'
+            AND cancelled_at IS NOT NULL
+            AND datetime(cancelled_at, ?) > datetime('now')
+          )
        ORDER BY started_at DESC LIMIT 1`
     )
-    .get() as OrderRow | undefined;
+    .get(`+${CANCEL_DISPLAY_SECONDS} seconds`) as OrderRow | undefined;
 
   const waiting = db
     .prepare(
       `SELECT * FROM orders
-       WHERE status = 'waiting' OR (status = 'cancelled' AND prev_status = 'waiting')
+       WHERE status = 'waiting'
+          OR (
+            status = 'cancelled'
+            AND prev_status = 'waiting'
+            AND cancelled_at IS NOT NULL
+            AND datetime(cancelled_at, ?) > datetime('now')
+          )
        ORDER BY id ASC`
     )
-    .all() as OrderRow[];
+    .all(`+${CANCEL_DISPLAY_SECONDS} seconds`) as OrderRow[];
 
   const hitCards = db
     .prepare("SELECT * FROM hit_cards ORDER BY id DESC LIMIT 20")
@@ -99,13 +113,17 @@ export function getLiveState(): LiveState {
 }
 
 /**
- * 카페24 주문 이력 화면용: 상태와 무관하게 최근 주문을 순서대로 보여줍니다.
- * (취소/환불된 주문은 8초 뒤 DB에서 실제로 삭제되므로, 그 이후에는 이력에서도 사라집니다.)
+ * 주문 이력 화면용: 상태와 무관하게 최근 3개월 주문을 최신순으로 반환합니다.
+ * 취소/환불 주문도 동일하게 3개월 보관됩니다.
  */
-export function getOrderHistory(limit = 30): OrderRow[] {
+export function getOrderHistory(): OrderRow[] {
   return db
-    .prepare("SELECT * FROM orders ORDER BY id DESC LIMIT ?")
-    .all(limit) as OrderRow[];
+    .prepare(
+      `SELECT * FROM orders
+       WHERE created_at >= datetime('now', ?)
+       ORDER BY id DESC`
+    )
+    .all(ORDER_HISTORY_RETENTION_MODIFIER) as OrderRow[];
 }
 
 /**
@@ -233,6 +251,10 @@ export function cancelOrder(
   ).run(order.status, reason, order.id);
 
   broadcastUpdate();
+
+  // 취소/환불 배지는 라이브 화면에서 8초만 유지합니다.
+  // DB 행은 삭제하지 않고 주문 이력으로 3개월 보관합니다.
+  setTimeout(() => broadcastUpdate(), CANCEL_DISPLAY_SECONDS * 1000 + 100);
   return true;
 }
 
@@ -279,15 +301,10 @@ function toSqliteUtc(value?: string | null): string {
   return new Date().toISOString().slice(0, 19).replace("T", " ");
 }
 
-function cleanupExpiredCancellations() {
+function cleanupExpiredOrderHistory() {
   const result = db
-    .prepare(
-      `DELETE FROM orders
-       WHERE status = 'cancelled'
-         AND cancelled_at IS NOT NULL
-         AND datetime(cancelled_at, '+${CANCEL_DISPLAY_SECONDS} seconds') <= datetime('now')`
-    )
-    .run();
+    .prepare("DELETE FROM orders WHERE created_at < datetime('now', ?)")
+    .run(ORDER_HISTORY_RETENTION_MODIFIER);
 
   if (result.changes > 0) broadcastUpdate();
 }
@@ -295,9 +312,21 @@ function cleanupExpiredCancellations() {
 declare global {
   // eslint-disable-next-line no-var
   var __cardbreakCleanupTimer: ReturnType<typeof setInterval> | undefined;
+  // eslint-disable-next-line no-var
+  var __orderRetentionCleanupTimer: ReturnType<typeof setInterval> | undefined;
 }
 
-// 3초마다 만료된 취소/환불 주문을 정리합니다. (Next.js dev HMR로 중복 등록되지 않도록 global에 캐싱)
-if (!global.__cardbreakCleanupTimer) {
-  global.__cardbreakCleanupTimer = setInterval(cleanupExpiredCancellations, 3000);
+// 이전 개발 서버 HMR 세션에서 8초 후 취소 주문을 실제 삭제하던 타이머가 남아 있으면 제거합니다.
+if (global.__cardbreakCleanupTimer) {
+  clearInterval(global.__cardbreakCleanupTimer);
+  global.__cardbreakCleanupTimer = undefined;
+}
+
+// 서버 시작 시 한 번, 이후 1시간마다 3개월이 지난 주문 이력을 정리합니다.
+cleanupExpiredOrderHistory();
+if (!global.__orderRetentionCleanupTimer) {
+  global.__orderRetentionCleanupTimer = setInterval(
+    cleanupExpiredOrderHistory,
+    ORDER_HISTORY_CLEANUP_MS
+  );
 }
