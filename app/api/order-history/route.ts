@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   return NextResponse.json({
-    orders: getOrderHistory(30),
+    orders: getOrderHistory(),
     hitCards: getHitCardHistory(30),
   });
 }
