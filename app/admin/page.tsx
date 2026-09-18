@@ -130,6 +130,15 @@ export default function AdminPage() {
     if (context.state === "running") {
       playOrderChime();
     }
+
+    if (nextPermission === "granted") {
+      const testNotification = new Notification("망고TCG 주문 알림", {
+        body: "새 주문이 들어오면 소리와 함께 Windows 알림을 표시합니다.",
+        tag: "mangotcg-order-alert-test",
+        silent: true,
+      });
+      window.setTimeout(() => testNotification.close(), 4000);
+    }
   }
 
   useEffect(() => {
