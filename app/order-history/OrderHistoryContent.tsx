@@ -197,7 +197,7 @@ export default function OrderHistoryContent() {
       <div className={styles.headerRow}>
         <div>
           <h1>망고TCG 주문 이력</h1>
-          <p className={styles.hint}>최근 30건까지만 보관됩니다. (10초마다 자동 새로고침)</p>
+          <p className={styles.hint}>최근 3개월 주문 이력을 보관합니다. (10초마다 자동 새로고침)</p>
         </div>
         <div className={styles.headerButtons}>
           <button className={styles.refreshButton} onClick={load}>
