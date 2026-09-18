@@ -104,7 +104,7 @@ export default function AdminPage() {
       return;
     }
 
-    if (!("AudioContext" in window)) {
+    if (typeof window.AudioContext === "undefined") {
       window.alert("이 브라우저에서는 소리 알림을 사용할 수 없습니다.");
       return;
     }
@@ -113,7 +113,7 @@ export default function AdminPage() {
     audioContextRef.current = context;
 
     const permissionPromise: Promise<NotificationPermission | "unsupported"> =
-      "Notification" in window
+      typeof window.Notification !== "undefined"
         ? Notification.permission === "default"
           ? Notification.requestPermission()
           : Promise.resolve(Notification.permission)
@@ -142,7 +142,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    if ("Notification" in window) {
+    if (typeof window.Notification !== "undefined") {
       setNotificationPermission(Notification.permission);
     } else {
       setNotificationPermission("unsupported");
@@ -191,7 +191,7 @@ export default function AdminPage() {
 
     playOrderChime();
 
-    if ("Notification" in window && Notification.permission === "granted") {
+    if (typeof window.Notification !== "undefined" && Notification.permission === "granted") {
       cafe24Orders.forEach((order) => {
         const totalPrice = order.unit_price * order.quantity;
         const notification = new Notification(ORDER_ALERT_NOTIFICATION_TITLE, {
