@@ -1,0 +1,284 @@
+.page {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  padding: 32px 20px 60px;
+  overflow-x: hidden;
+  background: #0f1115;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.headerRow {
+  max-width: 1320px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headerRow h1 {
+  margin: 0 0 4px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.refreshButton {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #28b7ff;
+  color: #04121c;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.headerButtons {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+.resetButton {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 77, 95, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 77, 95, 0.15);
+  color: #ff8a95;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resetButton:hover {
+  background: rgba(255, 77, 95, 0.25);
+}
+
+.tableWrap {
+  max-width: 1320px;
+  margin: 0 auto;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  /* 페이지를 넘기면서 행 수가 달라져도(마지막 페이지 등) 전체 레이아웃이
+     들썩이지 않도록 최소 높이를 잡아둡니다. (헤더 1줄 + 데이터 10줄 기준) */
+  min-height: 460px;
+}
+
+.scrollArea {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.pager {
+  max-width: 1320px;
+  margin: 10px auto 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.pagerButton {
+  padding: 6px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pagerButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pagerButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pagerInfo {
+  font-size: 13px;
+  opacity: 0.7;
+  min-width: 48px;
+  text-align: center;
+}
+
+.rowDeleteButton {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #ff4d5f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rowDeleteButton:hover {
+  background: #ff6b7a;
+}
+
+.sectionTitle {
+  max-width: 1320px;
+  margin: 0 auto 10px;
+  font-size: 14px;
+  opacity: 0.75;
+}
+
+.table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.table th {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.55;
+  letter-spacing: 0.03em;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.product {
+  white-space: normal;
+  max-width: 260px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding-inline: 14px;
+  }
+
+  .headerRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tableWrap {
+    min-height: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .table,
+  .table tbody {
+    display: block;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .table td {
+    min-width: 0;
+    padding: 10px 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .table td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 10px;
+    font-weight: 700;
+    content: attr(data-label);
+  }
+
+  .product {
+    max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .table tr {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statusBadge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.statusWaiting {
+  background: rgba(98, 227, 255, 0.15);
+  color: #62e3ff;
+}
+
+.statusOpening {
+  background: rgba(139, 97, 255, 0.2);
+  color: #b79bff;
+}
+
+.statusDone {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.statusCancelled {
+  background: rgba(255, 77, 95, 0.15);
+  color: #ff8a95;
+}
+
+.sourceTag {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.paidBadge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+  background: rgba(53, 208, 127, 0.18);
+  color: #4ee394;
+}
+
+.notPaid {
+  opacity: 0.35;
+}
+
+.empty {
+  padding: 40px 14px;
+  text-align: center;
+  opacity: 0.5;
+  font-size: 13px;
+}

@@ -1,0 +1,14 @@
+.previewStage {
+  position: relative;
+  width: min(100vw, 540px);
+  aspect-ratio: 9 / 16;
+  min-height: 960px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: transparent;
+}
+
+.overlayFrame {
+  position: absolute;
+  inset: 0;
+}

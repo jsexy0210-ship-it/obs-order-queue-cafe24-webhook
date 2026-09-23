@@ -1,0 +1,181 @@
+.overlay {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 24px;
+  background: transparent;
+  color: #fff;
+  pointer-events: none;
+}
+
+.panel {
+  width: 440px;
+  border-radius: 24px;
+  padding: 22px;
+  background: rgba(10, 12, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(14px);
+}
+
+.header,
+.queueHeading,
+.nowCard,
+.queueItem,
+.footer {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.eyebrow,
+.sectionLabel {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  opacity: 0.62;
+}
+
+.header h1 {
+  margin: 5px 0 0;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.liveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4d5f;
+  box-shadow: 0 0 0 5px rgba(255, 77, 95, 0.12);
+  animation: pulse 1.6s infinite;
+}
+
+.nowSection {
+  margin-bottom: 22px;
+}
+
+.nowCard {
+  gap: 12px;
+  margin-top: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 900;
+}
+
+.orderText {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orderText strong {
+  font-size: 15px;
+}
+
+.orderText span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  opacity: 0.68;
+}
+
+.quantity {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0.72;
+}
+
+.queueHeading {
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+
+.queueHeading > span {
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+.queueList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.queueItem {
+  gap: 12px;
+  padding: 12px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rank {
+  width: 30px;
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.42;
+}
+
+.footer {
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 11px;
+  opacity: 0.45;
+}
+
+.divider {
+  opacity: 0.4;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.9); }
+}
+
+@media (max-width: 520px) {
+  .overlay {
+    padding: 12px;
+  }
+
+  .panel {
+    width: 100%;
+  }
+}
