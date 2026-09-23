@@ -5,16 +5,28 @@ import {
   getValidAdminAuthTokens,
 } from "@/lib/adminAuth";
 
-// 비밀번호로 보호할 대상:
-//  - 관리자 화면 페이지: /admin, /order-history
-//  - 그 화면들이 쓰는 "쓰기" API (주문/히트카드 추가·삭제·상태변경, 이력 초기화)
+// 사용자용 페이지는 기본적으로 모두 로그인 보호한다.
+// 공개 예외는 OBS가 로그인 없이 직접 읽어야 하는 실제 방송 오버레이와 로그인 화면뿐이다.
 //
-// 절대 막으면 안 되는 것들(OBS 브라우저 소스가 로그인 없이 항상 떠 있어야 함):
-//  - /overlay-cardbreak, /overlay-vertical, /preview-cardbreak, /preview-vertical
-//  - /api/orders (GET), /api/stream (SSE) — 오버레이가 상태를 읽어오는 용도
-//  - /api/webhooks/cafe24 — 카페24 서버가 호출하는 웹훅(자체 token 파라미터로 이미 인증됨)
-const PROTECTED_PAGE_PREFIXES = ["/admin", "/order-history"];
-const PUBLIC_ADMIN_PAGES = ["/admin/login"];
+// 공개 유지:
+//  - /admin/login
+//  - /overlay, /overlay-cardbreak, /overlay-vertical
+//  - /api/orders (GET), /api/stream (SSE) — 오버레이 상태 조회용
+//  - /api/webhooks/cafe24 — Cafe24 서버 웹훅(자체 token 검증)
+//
+// 로그인 보호:
+//  - /, /admin, /order-history, /preview-* 및 향후 추가되는 일반 페이지
+//  - 주문/히트카드/설정 등을 변경하는 쓰기 API
+const PUBLIC_EXACT_PAGES = ["/admin/login"];
+const PUBLIC_PAGE_PREFIXES = ["/overlay", "/overlay-cardbreak", "/overlay-vertical"];
+
+function isPublicPage(pathname: string): boolean {
+  if (PUBLIC_EXACT_PAGES.includes(pathname)) return true;
+
+  return PUBLIC_PAGE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
 
 function isProtectedApiRequest(pathname: string, method: string): boolean {
   if (pathname === "/api/orders" && method === "POST") return true;
@@ -29,9 +41,8 @@ function isProtectedApiRequest(pathname: string, method: string): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isProtectedPage =
-    !PUBLIC_ADMIN_PAGES.includes(pathname) &&
-    PROTECTED_PAGE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const isPageRequest = !pathname.startsWith("/api/");
+  const isProtectedPage = isPageRequest && !isPublicPage(pathname);
   const isProtectedApi = isProtectedApiRequest(pathname, req.method);
 
   if (!isProtectedPage && !isProtectedApi) {
@@ -48,7 +59,7 @@ export async function middleware(req: NextRequest) {
 
   if (isProtectedPage) {
     const loginUrl = new URL("/admin/login", req.url);
-    loginUrl.searchParams.set("next", pathname);
+    loginUrl.searchParams.set("next", pathname === "/" ? "/admin" : pathname);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -57,8 +68,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/admin/:path*",
-    "/order-history/:path*",
+    // 일반 페이지는 기본 로그인 보호. API/Next 내부 리소스/앱 아이콘은 별도 처리한다.
+    "/((?!api|_next/static|_next/image|favicon.ico|icon.jpg).*)",
+    // 쓰기 API는 기존과 동일하게 인증 보호한다.
     "/api/orders/:path*",
     "/api/hit-cards/:path*",
     "/api/order-history",
