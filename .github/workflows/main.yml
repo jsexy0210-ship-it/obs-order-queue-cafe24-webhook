@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -13,6 +16,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Reject tracked runtime data
+        shell: bash
+        run: |
+          if [ -n "$(git ls-files 'data/*')" ]; then
+            echo "::error::Runtime data under data/ must never be committed."
+            git ls-files 'data/*'
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
