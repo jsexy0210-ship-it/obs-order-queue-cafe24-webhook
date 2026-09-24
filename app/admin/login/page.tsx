@@ -1,11 +1,9 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { FormEvent, useState } from "react";
 import styles from "../admin.module.css";
 
-function LoginForm() {
-  const searchParams = useSearchParams();
+export default function AdminLoginPage() {
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,11 +27,7 @@ function LoginForm() {
         return;
       }
 
-      const requestedNext = searchParams.get("next");
-      const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
-        ? requestedNext
-        : "/admin";
-      window.location.href = next;
+      window.location.href = "/admin";
     } finally {
       setLoading(false);
     }
@@ -84,13 +78,5 @@ function LoginForm() {
         <p className={styles.loginSecurity}>승인된 관리자 계정만 접근할 수 있습니다.</p>
       </div>
     </main>
-  );
-}
-
-export default function AdminLoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
   );
 }
