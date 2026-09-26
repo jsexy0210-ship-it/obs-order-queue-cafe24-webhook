@@ -758,6 +758,48 @@
   background: rgba(40, 183, 255, 0.12);
 }
 
+.settingsPage {
+  max-width: 720px;
+  margin: 32px auto;
+}
+
+.settingsPage h2 {
+  margin: 0 0 20px;
+  font-size: 24px;
+}
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: #10141c;
+}
+
+.settingRow h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.settingRow p {
+  margin: 0;
+  color: #aeb7c5;
+  font-size: 13px;
+}
+
+.settingRow button {
+  flex-shrink: 0;
+}
+
+.settingRow button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .hint {
   max-width: 1440px;
   margin: 18px auto 20px;
@@ -1044,6 +1086,11 @@
 }
 
 @media (max-width: 560px) {
+  .settingRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .historyButton {
     flex: 1 1 calc(50% - 8px);
     justify-content: center;

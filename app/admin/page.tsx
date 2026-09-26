@@ -16,7 +16,7 @@ const ORDER_ALERT_NOTIFICATION_TITLE = "망고TCG 새 주문";
 type Toast = { id: number; userId: string; product: string };
 
 export default function AdminPage() {
-  const { opening, waiting, hitCards } = useLiveCardBreak();
+  const { opening, waiting, hitCards, overlaySettings } = useLiveCardBreak();
 
   const [form, setForm] = useState({
     userId: "",
@@ -29,6 +29,9 @@ export default function AdminPage() {
   const [hitForm, setHitForm] = useState({ userId: "", card: "", youtubeNickname: "" });
   const [showHistory, setShowHistory] = useState(false);
   const [showOverlayPreview, setShowOverlayPreview] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
+  const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
   const [overlayEditorState, setOverlayEditorState] = useState({
     orderVisible: true,
@@ -66,6 +69,31 @@ export default function AdminPage() {
     }) => setOverlayEditorState(state),
     []
   );
+
+  useEffect(() => {
+    setOrderVisibleSetting(overlaySettings.orderVisible);
+  }, [overlaySettings.orderVisible]);
+
+  async function toggleOrderVisibilitySetting() {
+    setSavingOrderVisible(true);
+    try {
+      const currentResponse = await fetch("/api/overlay-settings");
+      if (!currentResponse.ok) throw new Error("load failed");
+      const currentSettings = await currentResponse.json() as OverlaySettings;
+      const nextVisible = !currentSettings.orderVisible;
+      const response = await fetch("/api/overlay-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...currentSettings, orderVisible: nextVisible }),
+      });
+      if (!response.ok) throw new Error("save failed");
+      setOrderVisibleSetting(nextVisible);
+    } catch {
+      window.alert("주문 접수 설정 저장에 실패했습니다.");
+    } finally {
+      setSavingOrderVisible(false);
+    }
+  }
 
   const playOrderChime = useCallback(() => {
     const context = audioContextRef.current;
@@ -360,41 +388,70 @@ export default function AdminPage() {
           <h1>망고TCG 관리자</h1>
         </div>
         <div className={styles.headerButtons}>
-          <a
-            className={styles.historyButton}
-            href="https://dhdudals5555.cafe24.com/disp/admin/shop1/main/dashboard"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            🏪 카페24 관리자
-          </a>
-          <button className={styles.historyButton} onClick={() => setShowOverlayPreview(true)}>
-            📺 오버레이 미리보기
-          </button>
-          <button
-            className={styles.historyButton}
-            onClick={toggleOrderAlerts}
-            aria-pressed={orderAlertsEnabled}
-            title={
-              notificationPermission === "denied"
-                ? "소리 알림은 사용할 수 있습니다. Windows 알림은 브라우저 알림 권한을 허용해야 합니다."
-                : "새 카페24 주문이 들어오면 알림음과 Windows 알림을 표시합니다."
-            }
-          >
-            {orderAlertsEnabled
-              ? notificationPermission === "granted"
-                ? "🔔 주문 알림 켜짐"
-                : "🔊 소리 알림 켜짐"
-              : "🔔 주문 알림 켜기"}
-          </button>
-          <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
-            🗂️ 주문이력 보기
+          {!showSettings && (
+            <>
+              <a
+                className={styles.historyButton}
+                href="https://dhdudals5555.cafe24.com/disp/admin/shop1/main/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                🏪 카페24 관리자
+              </a>
+              <button className={styles.historyButton} onClick={() => setShowOverlayPreview(true)}>
+                📺 오버레이 미리보기
+              </button>
+              <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
+                🗂️ 주문이력 보기
+              </button>
+            </>
+          )}
+          <button className={styles.historyButton} onClick={() => setShowSettings((value) => !value)} aria-pressed={showSettings}>
+            {showSettings ? "← 관리자 홈" : "⚙️ 설정"}
           </button>
           <button className={styles.logoutButton} onClick={logout}>
             로그아웃
           </button>
         </div>
       </div>
+      {showSettings ? (
+        <section className={styles.settingsPage} aria-labelledby="settings-title">
+          <h2 id="settings-title">설정</h2>
+          <div className={styles.settingRow}>
+            <div>
+              <h3>주문 알림</h3>
+              <p>새 카페24 주문이 들어오면 소리와 Windows 알림을 표시합니다.</p>
+            </div>
+            <button
+              className={styles.historyButton}
+              onClick={toggleOrderAlerts}
+              aria-pressed={orderAlertsEnabled}
+              title={notificationPermission === "denied" ? "Windows 알림은 브라우저 알림 권한을 허용해야 합니다." : undefined}
+            >
+              {orderAlertsEnabled
+                ? notificationPermission === "granted"
+                  ? "🔔 주문 알림 켜짐"
+                  : "🔊 소리 알림 켜짐"
+                : "🔔 주문 알림 켜기"}
+            </button>
+          </div>
+          <div className={styles.settingRow}>
+            <div>
+              <h3>주문 접수 카드</h3>
+              <p>오버레이에 주문 접수 카드를 표시합니다.</p>
+            </div>
+            <button
+              className={styles.historyButton}
+              onClick={toggleOrderVisibilitySetting}
+              aria-pressed={orderVisibleSetting}
+              disabled={savingOrderVisible}
+            >
+              주문 접수 {orderVisibleSetting ? "ON" : "OFF"}
+            </button>
+          </div>
+        </section>
+      ) : (
+      <>
       <p className={styles.hint}>
         카페24 웹훅은 &quot;주문 접수&quot;까지만 알려줍니다. 지금 오픈 중인 주문 지정과
         히트카드 등록은 여기서 직접 조작하세요.
@@ -606,12 +663,6 @@ export default function AdminPage() {
                 {editingOverlay && (
                   <>
                     <button
-                      className={`${styles.modalActionButton} ${overlayEditorState.orderVisible ? styles.orderActive : styles.orderInactive}`}
-                      onClick={() => overlayEditorRef.current?.toggleOrderVisibility()}
-                    >
-                      주문 접수 {overlayEditorState.orderVisible ? "ON" : "OFF"}
-                    </button>
-                    <button
                       className={`${styles.modalActionButton} ${overlayEditorState.panelBackgroundVisible ? styles.orderActive : styles.orderInactive}`}
                       onClick={() => overlayEditorRef.current?.togglePanelBackgroundVisibility()}
                     >
@@ -697,6 +748,8 @@ export default function AdminPage() {
             <OrderHistoryContent />
           </div>
         </div>
+      )}
+      </>
       )}
     </main>
   );
