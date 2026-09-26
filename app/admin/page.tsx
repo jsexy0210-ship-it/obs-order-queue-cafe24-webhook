@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [overlayEditorState, setOverlayEditorState] = useState({
     orderVisible: true,
     panelBackgroundVisible: true,
+    panelBackgroundTransparency: DEFAULT_OVERLAY_SETTINGS.panelBackgroundTransparency,
     saving: false,
     colors: DEFAULT_OVERLAY_SETTINGS.colors,
   });
@@ -59,6 +60,7 @@ export default function AdminPage() {
     (state: {
       orderVisible: boolean;
       panelBackgroundVisible: boolean;
+      panelBackgroundTransparency: number;
       saving: boolean;
       colors: OverlaySettings["colors"];
     }) => setOverlayEditorState(state),
@@ -659,6 +661,17 @@ export default function AdminPage() {
                     <code>{overlayEditorState.colors[key].toUpperCase()}</code>
                   </label>
                 ))}
+                <label className={styles.opacityField}>
+                  <span>카드 배경 투명도</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={overlayEditorState.panelBackgroundTransparency}
+                    onChange={(event) => overlayEditorRef.current?.updatePanelBackgroundTransparency(Number(event.target.value))}
+                  />
+                  <output>{overlayEditorState.panelBackgroundTransparency}%</output>
+                </label>
               </div>
             )}
             <div className={styles.overlayPreviewCanvas}>

@@ -189,6 +189,7 @@ type CardBreakFrameProps = {
   onEditorStateChange?: (state: {
     orderVisible: boolean;
     panelBackgroundVisible: boolean;
+    panelBackgroundTransparency: number;
     saving: boolean;
     colors: OverlaySettings["colors"];
   }) => void;
@@ -197,6 +198,7 @@ type CardBreakFrameProps = {
 export type CardBreakFrameHandle = {
   toggleOrderVisibility: () => void;
   togglePanelBackgroundVisibility: () => void;
+  updatePanelBackgroundTransparency: (value: number) => void;
   saveSettings: () => Promise<void>;
   updateColor: (key: keyof OverlaySettings["colors"], value: string) => void;
 };
@@ -216,6 +218,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   const [dragging, setDragging] = useState<PanelSide | null>(null);
   const [orderVisible, setOrderVisible] = useState(true);
   const [panelBackgroundVisible, setPanelBackgroundVisible] = useState(true);
+  const [panelBackgroundTransparency, setPanelBackgroundTransparency] = useState(overlaySettings.panelBackgroundTransparency);
   const [saving, setSaving] = useState(false);
   const [colors, setColors] = useState(overlaySettings.colors);
   const colorsRef = useRef(overlaySettings.colors);
@@ -260,6 +263,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     setPosition(safePosition);
     setOrderVisible(overlaySettings.orderVisible);
     setPanelBackgroundVisible(overlaySettings.panelBackgroundVisible);
+    setPanelBackgroundTransparency(overlaySettings.panelBackgroundTransparency);
     colorsRef.current = overlaySettings.colors;
     setColors(overlaySettings.colors);
   }, [overlaySettings]);
@@ -268,6 +272,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     const settings: OverlaySettings = {
       orderVisible,
       panelBackgroundVisible,
+      panelBackgroundTransparency,
       scales: scalesRef.current,
       widths: widthsRef.current,
       position: positionRef.current,
@@ -298,13 +303,14 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   useImperativeHandle(ref, () => ({
     toggleOrderVisibility,
     togglePanelBackgroundVisibility,
+    updatePanelBackgroundTransparency: setPanelBackgroundTransparency,
     saveSettings,
     updateColor,
   }));
 
   useEffect(() => {
-    onEditorStateChange?.({ orderVisible, panelBackgroundVisible, saving, colors });
-  }, [colors, onEditorStateChange, orderVisible, panelBackgroundVisible, saving]);
+    onEditorStateChange?.({ orderVisible, panelBackgroundVisible, panelBackgroundTransparency, saving, colors });
+  }, [colors, onEditorStateChange, orderVisible, panelBackgroundVisible, panelBackgroundTransparency, saving]);
 
   function toggleOrderVisibility() {
     const nextVisible = !orderVisible;
@@ -485,7 +491,9 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     "--order-accent": colors.orderAccent,
     "--hit-accent": colors.hitAccent,
     "--live-accent": colors.liveAccent,
-    "--panel-background": panelBackgroundVisible ? colors.panelBackground : "transparent",
+    "--panel-background": panelBackgroundVisible
+      ? `rgba(${parseInt(colors.panelBackground.slice(1, 3), 16)}, ${parseInt(colors.panelBackground.slice(3, 5), 16)}, ${parseInt(colors.panelBackground.slice(5, 7), 16)}, ${(100 - panelBackgroundTransparency) / 100})`
+      : "transparent",
     "--primary-text": colors.primaryText,
     "--order-text": colors.orderText,
     "--hit-header-text": colors.hitHeaderText,
