@@ -44,6 +44,14 @@
   flex: 0 0 auto;
 }
 
+.siteMenuToggle {
+  gap: 4px;
+}
+
+.siteMenuCaret {
+  font-size: 10px;
+}
+
 .siteMenuPanel {
   position: absolute;
   z-index: 60;

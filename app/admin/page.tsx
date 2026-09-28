@@ -438,7 +438,8 @@ export default function AdminPage() {
                   aria-controls="admin-site-menu"
                   onClick={() => setSiteMenuOpen((open) => !open)}
                 >
-                  🏪 사이트
+                  <span>🏪 사이트</span>
+                  <span className={styles.siteMenuCaret} aria-hidden="true">{siteMenuOpen ? "▴" : "▾"}</span>
                 </button>
                 {siteMenuOpen && (
                   <div id="admin-site-menu" className={styles.siteMenuPanel}>
