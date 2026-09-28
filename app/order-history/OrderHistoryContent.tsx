@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./order-history.module.css";
 
@@ -164,6 +164,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/admin/login");
@@ -209,6 +210,15 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
     orderPage * ORDER_PAGE_SIZE
   );
 
+  function slideOrderGrid(direction: "left" | "right") {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) return;
+    scrollArea.scrollBy({
+      left: (direction === "left" ? -1 : 1) * Math.max(scrollArea.clientWidth * 0.8, 420),
+      behavior: "smooth",
+    });
+  }
+
   return (
     <>
       <div className={styles.headerRow}>
@@ -216,7 +226,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
           {onBack
             ? <button className={styles.backButton} onClick={onBack} aria-label="뒤로가기" title="뒤로가기">←</button>
             : <a className={styles.backButton} href="/admin" aria-label="뒤로가기" title="뒤로가기">←</a>}
-          <h1>망고TCG 주문 이력</h1>
+          <h1>주문이력</h1>
           <span
             className={styles.infoTooltip}
             tabIndex={0}
@@ -285,19 +295,29 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
         ) : orders.length === 0 ? (
           <div className={styles.empty}>주문 이력이 없습니다.</div>
         ) : (
-          <div className={styles.scrollArea}>
-            <table className={styles.table}>
+          <div className={styles.tableScroller}>
+            <button
+              className={`${styles.gridScrollButton} ${styles.gridScrollLeft}`}
+              type="button"
+              onClick={() => slideOrderGrid("left")}
+              aria-label="이전 열 보기"
+              title="이전 열 보기"
+            >
+              ←
+            </button>
+            <div className={styles.scrollArea} ref={scrollAreaRef}>
+              <table className={styles.table}>
               <thead>
                 <tr>
                   <th>주문일시</th>
+                  <th>상품명</th>
+                  <th>실결제액</th>
+                  <th>수량</th>
                   <th>유튜브 닉네임</th>
                   <th>구매자</th>
-                  <th>상태</th>
-                  <th>실결제액</th>
-                  <th>적립금 지급/회수</th>
                   <th>회원등급</th>
-                  <th>상품명</th>
-                  <th>수량</th>
+                  <th>적립금</th>
+                  <th>상태</th>
                   <th>결제방식</th>
                   <th>완료일시</th>
                   <th></th>
@@ -310,11 +330,13 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   return (
                     <tr key={order.id}>
                       <td data-label="주문일시">{formatDate(order.created_at)}</td>
+                      <td data-label="상품명" className={styles.product}>{order.product}</td>
+                      <td data-label="실결제액">{formatPrice(order.actual_amount)}</td>
+                      <td data-label="수량">{order.quantity}</td>
                       <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
                       <td data-label="구매자">{order.user_id}</td>
-                      <td data-label="상태"><span className={`${styles.statusBadge} ${className}`}>{label}</span></td>
-                      <td data-label="실결제액">{formatPrice(order.actual_amount)}</td>
-                      <td data-label="적립금 지급/회수" className={styles.rewardCell}>
+                      <td data-label="회원등급">{order.tier || "-"}</td>
+                      <td data-label="적립금" className={styles.rewardCell}>
                         {!reward?.issue ? (
                           <span className={styles.rewardNone}>-</span>
                         ) : (
@@ -330,9 +352,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                           </>
                         )}
                       </td>
-                      <td data-label="회원등급">{order.tier || "-"}</td>
-                      <td data-label="상품명" className={styles.product}>{order.product}</td>
-                      <td data-label="수량">{order.quantity}</td>
+                      <td data-label="상태"><span className={`${styles.statusBadge} ${className}`}>{label}</span></td>
                       <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
                       <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
                       <td data-label="관리">
@@ -347,7 +367,17 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
+            <button
+              className={`${styles.gridScrollButton} ${styles.gridScrollRight}`}
+              type="button"
+              onClick={() => slideOrderGrid("right")}
+              aria-label="다음 열 보기"
+              title="다음 열 보기"
+            >
+              →
+            </button>
           </div>
         )}
       </div>

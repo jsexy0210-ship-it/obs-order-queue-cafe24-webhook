@@ -178,6 +178,42 @@
   scrollbar-width: thin;
 }
 
+.tableScroller {
+  position: relative;
+}
+
+.gridScrollButton {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgba(125, 220, 255, 0.48);
+  border-radius: 10px;
+  background: rgba(9, 11, 16, 0.92);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+  color: #7ddcff;
+  font-size: 22px;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.gridScrollButton:hover {
+  background: rgba(40, 183, 255, 0.2);
+}
+
+.gridScrollLeft {
+  left: 8px;
+}
+
+.gridScrollRight {
+  right: 8px;
+}
+
 .scrollArea::-webkit-scrollbar {
   height: 12px;
 }
@@ -302,15 +338,15 @@
   max-width: 260px;
 }
 
-.table th:nth-child(1) { width: 7%; }
-.table th:nth-child(2) { width: 8%; }
-.table th:nth-child(3) { width: 7%; }
-.table th:nth-child(4) { width: 6%; }
-.table th:nth-child(5) { width: 9%; }
-.table th:nth-child(6) { width: 12%; }
+.table th:nth-child(1) { width: 8%; }
+.table th:nth-child(2) { width: 19%; }
+.table th:nth-child(3) { width: 9%; }
+.table th:nth-child(4) { width: 4%; }
+.table th:nth-child(5) { width: 8%; }
+.table th:nth-child(6) { width: 7%; }
 .table th:nth-child(7) { width: 8%; }
-.table th:nth-child(8) { width: 19%; }
-.table th:nth-child(9) { width: 4%; }
+.table th:nth-child(8) { width: 11%; }
+.table th:nth-child(9) { width: 6%; }
 .table th:nth-child(10) { width: 8%; }
 .table th:nth-child(11) { width: 8%; }
 .table th:nth-child(12) { width: 4%; }
@@ -484,6 +520,10 @@
     min-height: 0;
     border: 0;
     background: transparent;
+  }
+
+  .gridScrollButton {
+    display: none;
   }
 
   .table,

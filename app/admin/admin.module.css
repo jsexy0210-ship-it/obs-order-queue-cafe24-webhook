@@ -33,7 +33,7 @@
 .headerButtons > .historyButton,
 .headerButtons > .logoutButton,
 .siteMenuToggle {
-  width: 84px;
+  width: 100px;
   padding-inline: 8px;
   justify-content: center;
   font-size: 12px;
@@ -42,6 +42,14 @@
 .siteMenu {
   position: relative;
   flex: 0 0 auto;
+}
+
+.siteMenuToggle {
+  gap: 4px;
+}
+
+.siteMenuCaret {
+  font-size: 10px;
 }
 
 .siteMenuPanel {
