@@ -37,13 +37,27 @@ export async function getCafe24CustomerGroups() {
   return response.customergroups ?? [];
 }
 
-export async function getCafe24OrderBuyerName(orderId: string): Promise<string | null> {
+export async function getCafe24OrderBuyerInfo(orderId: string) {
   const token = await getValidCafe24AccessToken();
   const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
-  const response = await request<{ buyer?: { name?: string } }>(
+  const response = await request<{ buyer?: { name?: string; member_id?: string } }>(
     `/orders/${encodeURIComponent(orderId)}/buyer?${query}`
   );
-  return response.buyer?.name?.trim() || null;
+  if (!response.buyer) return null;
+  return {
+    name: response.buyer.name?.trim() || null,
+    memberId: response.buyer.member_id?.trim() || null,
+  };
+}
+
+export async function getCafe24CurrentCustomerGroupNo(memberId: string): Promise<string | null> {
+  const token = await getValidCafe24AccessToken();
+  const query = new URLSearchParams({ shop_no: token.shopNo || "1", member_id: memberId });
+  const response = await request<{ customers?: Array<{ member_id: string; group_no: string | number }> }>(
+    `/customers?${query}`
+  );
+  const customer = response.customers?.find((item) => item.member_id === memberId);
+  return customer?.group_no == null ? null : String(customer.group_no);
 }
 
 export async function updateCafe24CustomerGroupName(groupNo: string, groupName: string) {

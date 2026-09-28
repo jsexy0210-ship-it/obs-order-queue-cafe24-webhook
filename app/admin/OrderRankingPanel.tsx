@@ -121,7 +121,7 @@ export default function OrderRankingPanel() {
                   <strong>{row.buyerName ?? "구매자 확인 불가"}</strong>
                   <span
                     className={`${styles.rankingGradeBadge} ${row.tier ? "" : styles.rankingGradeUnknown}`}
-                    title="최근 결제 주문에서 확인한 카페24 회원등급"
+                    title="카페24의 현재 회원등급"
                   >
                     {row.tier ?? "등급 확인 불가"}
                   </span>
