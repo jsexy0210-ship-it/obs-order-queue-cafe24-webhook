@@ -96,11 +96,11 @@ jobs:
       - name: Restart MangoTCG production process
         shell: pwsh
         run: |
-          $npmGlobalBin = (& npm prefix -g).Trim()
-          $pm2Command = Join-Path $npmGlobalBin "pm2.cmd"
-          if (-not (Test-Path $pm2Command)) {
+          $pm2 = Get-Command pm2 -ErrorAction SilentlyContinue
+          if (-not $pm2) {
             throw "PM2가 설치되어 있지 않습니다. 기존 운영 프로세스를 건드리지 않았습니다."
           }
+          $pm2Command = $pm2.Source
 
           $pm2Config = Join-Path $env:GITHUB_WORKSPACE "ecosystem.config.cjs"
           if (-not (Test-Path $pm2Config)) {
