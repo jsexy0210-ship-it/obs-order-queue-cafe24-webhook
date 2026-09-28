@@ -20,7 +20,7 @@
 
 .headerRow h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1.25;
 }
 
@@ -71,21 +71,21 @@
   display: grid;
   gap: 5px;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .historyFilters select {
-  min-width: 82px;
-  height: 36px;
-  padding: 0 9px;
+  min-width: 96px;
+  height: 42px;
+  padding: 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   color: #f4f7fb;
   color-scheme: dark;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 750;
   outline: none;
 }
@@ -115,17 +115,18 @@
 
 .hint {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   opacity: 0.6;
 }
 
 .refreshButton {
   flex: 0 0 auto;
-  padding: 8px 16px;
+  padding: 10px 18px;
   border: none;
   border-radius: 8px;
   background: #28b7ff;
   color: #04121c;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -159,7 +160,7 @@
   background: rgba(255, 255, 255, 0.05);
   /* 페이지를 넘기면서 행 수가 달라져도(마지막 페이지 등) 전체 레이아웃이
      들썩이지 않도록 최소 높이를 잡아둡니다. (헤더 1줄 + 데이터 10줄 기준) */
-  min-height: 460px;
+  min-height: 560px;
 }
 
 .syncWarning {
@@ -171,7 +172,25 @@
 
 .scrollArea {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-color: rgba(98, 227, 255, 0.68) rgba(255, 255, 255, 0.08);
+  scrollbar-width: thin;
+}
+
+.scrollArea::-webkit-scrollbar {
+  height: 12px;
+}
+
+.scrollArea::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgba(98, 227, 255, 0.68);
+  background-clip: padding-box;
+}
+
+.scrollArea::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .pager {
@@ -184,12 +203,12 @@
 }
 
 .pagerButton {
-  padding: 6px 16px;
+  padding: 9px 18px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
 }
 
@@ -203,19 +222,19 @@
 }
 
 .pagerInfo {
-  font-size: 13px;
+  font-size: 15px;
   opacity: 0.7;
   min-width: 48px;
   text-align: center;
 }
 
 .rowDeleteButton {
-  padding: 4px 10px;
+  padding: 7px 12px;
   border: none;
   border-radius: 6px;
   background: #ff4d5f;
   color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -228,7 +247,7 @@
 .sectionTitle {
   max-width: 1120px;
   margin: 0 auto 10px;
-  font-size: 14px;
+  font-size: 16px;
   opacity: 0.75;
 }
 
@@ -247,15 +266,15 @@
 
 .table {
   width: 100%;
-  min-width: 0;
+  min-width: 1380px;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .table th,
 .table td {
-  padding: 8px 6px;
+  padding: 13px 12px;
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -264,7 +283,11 @@
 }
 
 .table th {
-  font-size: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #111720;
+  font-size: 12px;
   font-weight: 700;
   opacity: 0.55;
   letter-spacing: 0.03em;
@@ -329,6 +352,10 @@
   border-bottom-color: rgba(30, 45, 70, 0.1);
 }
 
+:global([data-theme="light"]) .table th {
+  background: #f8fafc;
+}
+
 :global([data-theme="light"]) .table th,
 :global([data-theme="light"]) .table td::before,
 :global([data-theme="light"]) .hint,
@@ -354,11 +381,6 @@
   opacity: 1;
 }
 
-:global([data-theme="light"]) .statusDone {
-  background: #e8edf4;
-  color: #405066;
-}
-
 :global([data-theme="light"]) .statusWaiting {
   background: #e8f8fd;
   color: #12648a;
@@ -370,7 +392,8 @@
 }
 
 :global([data-theme="light"]) .paidBadge,
-:global([data-theme="light"]) .rewardsucceeded {
+:global([data-theme="light"]) .rewardsucceeded,
+:global([data-theme="light"]) .statusDone {
   background: #e7f8ee;
   color: #137a49;
 }
@@ -522,9 +545,9 @@
 }
 
 .statusBadge {
-  padding: 3px 9px;
+  padding: 5px 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   display: inline-block;
 }
@@ -576,9 +599,9 @@
   display: block;
   width: fit-content;
   margin: 2px 0;
-  padding: 3px 7px;
+  padding: 5px 9px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
