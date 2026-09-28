@@ -510,6 +510,19 @@ export default function AdminPage() {
               주문 접수 {orderVisibleSetting ? "ON" : "OFF"}
             </button>
           </div>
+          <div className={styles.settingRow}>
+            <div>
+              <h3>화면 모드</h3>
+              <p>관리자 화면의 밝은 테마와 어두운 테마를 전환합니다.</p>
+            </div>
+            <button
+              className={styles.historyButton}
+              onClick={toggleTheme}
+              aria-label={`${theme === "dark" ? "라이트" : "다크"} 모드로 전환`}
+            >
+              {theme === "dark" ? "☀ 라이트 모드" : "◐ 다크 모드"}
+            </button>
+          </div>
           <RewardSettingsPanel />
         </section>
       ) : showHistory ? (
@@ -801,9 +814,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-      <button className={styles.themeFab} onClick={toggleTheme} aria-label={`${theme === "dark" ? "라이트" : "다크"} 모드로 전환`}>
-        {theme === "dark" ? "☀ 라이트" : "◐ 다크"}
-      </button>
     </main>
   );
 }

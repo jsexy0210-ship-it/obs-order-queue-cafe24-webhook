@@ -88,7 +88,7 @@ function formatPaymentMethod(method: string | null) {
 function statusInfo(order: OrderRow): { label: string; className: string } {
   if (order.status === "cancelled") {
     return {
-      label: order.cancel_reason === "refunded" ? "환불됨" : "취소됨",
+      label: "취소",
       className: styles.statusCancelled,
     };
   }
@@ -299,8 +299,6 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   <th>상품명</th>
                   <th>수량</th>
                   <th>결제방식</th>
-                  <th>입금여부</th>
-                  <th>주문번호</th>
                   <th>완료일시</th>
                   <th></th>
                 </tr>
@@ -336,14 +334,6 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                       <td data-label="상품명" className={styles.product}>{order.product}</td>
                       <td data-label="수량">{order.quantity}</td>
                       <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
-                      <td data-label="입금여부">
-                        {order.paid_at ? (
-                          <span className={styles.paidBadge}>입금완료</span>
-                        ) : (
-                          <span className={styles.notPaid}>-</span>
-                        )}
-                      </td>
-                      <td data-label="주문번호">{order.external_order_id ?? "-"}</td>
                       <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
                       <td data-label="관리">
                         {!order.remote_only && <button
