@@ -1180,16 +1180,12 @@
 }
 
 .pageTitleRow {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 32px;
+  gap: 10px;
 }
 
 .pageBackButton {
-  position: absolute;
-  left: 0;
   width: 32px;
   height: 32px;
   padding: 0;
