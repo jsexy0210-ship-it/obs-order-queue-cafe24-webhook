@@ -84,7 +84,7 @@ export type Cafe24RewardOrder = {
   payment_date?: string | null;
   paid?: string | boolean | number;
   payment_confirmation?: string | boolean | number;
-  payment_method?: string;
+  payment_method?: string | string[];
   items?: Cafe24OrderItem[];
 };
 
