@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./order-history.module.css";
 
 type OrderRow = {
@@ -157,6 +157,29 @@ export default function OrderHistoryContent() {
   const [orderPage, setOrderPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+  const orderScrollRef = useRef<HTMLDivElement>(null);
+  const [scrollEdges, setScrollEdges] = useState({ atStart: true, atEnd: true });
+
+  const updateScrollEdges = useCallback(() => {
+    const area = orderScrollRef.current;
+    if (!area) return;
+    setScrollEdges({
+      atStart: area.scrollLeft <= 2,
+      atEnd: area.scrollLeft + area.clientWidth >= area.scrollWidth - 2,
+    });
+  }, []);
+
+  useEffect(() => {
+    updateScrollEdges();
+    window.addEventListener("resize", updateScrollEdges);
+    return () => window.removeEventListener("resize", updateScrollEdges);
+  }, [loading, orders.length, orderPage, updateScrollEdges]);
+
+  function jumpToTableEdge(edge: "start" | "end") {
+    const area = orderScrollRef.current;
+    if (!area) return;
+    area.scrollTo({ left: edge === "start" ? 0 : area.scrollWidth, behavior: "smooth" });
+  }
 
   const load = useCallback(async () => {
     try {
@@ -244,14 +267,20 @@ export default function OrderHistoryContent() {
         </div>
       </div>
 
-      <h2 className={styles.sectionTitle}>{selectedYear}년 {selectedMonth}월 주문 이력 ({orders.length})</h2>
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.sectionTitle}>{selectedYear}년 {selectedMonth}월 주문 이력 ({orders.length})</h2>
+        <div className={styles.tableNavigation} aria-label="주문 이력 열 이동">
+          <button type="button" aria-label="첫 번째 열로 이동" title="첫 번째 열로 이동" disabled={scrollEdges.atStart} onClick={() => jumpToTableEdge("start")}>⟵</button>
+          <button type="button" aria-label="마지막 열로 이동" title="마지막 열로 이동" disabled={scrollEdges.atEnd} onClick={() => jumpToTableEdge("end")}>⟶</button>
+        </div>
+      </div>
       <div className={styles.tableWrap}>
         {loading ? (
           <div className={styles.empty}>불러오는 중...</div>
         ) : orders.length === 0 ? (
           <div className={styles.empty}>주문 이력이 없습니다.</div>
         ) : (
-          <div className={styles.scrollArea}>
+          <div className={styles.scrollArea} ref={orderScrollRef} onScroll={updateScrollEdges}>
             <table className={styles.table}>
               <thead>
                 <tr>
