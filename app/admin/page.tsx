@@ -15,6 +15,12 @@ const WAITING_PAGE_SIZE = 5;
 const HIT_PAGE_SIZE = 5;
 const TOAST_DISPLAY_MS = 5000;
 const ORDER_ALERT_NOTIFICATION_TITLE = "망고TCG 새 주문";
+const SITE_LINKS = [
+  { label: "망고TCG 사이트", href: "https://mangotcg.com/" },
+  { label: "쇼핑몰 관리자", href: "https://dhdudals5555.cafe24.com/disp/admin/shop1/main/dashboard" },
+  { label: "호스팅 관리자", href: "https://hosting.cafe24.com/?controller=myservice_hosting_main" },
+  { label: "개발자 센터", href: "https://developers.cafe24.com/admin/dashboard/main/front/app" },
+] as const;
 
 type Toast = { id: number; userId: string; product: string };
 
@@ -37,6 +43,7 @@ export default function AdminPage() {
   const [showOverlayPreview, setShowOverlayPreview] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [siteMenuOpen, setSiteMenuOpen] = useState(false);
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
   const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
@@ -419,26 +426,44 @@ export default function AdminPage() {
         <div
           id="admin-header-menu"
           className={`${styles.headerButtons} ${mobileMenuOpen ? styles.mobileMenuOpen : ""}`}
-          onClickCapture={() => setMobileMenuOpen(false)}
+          onClickCapture={(event) => {
+            if (!(event.target as HTMLElement).closest("[data-site-menu-toggle]")) {
+              setMobileMenuOpen(false);
+              setSiteMenuOpen(false);
+            }
+          }}
         >
           {!showSettings && !showHistory && !showRanking && !showOverlayPreview && (
             <>
-              <a
-                className={styles.historyButton}
-                href="https://dhdudals5555.cafe24.com/disp/admin/shop1/main/dashboard"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                🏪 카페24 관리자
-              </a>
+              <div className={styles.siteMenu}>
+                <button
+                  className={`${styles.historyButton} ${styles.siteMenuToggle}`}
+                  type="button"
+                  data-site-menu-toggle
+                  aria-expanded={siteMenuOpen}
+                  aria-controls="admin-site-menu"
+                  onClick={() => setSiteMenuOpen((open) => !open)}
+                >
+                  사이트
+                </button>
+                {siteMenuOpen && (
+                  <div id="admin-site-menu" className={styles.siteMenuPanel}>
+                    {SITE_LINKS.map((link) => (
+                      <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className={styles.historyButton} onClick={() => setShowOverlayPreview(true)}>
-                📺 오버레이 미리보기
+                오버레이
               </button>
               <button className={styles.historyButton} onClick={() => setShowRanking(true)}>
-                🏆 주문랭킹 보기
+                주문랭킹
               </button>
               <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
-                🗂️ 주문이력 보기
+                주문이력
               </button>
             </>
           )}
@@ -460,11 +485,11 @@ export default function AdminPage() {
             }}
             aria-pressed={showSettings}
           >
-            {showSettings || showHistory || showRanking || showOverlayPreview ? "← 관리자 홈" : "⚙️ 설정"}
+            {showSettings || showHistory || showRanking || showOverlayPreview ? "← 관리자 홈" : "설정"}
           </button>
           {showHistory && (
             <button className={styles.historyButton} onClick={() => setShowHitHistory(true)}>
-              🃏 히트카드 이력
+              히트카드
             </button>
           )}
           <button className={styles.logoutButton} onClick={logout}>
