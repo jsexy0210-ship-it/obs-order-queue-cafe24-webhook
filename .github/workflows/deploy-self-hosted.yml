@@ -1,0 +1,77 @@
+name: Deploy to office runner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: mangotcg-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # 사무실 Windows self-hosted runner의 기본 라벨을 사용합니다.
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 20
+
+    steps:
+      # clean:false는 runner 작업 폴더에 있는 .env.local 및 SQLite data/를 보존합니다.
+      - name: Checkout production source without clearing runtime data
+        uses: actions/checkout@v5
+        with:
+          clean: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install and build
+        shell: pwsh
+        run: |
+          npm ci
+          npm run build
+
+      - name: Restart MangoTCG production process
+        shell: pwsh
+        run: |
+          $processName = "mangotcg-admin"
+          if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
+            throw "PM2가 설치되어 있지 않습니다. 기존 운영 프로세스를 건드리지 않았습니다."
+          }
+
+          if (-not (Test-Path "$env:GITHUB_WORKSPACE\.env.local")) {
+            Write-Warning ".env.local을 찾지 못했습니다. runner의 시스템 환경변수로 운영 중인지 확인하세요."
+          }
+
+          & pm2 describe $processName 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            & pm2 reload $processName --update-env
+          } else {
+            & pm2 start npm --name $processName --cwd $env:GITHUB_WORKSPACE -- run start -- -p 3000
+          }
+          if ($LASTEXITCODE -ne 0) {
+            throw "MangoTCG PM2 프로세스를 시작 또는 재시작하지 못했습니다."
+          }
+          & pm2 save
+
+      - name: Verify local production endpoint
+        shell: pwsh
+        run: |
+          $healthy = $false
+          foreach ($attempt in 1..6) {
+            try {
+              $response = Invoke-WebRequest -Uri "http://127.0.0.1:3000/admin/login" -UseBasicParsing -TimeoutSec 5
+              if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
+                $healthy = $true
+                break
+              }
+            } catch {
+              Start-Sleep -Seconds 3
+            }
+          }
+          if (-not $healthy) {
+            throw "로컬 운영 엔드포인트(http://127.0.0.1:3000/admin/login) 헬스체크에 실패했습니다."
+          }
