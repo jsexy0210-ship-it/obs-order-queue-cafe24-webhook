@@ -230,8 +230,8 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
       <div className={styles.headerRow}>
         <div className={styles.titleWithTooltip}>
           {onBack
-            ? <button className={styles.backButton} onClick={onBack}>← Back</button>
-            : <a className={styles.backButton} href="/admin">← Back</a>}
+            ? <button className={styles.backButton} onClick={onBack} aria-label="뒤로가기" title="뒤로가기">←</button>
+            : <a className={styles.backButton} href="/admin" aria-label="뒤로가기" title="뒤로가기">←</a>}
           <h1>망고TCG 주문 이력</h1>
           <span
             className={styles.infoTooltip}
