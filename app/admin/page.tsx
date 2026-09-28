@@ -36,6 +36,7 @@ export default function AdminPage() {
   const [showHitHistory, setShowHitHistory] = useState(false);
   const [showOverlayPreview, setShowOverlayPreview] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
   const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
@@ -405,7 +406,21 @@ export default function AdminPage() {
           <span>LIVE OPERATIONS</span>
           <h1>망고TCG 관리자</h1>
         </div>
-        <div className={styles.headerButtons}>
+        <button
+          className={styles.mobileMenuButton}
+          type="button"
+          aria-label="관리자 메뉴"
+          aria-controls="admin-header-menu"
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          ☰
+        </button>
+        <div
+          id="admin-header-menu"
+          className={`${styles.headerButtons} ${mobileMenuOpen ? styles.mobileMenuOpen : ""}`}
+          onClickCapture={() => setMobileMenuOpen(false)}
+        >
           {!showSettings && !showHistory && !showRanking && !showOverlayPreview && (
             <>
               <a
@@ -459,7 +474,10 @@ export default function AdminPage() {
       </div>
       {showSettings ? (
         <section className={styles.settingsPage} aria-labelledby="settings-title">
-          <h2 id="settings-title">설정</h2>
+          <div className={styles.pageTitleRow}>
+            <button className={styles.pageBackButton} onClick={() => setShowSettings(false)}>← Back</button>
+            <h2 id="settings-title">설정</h2>
+          </div>
           <div className={styles.settingRow}>
             <div>
               <h3>주문 알림</h3>
@@ -496,10 +514,10 @@ export default function AdminPage() {
         </section>
       ) : showHistory ? (
         <section className={styles.historyPage} aria-label="주문 이력">
-          <OrderHistoryContent />
+          <OrderHistoryContent onBack={() => setShowHistory(false)} />
         </section>
       ) : showRanking ? (
-        <OrderRankingPanel />
+        <OrderRankingPanel onBack={() => setShowRanking(false)} />
       ) : (
       <>
       {!showOverlayPreview && (
@@ -683,7 +701,10 @@ export default function AdminPage() {
           <div className={`${styles.overlayEditorModal} ${styles.overlayEditorPage}`}>
             <div className={`${styles.modalTopBarWithTitle} ${styles.overlayModalHeader}`}>
               <div className={styles.overlayModalHero}>
-                <h2 className={styles.modalTitle} id="overlay-preview-title">라이브 오버레이 미리보기</h2>
+                <div className={styles.pageTitleRow}>
+                  <button className={styles.pageBackButton} onClick={closeOverlayPreview}>← Back</button>
+                  <h2 className={styles.modalTitle} id="overlay-preview-title">라이브 오버레이 미리보기</h2>
+                </div>
               </div>
               <div className={styles.overlayModalActions}>
                 <button

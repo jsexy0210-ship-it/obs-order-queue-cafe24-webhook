@@ -1,51 +1,71 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./admin.module.css";
 
 type Order = {
-  external_order_id: string | null;
   created_at: string;
   quantity: number;
   unit_price: number;
   payment_method: string | null;
 };
 
-type RewardSummary = {
-  issue?: { amount: number; grade_id: string; status: "pending" | "succeeded" | "failed" };
-};
+type RewardEntry = { amount: number; grade_id: string; processed_at: string };
 type Grade = { id: string; name: string };
+type DashboardRange = "day" | "week" | "month" | "year";
 
 const BANK_DEPOSIT_METHODS = new Set(["cash", "deposit", "escrow_cash"]);
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const SERIES_LENGTH = 12;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const KST_OFFSET_MS = 9 * HOUR_MS;
+const RANGE_OPTIONS: Array<{ value: DashboardRange; label: string; description: string }> = [
+  { value: "day", label: "일", description: "오늘" },
+  { value: "week", label: "주", description: "이번 주" },
+  { value: "month", label: "월", description: "이번 달" },
+  { value: "year", label: "년", description: "올해" },
+];
 
 type SeriesPoint = { label: string; amount: number; cardCount: number; bankCount: number };
 
-function parseOrderDate(value: string) {
-  const date = new Date(`${value.replace(" ", "T")}Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+function parseUtc(value: string) {
+  const iso = value.replace(" ", "T");
+  return new Date(/[zZ]|[+-]\d{2}:\d{2}$/.test(iso) ? iso : `${iso}Z`).getTime();
 }
 
-function makeWeeklySeries(orders: Order[]): SeriesPoint[] {
-  const now = new Date();
-  const start = new Date(now.getTime() - (SERIES_LENGTH - 1) * WEEK_MS);
-  start.setHours(0, 0, 0, 0);
-  const series = Array.from({ length: SERIES_LENGTH }, (_, index) => {
-    const date = new Date(start.getTime() + index * WEEK_MS);
-    return {
-      label: `${date.getMonth() + 1}/${date.getDate()}`,
-      amount: 0,
-      cardCount: 0,
-      bankCount: 0,
-    };
-  });
+function rangeStart(range: DashboardRange, now: number) {
+  const kst = new Date(now + KST_OFFSET_MS);
+  const year = kst.getUTCFullYear();
+  const month = kst.getUTCMonth();
+  const day = kst.getUTCDate();
+  if (range === "year") return Date.UTC(year, 0, 1) - KST_OFFSET_MS;
+  if (range === "month") return Date.UTC(year, month, 1) - KST_OFFSET_MS;
+  if (range === "week") {
+    const daysSinceMonday = (kst.getUTCDay() + 6) % 7;
+    return Date.UTC(year, month, day - daysSinceMonday) - KST_OFFSET_MS;
+  }
+  return Date.UTC(year, month, day) - KST_OFFSET_MS;
+}
 
+function makeSeries(orders: Order[], range: DashboardRange, now: number): SeriesPoint[] {
+  const start = rangeStart(range, now);
+  const kst = new Date(now + KST_OFFSET_MS);
+  const length = range === "day" ? 24 : range === "week" ? 7
+    : range === "month" ? new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth() + 1, 0)).getUTCDate()
+      : 12;
+  const series = Array.from({ length }, (_, index) => {
+    const date = new Date(start + KST_OFFSET_MS + index * DAY_MS);
+    const label = range === "day" ? `${index}시` : range === "year" ? `${index + 1}월`
+      : range === "month" ? `${index + 1}일` : `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
+    return { label, amount: 0, cardCount: 0, bankCount: 0 };
+  });
   orders.forEach((order) => {
-    const date = parseOrderDate(order.created_at);
-    if (!date) return;
-    const index = Math.floor((date.getTime() - start.getTime()) / WEEK_MS);
-    if (index < 0 || index >= SERIES_LENGTH) return;
+    const time = parseUtc(order.created_at);
+    if (!Number.isFinite(time) || time < start || time > now) return;
+    const kstOrder = new Date(time + KST_OFFSET_MS);
+    const index = range === "day" ? Math.floor((time - start) / HOUR_MS)
+      : range === "year" ? kstOrder.getUTCMonth()
+        : Math.floor((time - start) / DAY_MS);
+    if (index < 0 || index >= length) return;
     series[index].amount += order.unit_price * order.quantity;
     const method = order.payment_method?.toLowerCase() ?? "";
     if (method === "card") series[index].cardCount += 1;
@@ -54,28 +74,50 @@ function makeWeeklySeries(orders: Order[]): SeriesPoint[] {
   return series;
 }
 
+function RangePicker({ value, onChange, title }: {
+  value: DashboardRange;
+  onChange: (value: DashboardRange) => void;
+  title: string;
+}) {
+  return <div className={styles.dashboardRangePicker} role="group" aria-label={`${title} 기간`}>
+    {RANGE_OPTIONS.map((option) => <button
+      key={option.value}
+      type="button"
+      className={value === option.value ? styles.dashboardRangeActive : ""}
+      aria-pressed={value === option.value}
+      title={option.description}
+      onClick={() => onChange(option.value)}
+    >{option.label}</button>)}
+  </div>;
+}
+
 export default function OrderDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [rewards, setRewards] = useState<Record<string, RewardSummary>>({});
+  const [rewardEntries, setRewardEntries] = useState<RewardEntry[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
+  const [amountRange, setAmountRange] = useState<DashboardRange>("month");
+  const [paymentRange, setPaymentRange] = useState<DashboardRange>("month");
+  const [rewardRange, setRewardRange] = useState<DashboardRange>("month");
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
         const [historyResponse, settingsResponse] = await Promise.all([
-          fetch("/api/order-history?range=recent3months", { cache: "no-store" }),
+          fetch("/api/order-history?range=dashboard", { cache: "no-store" }),
           fetch("/api/reward-settings", { cache: "no-store" }),
         ]);
         const history = await historyResponse.json() as {
           orders?: Order[];
-          rewardSummaries?: Record<string, RewardSummary>;
+          rewardEntries?: RewardEntry[];
         };
         const settings = await settingsResponse.json() as { settings?: { grades?: Grade[] } };
         if (!active || !historyResponse.ok || !settingsResponse.ok) return;
         setOrders(history.orders ?? []);
-        setRewards(history.rewardSummaries ?? {});
+        setRewardEntries(history.rewardEntries ?? []);
         setGrades(settings.settings?.grades ?? []);
+        setNow(Date.now());
       } catch {
         // 다음 갱신 때 재시도합니다.
       }
@@ -88,61 +130,59 @@ export default function OrderDashboard() {
     };
   }, []);
 
-  const metrics = useMemo(() => {
-    const totalAmount = orders.reduce((total, order) => total + order.unit_price * order.quantity, 0);
-    const cardCount = orders.filter(
+  const amountOrders = orders.filter((order) => {
+    const time = parseUtc(order.created_at);
+    return time >= rangeStart(amountRange, now) && time <= now;
+  });
+  const paymentOrders = orders.filter((order) => {
+    const time = parseUtc(order.created_at);
+    return time >= rangeStart(paymentRange, now) && time <= now;
+  });
+  const currentRewards = rewardEntries.filter((entry) => {
+    const time = parseUtc(entry.processed_at);
+    return time >= rangeStart(rewardRange, now) && time <= now;
+  });
+  const totalAmount = amountOrders.reduce((total, order) => total + order.unit_price * order.quantity, 0);
+  const cardCount = paymentOrders.filter(
       (order) => order.payment_method?.toLowerCase() === "card"
     ).length;
-    const bankCount = orders.filter((order) =>
+  const bankCount = paymentOrders.filter((order) =>
       BANK_DEPOSIT_METHODS.has(order.payment_method?.toLowerCase() ?? "")
     ).length;
-    const paymentCount = cardCount + bankCount;
-    const rewardTotal = Object.values(rewards).reduce(
-      (total, reward) => total + (reward.issue?.status === "succeeded" ? reward.issue.amount : 0),
-      0
-    );
-    const rewardByGrade = grades.map((grade) => ({
+  const paymentCount = cardCount + bankCount;
+  const rewardTotal = currentRewards.reduce((total, entry) => total + entry.amount, 0);
+  const rewardByGrade = grades.map((grade) => ({
       ...grade,
-      amount: Object.values(rewards).reduce(
-        (total, reward) => total + (
-          reward.issue?.status === "succeeded" && reward.issue.grade_id === grade.id
-            ? reward.issue.amount
-            : 0
-        ),
+      amount: currentRewards.reduce(
+        (total, entry) => total + (entry.grade_id === grade.id ? entry.amount : 0),
         0
       ),
     }));
-    return {
-      totalAmount,
-      paymentCount,
-      cardCount,
-      bankCount,
-      rewardTotal,
-      rewardByGrade,
-      weeklySeries: makeWeeklySeries(orders),
-    };
-  }, [grades, orders, rewards]);
-
-  const amountPeak = Math.max(1, ...metrics.weeklySeries.map((point) => point.amount));
-  const amountLinePoints = metrics.weeklySeries
+  const amountSeries = makeSeries(amountOrders, amountRange, now);
+  const paymentSeries = makeSeries(paymentOrders, paymentRange, now);
+  const amountPeak = Math.max(1, ...amountSeries.map((point) => point.amount));
+  const amountLinePoints = amountSeries
     .map((point, index) => {
-      const x = (index / (SERIES_LENGTH - 1)) * 100;
+      const x = (index / (amountSeries.length - 1)) * 100;
       const y = 91 - (point.amount / amountPeak) * 78;
       return `${x},${y}`;
     })
     .join(" ");
   const paymentPeak = Math.max(
     1,
-    ...metrics.weeklySeries.flatMap((point) => [point.cardCount, point.bankCount])
+    ...paymentSeries.flatMap((point) => [point.cardCount, point.bankCount])
   );
 
   return (
     <section className={styles.orderDashboard} aria-label="주문 요약 대시보드">
       <div className={`${styles.dashboardCard} ${styles.chartDashboardCard}`}>
-        <span>총 주문금액</span>
-        <strong>{metrics.totalAmount.toLocaleString("ko-KR")}원</strong>
-        <small>최근 3개월 · 주별 주문금액 추이</small>
-        <div className={styles.lineChart} role="img" aria-label="최근 3개월 주별 총 주문금액 선 그래프">
+        <div className={styles.dashboardCardHeader}>
+          <span>총 주문금액</span>
+          <RangePicker title="총 주문금액" value={amountRange} onChange={setAmountRange} />
+        </div>
+        <strong>{totalAmount.toLocaleString("ko-KR")}원</strong>
+        <small>{RANGE_OPTIONS.find((option) => option.value === amountRange)?.description} · 주문금액 추이</small>
+        <div className={styles.lineChart} role="img" aria-label={`${amountRange} 기간별 총 주문금액 선 그래프`}>
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <line x1="0" y1="26" x2="100" y2="26" />
             <line x1="0" y1="58" x2="100" y2="58" />
@@ -150,17 +190,20 @@ export default function OrderDashboard() {
             <polyline points={amountLinePoints} />
           </svg>
           <div className={styles.chartAxis}>
-            <span>{metrics.weeklySeries[0]?.label}</span>
-            <span>{metrics.weeklySeries.at(-1)?.label}</span>
+            <span>{amountSeries[0]?.label}</span>
+            <span>{amountSeries.at(-1)?.label}</span>
           </div>
         </div>
       </div>
       <div className={`${styles.dashboardCard} ${styles.chartDashboardCard}`}>
-        <span>카드결제 + 무통장 총계</span>
-        <strong>{metrics.paymentCount}건</strong>
-        <small>카드결제 {metrics.cardCount}건 · 무통장 {metrics.bankCount}건</small>
-        <div className={styles.barChart} role="img" aria-label="최근 3개월 주별 카드결제와 무통장 주문 건수 막대 그래프">
-          {metrics.weeklySeries.map((point) => (
+        <div className={styles.dashboardCardHeader}>
+          <span>카드결제 + 무통장 총계</span>
+          <RangePicker title="결제 건수" value={paymentRange} onChange={setPaymentRange} />
+        </div>
+        <strong>{paymentCount}건</strong>
+        <small>카드결제 {cardCount}건 · 무통장 {bankCount}건</small>
+        <div className={styles.barChart} role="img" aria-label={`${paymentRange} 기간별 카드결제와 무통장 주문 건수 막대 그래프`}>
+          {paymentSeries.map((point) => (
             <div
               className={styles.barColumn}
               key={point.label}
@@ -182,16 +225,19 @@ export default function OrderDashboard() {
           <span><i className={styles.bankPaymentBar} />무통장</span>
         </div>
         <div className={styles.chartAxis}>
-          <span>{metrics.weeklySeries[0]?.label}</span>
-          <span>{metrics.weeklySeries.at(-1)?.label}</span>
+            <span>{paymentSeries[0]?.label}</span>
+            <span>{paymentSeries.at(-1)?.label}</span>
         </div>
       </div>
       <div className={`${styles.dashboardCard} ${styles.rewardDashboardCard}`}>
-        <span>적립금 지급 총액</span>
-        <strong>{metrics.rewardTotal.toLocaleString("ko-KR")}원</strong>
-        <small>등급별 지급 완료 원장 기준</small>
+        <div className={styles.dashboardCardHeader}>
+          <span>적립금 지급 총액</span>
+          <RangePicker title="적립금 지급 총액" value={rewardRange} onChange={setRewardRange} />
+        </div>
+        <strong>{rewardTotal.toLocaleString("ko-KR")}원</strong>
+        <small>{RANGE_OPTIONS.find((option) => option.value === rewardRange)?.description} · 지급 완료 원장 기준</small>
         <div className={styles.rewardBreakdown} aria-label="등급별 적립금 지급 총액">
-          {metrics.rewardByGrade.map((grade) => (
+          {rewardByGrade.map((grade) => (
             <div className={styles.rewardGradeTotal} key={grade.id}>
               <span>{grade.name}</span>
               <strong>{grade.amount.toLocaleString("ko-KR")}원</strong>

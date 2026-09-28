@@ -281,12 +281,43 @@
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
 }
 
-.dashboardCard > span,
+.dashboardCardHeader > span,
 .dashboardCard > small {
   display: block;
   color: #8e98a8;
   font-size: 11px;
   font-weight: 750;
+}
+
+.dashboardCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+}
+
+.dashboardRangePicker {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dashboardRangePicker button {
+  min-width: 26px;
+  height: 25px;
+  padding: 0 5px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  background: transparent;
+  color: #aeb7c5;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dashboardRangePicker .dashboardRangeActive {
+  border-color: #8b68ff;
+  background: #5e3ac2;
+  color: #fff;
 }
 
 .dashboardCard > strong {
@@ -459,11 +490,21 @@
   box-shadow: 0 8px 20px rgba(27, 39, 59, 0.07);
 }
 
-.page[data-theme="light"] .dashboardCard > span,
+.page[data-theme="light"] .dashboardCardHeader > span,
 .page[data-theme="light"] .dashboardCard > small,
 .page[data-theme="light"] .chartAxis,
 .page[data-theme="light"] .barLegend {
   color: #526276;
+}
+
+.page[data-theme="light"] .dashboardRangePicker button {
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.page[data-theme="light"] .dashboardRangePicker .dashboardRangeActive {
+  border-color: #6845d9;
+  color: #fff;
 }
 
 .page[data-theme="light"] .dashboardCard > strong {
@@ -1125,6 +1166,32 @@
 
 .headerButtons {
   justify-content: flex-end;
+}
+
+.mobileMenuButton {
+  display: none;
+}
+
+.pageTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pageBackButton {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.page[data-theme="light"] .pageBackButton {
+  border-color: #cbd5e1;
+  color: #162033;
 }
 
 .historyButton {
@@ -2483,12 +2550,47 @@
   }
 
   .headerRow {
-    position: relative;
-    align-items: flex-start;
-    flex-direction: column;
+    position: sticky;
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .mobileMenuButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
   }
 
   .headerButtons {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    width: min(280px, calc(100vw - 32px));
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    background: #141923;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
+  }
+
+  .mobileMenuOpen {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .headerButtons .historyButton,
+  .headerButtons .logoutButton {
     width: 100%;
     justify-content: flex-start;
   }
