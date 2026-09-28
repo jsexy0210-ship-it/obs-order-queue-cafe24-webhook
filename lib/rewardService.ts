@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward, type Cafe24RewardOrder } from "./cafe24Admin";
 import { canExecuteCafe24RewardChanges } from "./rewardExecution";
+import { isAfterRewardStart } from "./rewardCutoff";
 import { getRewardSettings } from "./rewardStore";
 
 type LedgerAction = "issue" | "recover";
@@ -119,6 +120,7 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
   const order = await getCafe24OrderForReward(orderId, { includeBuyerGroup: true });
   // 웹훅 URL의 event=paid만 신뢰하지 않고 카페24 주문 원본에서 결제를 다시 확인합니다.
   if (!isPaymentConfirmed(order) || isFullyCancelled(order)) return { outcome: "skipped" as const };
+  if (!isAfterRewardStart(order)) return { outcome: "before_reward_start" as const };
   const memberId = order.member_id?.trim();
   const groupNo = order.member_group_no ?? order.group_no;
   const grade = findGrade(settings, groupNo);
