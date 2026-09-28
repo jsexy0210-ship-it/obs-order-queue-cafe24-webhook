@@ -75,8 +75,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          # 애플리케이션 런타임과 동일한 Node.js LTS를 사용합니다.
-          node-version: 22
+          # better-sqlite3 Windows 사전 빌드를 검증한 Node.js 22 LTS 패치 버전입니다.
+          node-version: 22.18.0
           cache: npm
 
       - name: Install and build
