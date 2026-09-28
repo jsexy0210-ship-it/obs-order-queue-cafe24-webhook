@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./order-history.module.css";
 
 type OrderRow = {
@@ -153,6 +154,7 @@ function Pager({
  * 주문 이력 전체 페이지입니다.
  */
 export default function OrderHistoryContent({ onBack }: { onBack?: () => void }) {
+  const router = useRouter();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [rewardSummaries, setRewardSummaries] = useState<Record<string, RewardSummary>>({});
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -161,6 +163,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   const [orderPage, setOrderPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const orderScrollRef = useRef<HTMLDivElement>(null);
   const [scrollEdges, setScrollEdges] = useState({ atStart: true, atEnd: true });
 
@@ -183,6 +186,11 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
     const area = orderScrollRef.current;
     if (!area) return;
     area.scrollTo({ left: edge === "start" ? 0 : area.scrollWidth, behavior: "smooth" });
+  }
+
+  async function logout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.replace("/admin/login");
   }
 
   const load = useCallback(async () => {
@@ -243,6 +251,22 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
             ⓘ
           </span>
         </div>
+        <div className={styles.mobileMenuArea}>
+          <button
+            className={styles.mobileMenuButton}
+            type="button"
+            aria-label="관리자 메뉴"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+          >
+            ☰
+          </button>
+          {mobileMenuOpen && <nav className={styles.mobileMenu} aria-label="관리자 메뉴">
+            <a href="https://dhdudals5555.cafe24.com/disp/admin/shop1/main/dashboard" target="_blank" rel="noopener noreferrer">🏪 카페24 관리자</a>
+            <a href="/admin">관리자 홈</a>
+            <button type="button" onClick={logout}>로그아웃</button>
+          </nav>}
+        </div>
         <div className={styles.historyFilters} aria-label="주문 이력 기간 선택">
           <label>
             <span>연도</span>
@@ -294,7 +318,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
               <thead>
                 <tr>
                   <th>주문일시</th>
-                  <th>주문번호</th>
+                  <th>유튜브 닉네임</th>
                   <th>구매자</th>
                   <th>상태</th>
                   <th>실결제액</th>
@@ -304,7 +328,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   <th>수량</th>
                   <th>결제방식</th>
                   <th>입금여부</th>
-                  <th>유튜브 닉네임</th>
+                  <th>주문번호</th>
                   <th>완료일시</th>
                   <th></th>
                 </tr>
@@ -316,7 +340,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   return (
                     <tr key={order.id}>
                       <td data-label="주문일시">{formatDate(order.created_at)}</td>
-                      <td data-label="주문번호">{order.external_order_id ?? "-"}</td>
+                      <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
                       <td data-label="구매자">{order.user_id}</td>
                       <td data-label="상태"><span className={`${styles.statusBadge} ${className}`}>{label}</span></td>
                       <td data-label="실결제액">{formatPrice(order.actual_amount)}</td>
@@ -347,7 +371,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                           <span className={styles.notPaid}>-</span>
                         )}
                       </td>
-                      <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
+                      <td data-label="주문번호">{order.external_order_id ?? "-"}</td>
                       <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
                       <td data-label="관리">
                         {!order.remote_only && <button
