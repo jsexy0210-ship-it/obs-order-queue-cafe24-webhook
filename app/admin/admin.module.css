@@ -30,6 +30,48 @@
   flex-wrap: wrap;
 }
 
+.headerButtons > .historyButton,
+.headerButtons > .logoutButton,
+.siteMenuToggle {
+  width: 132px;
+  justify-content: center;
+}
+
+.siteMenu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.siteMenuPanel {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: 208px;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: #141923;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
+}
+
+.siteMenuPanel a {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.siteMenuPanel a:hover {
+  border-color: rgba(125, 220, 255, 0.5);
+  background: rgba(40, 183, 255, 0.12);
+}
+
 .historyButton {
   display: inline-flex;
   align-items: center;
@@ -2595,6 +2637,17 @@
   .headerButtons .logoutButton {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .siteMenu {
+    width: 100%;
+  }
+
+  .siteMenuPanel {
+    position: static;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
   }
 
   .statusGrid,
