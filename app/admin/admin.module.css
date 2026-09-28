@@ -1123,7 +1123,7 @@
 
 /* 운영 중 빠르게 읽고 조작할 수 있는 대시보드 레이아웃 */
 .page {
-  padding: 0 28px 80px;
+  padding: 82px 28px 80px;
   background:
     radial-gradient(circle at 12% -10%, rgba(104, 56, 234, 0.22), transparent 34%),
     radial-gradient(circle at 90% 8%, rgba(40, 183, 255, 0.12), transparent 28%),
@@ -1131,10 +1131,13 @@
 }
 
 .headerRow {
-  position: sticky;
+  position: fixed;
   top: 0;
+  right: 0;
+  left: 0;
   z-index: 50;
   max-width: 1440px;
+  box-sizing: border-box;
   min-height: 82px;
   padding: 14px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -2482,7 +2485,6 @@
 /* 관리자 홈은 3열 × 4행을 데스크톱 한 화면에서 조작할 수 있도록 압축합니다. */
 @media (min-width: 901px) {
   .page {
-    padding-top: 0;
     padding-bottom: 24px;
   }
 
@@ -2577,7 +2579,7 @@
   }
 
   .headerRow {
-    position: sticky;
+    width: calc(100% - 32px);
     align-items: center;
     flex-direction: row;
   }
