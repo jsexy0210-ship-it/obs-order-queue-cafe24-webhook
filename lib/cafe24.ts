@@ -29,17 +29,6 @@ function pick(obj: any, keys: string[]): unknown {
 }
 
 /**
- * 한글 이름을 가운데 마스킹해서 화면에 노출할 형식으로 만듭니다. (예: "안영호" -> "안*호", "김민" -> "김*")
- */
-function maskUserId(raw: string): string {
-  const name = raw.trim();
-  if (name.length === 0) return name;
-  if (name.length === 1) return name;
-  if (name.length === 2) return `${name[0]}*`;
-  return `${name[0]}${"*".repeat(name.length - 2)}${name[name.length - 1]}`;
-}
-
-/**
  * 카페24 "주문서 추가 입력 항목"(additional_order_info_list)은
  * "필드명  = 값" 형태의 문자열로 옵니다. 여러 항목이면 줄바꿈으로 구분됩니다.
  * 예: "유튜브 닉네임  = 재호"
@@ -136,7 +125,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
 
   return {
     externalOrderId: String(orderId),
-    userId: maskUserId(String(buyerName)),
+    userId: String(buyerName).trim(),
     product: String(productName),
     quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
     unitPrice: Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 15000,

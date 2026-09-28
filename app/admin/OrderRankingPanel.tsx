@@ -6,6 +6,7 @@ import styles from "./admin.module.css";
 type RankingRow = {
   rank: number;
   userId: string;
+  buyerName: string | null;
   youtubeNickname: string | null;
   tier: string | null;
   totalPurchaseAmount: number;
@@ -80,7 +81,7 @@ export default function OrderRankingPanel() {
       if (!response.ok) throw new Error(data.error ?? "보너스 적립금 지급에 실패했습니다.");
       setRanking(data.ranking ?? []);
       setBonusAmounts((current) => ({ ...current, [row.userId]: "" }));
-      setNotice(`${row.userId}님에게 ${formatWon(data.result?.amount ?? amount)}을 카페24 적립금으로 지급했습니다.`);
+      setNotice(`${row.buyerName ?? "구매자 확인 불가"}님에게 ${formatWon(data.result?.amount ?? amount)}을 카페24 적립금으로 지급했습니다.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "보너스 적립금 지급에 실패했습니다.");
     } finally {
@@ -117,7 +118,7 @@ export default function OrderRankingPanel() {
                   {isTopThree ? TROPHIES[row.rank - 1] : `${row.rank}위`}
                 </div>
                 <div className={styles.rankingCustomer}>
-                  <strong>{row.userId}</strong>
+                  <strong>{row.buyerName ?? "구매자 확인 불가"}</strong>
                   <span
                     className={`${styles.rankingGradeBadge} ${row.tier ? "" : styles.rankingGradeUnknown}`}
                     title="최근 결제 주문에서 확인한 카페24 회원등급"
@@ -174,7 +175,7 @@ export default function OrderRankingPanel() {
           <p className={styles.bonusConfirmEyebrow}>지급 전 최종 확인</p>
           <h3 id="bonus-confirm-title">카페24 적립금 실지급을 진행합니다</h3>
           <p className={styles.bonusConfirmAmount}>
-            {pendingBonus.row.userId} · {formatWon(pendingBonus.amount)}
+            {pendingBonus.row.buyerName ?? "구매자 확인 불가"} · {formatWon(pendingBonus.amount)}
           </p>
           <div id="bonus-confirm-description" className={styles.bonusConfirmWarning}>
             <strong>주의: 카페24 고객 적립금 잔액이 즉시 증가합니다.</strong>

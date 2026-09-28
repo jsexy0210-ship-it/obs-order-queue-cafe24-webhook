@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLiveState, insertOrder } from "@/lib/store";
+import { resolveLiveBuyerNames } from "@/lib/buyerNames";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json(getLiveState());
+  return NextResponse.json(await resolveLiveBuyerNames(getLiveState()));
 }
 
 // 관리자 화면에서 주문을 수동으로 추가할 때 사용 (카페24 웹훅 없이도 테스트 가능)

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { cardbreakEvents } from "@/lib/events";
 import { getLiveState } from "@/lib/store";
+import { resolveLiveBuyerNames } from "@/lib/buyerNames";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,9 +11,13 @@ export async function GET(req: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
+      let latestSend = 0;
       const send = () => {
-        const state = getLiveState();
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(state)}\n\n`));
+        const sequence = ++latestSend;
+        void resolveLiveBuyerNames(getLiveState()).then((state) => {
+          if (req.signal.aborted || sequence !== latestSend) return;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(state)}\n\n`));
+        });
       };
 
       // 최초 접속 시 현재 상태를 바로 전송 (OBS를 껐다 켜도 즉시 최신 상태로 뜸)
