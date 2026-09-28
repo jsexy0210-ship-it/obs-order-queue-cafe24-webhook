@@ -580,7 +580,7 @@ export default function AdminPage() {
       <h2 className={styles.homeSectionTitle}>대시보드</h2>
       <OrderDashboard />
 
-      <h2 className={styles.homeSectionTitle}>오버레이 설정</h2>
+      <h2 className={styles.homeSectionTitle}>오버레이</h2>
       <div className={styles.operationsGrid}>
       <section className={`${styles.block} ${styles.primaryBlock}`}>
         <h2>지금 오픈 중</h2>

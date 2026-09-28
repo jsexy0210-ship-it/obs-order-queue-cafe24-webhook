@@ -33,7 +33,7 @@
 .headerButtons > .historyButton,
 .headerButtons > .logoutButton,
 .siteMenuToggle {
-  width: 84px;
+  width: 100px;
   padding-inline: 8px;
   justify-content: center;
   font-size: 12px;
