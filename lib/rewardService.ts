@@ -137,7 +137,10 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
     return { outcome: "native_reward_unverified" as const };
   }
 
-  const isBankDeposit = order.payment_method?.toLowerCase() === "cash";
+  const paymentMethods = Array.isArray(order.payment_method)
+    ? order.payment_method
+    : [order.payment_method];
+  const isBankDeposit = paymentMethods.some((method) => method?.toLowerCase() === "cash");
   const appliedRate = isBankDeposit ? grade.bankRate : grade.cardRate;
   const amount = Math.floor(baseAmount * appliedRate / 100);
   if (amount <= 0) return { outcome: "skipped" as const };
