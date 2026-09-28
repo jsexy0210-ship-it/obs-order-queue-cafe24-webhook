@@ -19,6 +19,7 @@ export async function GET() {
     oauth,
     executionMode: getRewardExecutionMode(),
     executionAllowed: canExecuteCafe24RewardChanges(),
+    nativeRewardsDisabled: process.env.CAFE24_NATIVE_REWARDS_DISABLED === "true",
   });
 }
 export async function PUT(req: NextRequest) {
@@ -59,6 +60,7 @@ export async function PUT(req: NextRequest) {
     oauth,
     executionMode: getRewardExecutionMode(),
     executionAllowed: canExecuteCafe24RewardChanges(),
+    nativeRewardsDisabled: process.env.CAFE24_NATIVE_REWARDS_DISABLED === "true",
     groupNameSync: { updated: updatedGroupNames, pending: pendingGroupNames },
   });
 }

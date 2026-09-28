@@ -36,6 +36,7 @@ jobs:
           CAFE24_MALL_ID: ${{ secrets.CAFE24_MALL_ID }}
           CAFE24_REDIRECT_URI: ${{ secrets.CAFE24_REDIRECT_URI }}
           CAFE24_REWARD_LIVE_ENABLED: ${{ secrets.CAFE24_REWARD_LIVE_ENABLED }}
+          CAFE24_NATIVE_REWARDS_DISABLED: ${{ secrets.CAFE24_NATIVE_REWARDS_DISABLED || 'false' }}
           CAFE24_TOKEN_ENCRYPTION_KEY: ${{ secrets.CAFE24_TOKEN_ENCRYPTION_KEY }}
           CAFE24_WEBHOOK_TOKEN: ${{ secrets.CAFE24_WEBHOOK_TOKEN }}
         run: |
@@ -51,6 +52,23 @@ jobs:
             throw "필수 GitHub Actions Secret이 없습니다: $($missing -join ', ')"
           }
 
+          # 새 Secret을 추가한 배포만으로 주문 실지급이 시작되지 않게 합니다.
+          # 최초 활성화는 통제된 주문 검증을 준비한 뒤 운영 서버에서 별도로 진행합니다.
+          $runtimeEnvPath = Join-Path $env:GITHUB_WORKSPACE ".env.local"
+          if ($env:CAFE24_REWARD_LIVE_ENABLED -ceq "true" -and $env:CAFE24_NATIVE_REWARDS_DISABLED -ceq "true") {
+            $existingFlags = @{}
+            if (Test-Path $runtimeEnvPath) {
+              foreach ($line in [System.IO.File]::ReadAllLines($runtimeEnvPath)) {
+                if ($line -cmatch '^(CAFE24_REWARD_LIVE_ENABLED|CAFE24_NATIVE_REWARDS_DISABLED)=(true|false)$') {
+                  $existingFlags[$Matches[1]] = $Matches[2]
+                }
+              }
+            }
+            if ($existingFlags["CAFE24_REWARD_LIVE_ENABLED"] -cne "true" -or $existingFlags["CAFE24_NATIVE_REWARDS_DISABLED"] -cne "true") {
+              throw "배포를 통한 주문 실지급 최초 활성화를 차단했습니다. 기존 환경파일은 변경하지 않았습니다. 통제된 주문 검증을 위한 운영 서버 설정이 필요합니다."
+            }
+          }
+
           $environmentLines = @(
             "ADMIN_PRIMARY_ID=$env:ADMIN_PRIMARY_ID",
             "ADMIN_PRIMARY_PASSWORD=$env:ADMIN_PRIMARY_PASSWORD",
@@ -62,6 +80,7 @@ jobs:
             "CAFE24_REDIRECT_URI=$env:CAFE24_REDIRECT_URI",
             "CAFE24_OAUTH_SCOPES=mall.read_order,mall.read_customer,mall.read_mileage,mall.write_mileage",
             "CAFE24_REWARD_LIVE_ENABLED=$env:CAFE24_REWARD_LIVE_ENABLED",
+            "CAFE24_NATIVE_REWARDS_DISABLED=$env:CAFE24_NATIVE_REWARDS_DISABLED",
             "CAFE24_TOKEN_ENCRYPTION_KEY=$env:CAFE24_TOKEN_ENCRYPTION_KEY",
             "CAFE24_WEBHOOK_TOKEN=$env:CAFE24_WEBHOOK_TOKEN"
           )
