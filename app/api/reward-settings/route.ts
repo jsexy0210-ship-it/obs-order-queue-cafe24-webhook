@@ -62,4 +62,3 @@ export async function PUT(req: NextRequest) {
     groupNameSync: { updated: updatedGroupNames, pending: pendingGroupNames },
   });
 }
-
