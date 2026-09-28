@@ -205,7 +205,7 @@ export default function RewardSettingsPanel() {
       <div className={styles.oauthActions}>
         {oauthConfigured ? (
           <a className={styles.oauthConnectButton} href="/api/cafe24/oauth/start">
-            {oauthConnected ? "카페24 재연결" : "카페24 테스트 연결"}
+            {oauthConnected ? "카페24 재연결" : "카페24 연결"}
           </a>
         ) : (
           <span>서버에 OAuth 환경변수를 등록한 뒤 연결할 수 있습니다.</span>

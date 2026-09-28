@@ -4,7 +4,8 @@ export type RewardExecutionMode = "test" | "live";
 
 export function isCafe24RewardIntegrationConfigured() {
   const status = getCafe24OAuthStatus();
-  return status.configured && status.connected;
+  return status.configured && status.connected &&
+    ["mall.read_order", "mall.write_mileage"].every((scope) => status.scopes.includes(scope));
 }
 
 /**

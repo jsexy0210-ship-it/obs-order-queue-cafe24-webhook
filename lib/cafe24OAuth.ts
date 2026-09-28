@@ -205,17 +205,8 @@ export function getRequestedCafe24Scopes() {
 
   // 현재 망고TCG 앱의 개발자센터 권한 설정과 일치하는 기본 Scope입니다.
   return [
-    "mall.read_application",
-    "mall.write_application",
-    "mall.read_category",
-    "mall.read_product",
-    "mall.write_product",
-    "mall.read_collection",
-    "mall.read_supply",
     "mall.read_order",
     "mall.read_customer",
-    "mall.write_customer",
-    "mall.read_promotion",
     "mall.read_mileage",
     "mall.write_mileage",
   ];

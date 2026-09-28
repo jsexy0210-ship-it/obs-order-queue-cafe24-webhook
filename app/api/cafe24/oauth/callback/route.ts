@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 const STATE_COOKIE = "cafe24_oauth_state";
 
 function redirectToAdmin(req: NextRequest, result: string) {
-  const url = new URL("/admin", req.url);
+  // 프록시 뒤에서는 req.url의 호스트가 localhost:3001로 잡힐 수 있습니다.
+  // 등록된 공개 OAuth 콜백 주소를 기준으로 관리자 화면에 돌려보냅니다.
+  const url = new URL("/admin", process.env.CAFE24_REDIRECT_URI ?? req.url);
   url.searchParams.set("cafe24_oauth", result);
   return NextResponse.redirect(url);
 }

@@ -91,6 +91,11 @@ function isFullyCancelled(order: Cafe24RewardOrder) {
   );
 }
 
+function isPaymentConfirmed(order: Cafe24RewardOrder) {
+  const value = order.paid ?? order.payment_confirmation;
+  return value === true || value === 1 || String(value).toUpperCase() === "T";
+}
+
 function findGrade(
   settings: ReturnType<typeof getRewardSettings>,
   groupNo: string | number | undefined
@@ -112,6 +117,8 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
   if (getLedger(orderId, "issue")) return { outcome: "duplicate" as const };
 
   const order = await getCafe24OrderForReward(orderId);
+  // 웹훅 URL의 event=paid만 신뢰하지 않고 카페24 주문 원본에서 결제를 다시 확인합니다.
+  if (!isPaymentConfirmed(order) || isFullyCancelled(order)) return { outcome: "skipped" as const };
   const memberId = order.member_id?.trim();
   const grade = findGrade(settings, order.member_group_no ?? order.group_no);
   const baseAmount = netProductAmount(order);

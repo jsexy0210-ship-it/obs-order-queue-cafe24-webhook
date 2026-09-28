@@ -53,6 +53,8 @@ export type Cafe24RewardOrder = {
   member_id?: string;
   member_group_no?: string | number;
   group_no?: string | number;
+  paid?: string | boolean | number;
+  payment_confirmation?: string | boolean | number;
   payment_method?: string;
   items?: Cafe24OrderItem[];
 };
