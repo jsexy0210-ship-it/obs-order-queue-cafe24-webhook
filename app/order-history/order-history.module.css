@@ -180,6 +180,7 @@
 
 .tableScroller {
   position: relative;
+  padding-inline: 48px;
 }
 
 .gridScrollButton {
@@ -520,6 +521,10 @@
     min-height: 0;
     border: 0;
     background: transparent;
+  }
+
+  .tableScroller {
+    padding-inline: 0;
   }
 
   .gridScrollButton {
