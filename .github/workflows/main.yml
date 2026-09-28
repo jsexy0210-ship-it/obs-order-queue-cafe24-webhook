@@ -36,6 +36,19 @@ jobs:
         shell: pwsh
         run: ./scripts/test-deploy-reward-guard.ps1
 
+      - name: Check remote deployment configuration and PowerShell syntax
+        shell: pwsh
+        run: |
+          python -m unittest discover -s scripts -p 'test_remote_deploy.py'
+          if ($LASTEXITCODE -ne 0) { throw "Remote deployment tests failed" }
+          $parseErrors = $null
+          $tokens = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $env:GITHUB_WORKSPACE "scripts/deploy-windows.ps1"),
+            [ref]$tokens, [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
+
       - name: Install dependencies
         run: npm ci
 

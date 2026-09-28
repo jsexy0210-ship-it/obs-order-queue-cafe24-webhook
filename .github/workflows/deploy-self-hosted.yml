@@ -11,6 +11,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: vars.MANGO_REMOTE_DEPLOY_ENABLED != 'true'
     # 등록 방식에 따른 OS 라벨 차이로 작업이 멈추지 않도록 사무실 self-hosted runner를 사용합니다.
     runs-on: self-hosted
     timeout-minutes: 20
