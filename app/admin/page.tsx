@@ -426,12 +426,6 @@ export default function AdminPage() {
         <div
           id="admin-header-menu"
           className={`${styles.headerButtons} ${mobileMenuOpen ? styles.mobileMenuOpen : ""}`}
-          onClickCapture={(event) => {
-            if (!(event.target as HTMLElement).closest("[data-site-menu-toggle]")) {
-              setMobileMenuOpen(false);
-              setSiteMenuOpen(false);
-            }
-          }}
         >
           {!showSettings && !showHistory && !showRanking && !showOverlayPreview && (
             <>
@@ -444,32 +438,52 @@ export default function AdminPage() {
                   aria-controls="admin-site-menu"
                   onClick={() => setSiteMenuOpen((open) => !open)}
                 >
-                  사이트
+                  🏪 사이트
                 </button>
                 {siteMenuOpen && (
                   <div id="admin-site-menu" className={styles.siteMenuPanel}>
                     {SITE_LINKS.map((link) => (
-                      <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
+                      <a
+                        key={link.href}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setSiteMenuOpen(false);
+                        }}
+                      >
                         {link.label}
                       </a>
                     ))}
                   </div>
                 )}
               </div>
-              <button className={styles.historyButton} onClick={() => setShowOverlayPreview(true)}>
-                오버레이
+              <button className={styles.historyButton} onClick={() => {
+                setMobileMenuOpen(false);
+                setShowOverlayPreview(true);
+              }}>
+                📺 오버레이
               </button>
-              <button className={styles.historyButton} onClick={() => setShowRanking(true)}>
-                주문랭킹
+              <button className={styles.historyButton} onClick={() => {
+                setMobileMenuOpen(false);
+                setShowRanking(true);
+              }}>
+                🏆 주문랭킹
               </button>
-              <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
-                주문이력
+              <button className={styles.historyButton} onClick={() => {
+                setMobileMenuOpen(false);
+                setShowHistory(true);
+              }}>
+                🗂️ 주문이력
               </button>
             </>
           )}
           <button
             className={styles.historyButton}
             onClick={() => {
+              setMobileMenuOpen(false);
+              setSiteMenuOpen(false);
               if (showOverlayPreview) {
                 closeOverlayPreview();
                 return;
@@ -485,11 +499,14 @@ export default function AdminPage() {
             }}
             aria-pressed={showSettings}
           >
-            {showSettings || showHistory || showRanking || showOverlayPreview ? "← 관리자 홈" : "설정"}
+            {showSettings || showHistory || showRanking || showOverlayPreview ? "← 관리자 홈" : "⚙️ 설정"}
           </button>
           {showHistory && (
-            <button className={styles.historyButton} onClick={() => setShowHitHistory(true)}>
-              히트카드
+            <button className={styles.historyButton} onClick={() => {
+              setMobileMenuOpen(false);
+              setShowHitHistory(true);
+            }}>
+              🃏 히트카드
             </button>
           )}
           <button className={styles.logoutButton} onClick={logout}>
