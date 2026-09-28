@@ -58,6 +58,13 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
   ).all() as Array<{ user_id: string; reward_points: number | null }>;
   const rewards = new Map(rewardRows.map((row) => [row.user_id, Number(row.reward_points ?? 0)]));
 
+  const pointBalanceRows = db.prepare(
+    `SELECT member_id, buyer_name, balance
+       FROM cafe24_member_point_balance_snapshots`
+  ).all() as Array<{ member_id: string; buyer_name: string; balance: number }>;
+  const pointBalancesByMemberId = new Map(pointBalanceRows.map((row) => [row.member_id, Number(row.balance)]));
+  const pointBalancesByBuyerName = new Map(pointBalanceRows.map((row) => [row.buyer_name, Number(row.balance)]));
+
   const bonusRows = db.prepare(
     `SELECT user_id, SUM(amount) AS bonus_points
        FROM ranking_bonus_ledger
@@ -74,7 +81,12 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
     tier: row.tier || null,
     totalPurchaseAmount: Number(row.total_purchase_amount ?? 0),
     orderCount: Number(row.order_count ?? 0),
-    rewardPoints: rewards.get(row.user_id) ?? 0,
+    // 카페24 잔액 스냅샷이 있으면 현재 누적 적립금을 우선 표시합니다.
+    // 스냅샷이 없는 기존 회원만 실제 지급·회수 원장 합계를 사용합니다.
+    rewardPoints: pointBalancesByMemberId.get(row.user_id)
+      ?? pointBalancesByBuyerName.get(row.user_id)
+      ?? rewards.get(row.user_id)
+      ?? 0,
     bonusPoints: bonuses.get(row.user_id) ?? 0,
     eligibleForBonus: index < 3 && hasCafe24Order(row.user_id),
   }));

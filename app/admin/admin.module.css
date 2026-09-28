@@ -1452,24 +1452,6 @@
   opacity: 0.42;
 }
 
-.themeFab {
-  position: fixed;
-  right: 22px;
-  bottom: 22px;
-  z-index: 110;
-  min-width: 96px;
-  height: 42px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  background: rgba(20, 24, 34, 0.94);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
-  color: #f4f7fb;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 850;
-}
-
 .page[data-theme="light"] {
   background: #f4f7fb;
   color: #162033;
@@ -1493,8 +1475,7 @@
 }
 
 .page[data-theme="light"] .historyButton,
-.page[data-theme="light"] .rankingRefreshButton,
-.page[data-theme="light"] .themeFab {
+.page[data-theme="light"] .rankingRefreshButton {
   border-color: rgba(30, 45, 70, 0.2);
   background: #fff;
   color: #162033;
@@ -1516,10 +1497,6 @@
 
 .page[data-theme="light"] .topRankingCard {
   background: linear-gradient(110deg, #fff8df, #fff);
-}
-
-.page[data-theme="light"] .themeFab {
-  box-shadow: 0 12px 28px rgba(27, 39, 59, 0.18);
 }
 
 @media (max-width: 900px) {
@@ -1551,10 +1528,6 @@
     width: 100%;
   }
 
-  .themeFab {
-    right: 14px;
-    bottom: 14px;
-  }
 }
 
 /* Settings, forms and modal content are defined later in this stylesheet.

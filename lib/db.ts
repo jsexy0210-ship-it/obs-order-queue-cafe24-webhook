@@ -121,6 +121,17 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- 카페24에서 내려받은 회원별 현재 적립금 잔액입니다. 주문 적립 원장과 별도로
+  -- 실제 카페24 잔액을 주문 랭킹에 표시하는 용도로만 보관합니다.
+  CREATE TABLE IF NOT EXISTS cafe24_member_point_balance_snapshots (
+    member_id TEXT PRIMARY KEY,
+    buyer_name TEXT NOT NULL,
+    balance INTEGER NOT NULL CHECK (balance >= 0),
+    source_file TEXT NOT NULL,
+    source_date TEXT NOT NULL,
+    imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
   CREATE INDEX IF NOT EXISTS idx_reward_ledger_status ON reward_ledger(status, action);
   CREATE INDEX IF NOT EXISTS idx_ranking_bonus_user ON ranking_bonus_ledger(user_id, status);
