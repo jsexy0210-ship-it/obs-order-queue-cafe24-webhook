@@ -2,6 +2,7 @@ import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward } 
 import { db } from "./db";
 import { assertCafe24BonusExecutionAllowed } from "./rewardExecution";
 import { getBuyerInfo, getCurrentCustomerGroupNo } from "./buyerNames";
+import { isAfterRewardStart } from "./rewardCutoff";
 
 export type OrderRankingRow = {
   rank: number;
@@ -150,6 +151,9 @@ export async function grantRankingBonus(userId: string, amount: number, requestI
     const paid = cafe24Order.paid ?? cafe24Order.payment_confirmation;
     if (!memberId || !(paid === true || paid === 1 || String(paid).toUpperCase() === "T")) {
       throw new Error("카페24에서 구매자와 결제완료 상태를 확인할 수 없어 지급을 중단했습니다.");
+    }
+    if (!isAfterRewardStart(cafe24Order)) {
+      throw new Error("적립 시작일 이전 주문이 랭킹에 포함되어 보너스 적립금을 지급할 수 없습니다.");
     }
     if (!Array.isArray(cafe24Order.items) || cafe24Order.items.length === 0 || cafe24Order.items.some((orderItem) =>
       ["C1", "C2", "C3", "CANCELLED", "RETURNED"].includes(String(orderItem.status_code ?? orderItem.order_status).toUpperCase())
