@@ -137,7 +137,8 @@ export default function OrderDashboard() {
 
   const amountOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
-    return order.status !== "cancelled" && time >= rangeStart(amountRange, now) && time <= now;
+    return order.status !== "cancelled" && Boolean(order.paid_at)
+      && time >= rangeStart(amountRange, now) && time <= now;
   });
   const paymentOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
