@@ -95,7 +95,7 @@ export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
       <div className={styles.rankingHero}>
         <div>
           <div className={styles.pageTitleRow}>
-            <button className={styles.pageBackButton} onClick={onBack}>← Back</button>
+            <button className={styles.pageBackButton} onClick={onBack} aria-label="뒤로가기" title="뒤로가기">←</button>
             <h2 id="ranking-title">주문랭킹 TOP 10</h2>
           </div>
           <p>카페24 결제완료 주문의 취소·환불 제외 누적 구매금액 기준 Top 10입니다.</p>
@@ -121,19 +121,21 @@ export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
                   {isTopThree ? TROPHIES[row.rank - 1] : `${row.rank}위`}
                 </div>
                 <div className={styles.rankingCustomer}>
-                  <strong>{row.buyerName ?? "구매자 확인 불가"}</strong>
-                  <span
-                    className={`${styles.rankingGradeBadge} ${row.tier ? "" : styles.rankingGradeUnknown}`}
-                    title="카페24의 현재 회원등급"
-                  >
-                    {row.tier ?? "등급 확인 불가"}
-                  </span>
+                  <div className={styles.rankingIdentity}>
+                    <strong>{row.buyerName ?? "구매자 확인 불가"}</strong>
+                    <span
+                      className={`${styles.rankingGradeBadge} ${row.tier ? "" : styles.rankingGradeUnknown}`}
+                      title="카페24의 현재 회원등급"
+                    >
+                      {row.tier ?? "등급 확인 불가"}
+                    </span>
+                  </div>
                   {row.youtubeNickname && <span>YT: {row.youtubeNickname}</span>}
                 </div>
                 <dl className={styles.rankingMetrics}>
                   <div><dt>총 구매금액</dt><dd>{formatWon(row.totalPurchaseAmount)}</dd></div>
                   <div><dt>주문 건수</dt><dd>{row.orderCount}건</dd></div>
-                  <div><dt>적립 포인트</dt><dd>{formatWon(row.rewardPoints)}</dd></div>
+                  <div><dt>누적 적립금</dt><dd>{formatWon(row.rewardPoints)}</dd></div>
                   <div><dt>보너스 적립금</dt><dd>{formatWon(row.bonusPoints)}</dd></div>
                 </dl>
                 {isTopThree && (

@@ -475,7 +475,7 @@ export default function AdminPage() {
       {showSettings ? (
         <section className={styles.settingsPage} aria-labelledby="settings-title">
           <div className={styles.pageTitleRow}>
-            <button className={styles.pageBackButton} onClick={() => setShowSettings(false)}>← Back</button>
+            <button className={styles.pageBackButton} onClick={() => setShowSettings(false)} aria-label="뒤로가기" title="뒤로가기">←</button>
             <h2 id="settings-title">설정</h2>
           </div>
           <div className={styles.settingRow}>
@@ -702,7 +702,7 @@ export default function AdminPage() {
             <div className={`${styles.modalTopBarWithTitle} ${styles.overlayModalHeader}`}>
               <div className={styles.overlayModalHero}>
                 <div className={styles.pageTitleRow}>
-                  <button className={styles.pageBackButton} onClick={closeOverlayPreview}>← Back</button>
+                  <button className={styles.pageBackButton} onClick={closeOverlayPreview} aria-label="뒤로가기" title="뒤로가기">←</button>
                   <h2 className={styles.modalTitle} id="overlay-preview-title">라이브 오버레이 미리보기</h2>
                 </div>
               </div>

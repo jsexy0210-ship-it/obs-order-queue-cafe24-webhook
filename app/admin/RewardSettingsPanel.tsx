@@ -41,7 +41,6 @@ export default function RewardSettingsPanel() {
   const [settings, setSettings] = useState<RewardSettings>(DEFAULT_REWARD_SETTINGS);
   const [oauthConfigured, setOauthConfigured] = useState(false);
   const [oauthConnected, setOauthConnected] = useState(false);
-  const [runtimeStatus, setRuntimeStatus] = useState<Pick<ApiResponse, "executionMode" | "integrationReady" | "nativeRewardsDisabled"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
@@ -64,7 +63,6 @@ export default function RewardSettingsPanel() {
         setSettings(data.settings);
         setOauthConfigured(data.oauth.configured);
         setOauthConnected(data.oauth.connected);
-        setRuntimeStatus(data);
       })
       .catch(() => {
         if (active) setError("적립금 설정을 불러오지 못했습니다.");
@@ -162,7 +160,6 @@ export default function RewardSettingsPanel() {
       setSettings(data.settings);
       setOauthConfigured(data.oauth.configured);
       setOauthConnected(data.oauth.connected);
-      setRuntimeStatus(data);
       if (data.groupNameSync?.pending.length) {
         setMessage(`적립금 정책을 저장했습니다. ${data.groupNameSync.pending.join(", ")} 등급명은 카페24 연결 후 반영됩니다.`);
       } else if (data.groupNameSync?.updated.length) {
@@ -215,16 +212,6 @@ export default function RewardSettingsPanel() {
           </button>
         )}
       </div>
-
-      {runtimeStatus && (
-        <section aria-label="서버 지급 조건">
-          <h4>서버 지급 조건</h4>
-          <p>실지급 스위치: {runtimeStatus.executionMode === "live" ? "ON" : "OFF — 지급·회수 차단"}</p>
-          <p>카페24 연동·필수 권한: {runtimeStatus.integrationReady ? "준비 완료" : "확인 필요"}</p>
-          <p>자체 적립 중단 확인값: {runtimeStatus.nativeRewardsDisabled ? "반영됨" : "미반영 — 주문 자동 지급 차단"}</p>
-          <p>서버 조건 표시이며 실제 지급 완료를 뜻하지 않습니다. 주문별 결제·회원등급·중복 원장 조건을 추가 확인합니다.</p>
-        </section>
-      )}
 
       <label className={styles.rewardTrigger}>
         <span>적립 시점</span>

@@ -1180,18 +1180,24 @@
 }
 
 .pageTitleRow {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  min-height: 32px;
 }
 
 .pageBackButton {
-  padding: 6px 10px;
+  position: absolute;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   background: transparent;
   color: inherit;
-  font-size: 12px;
+  font-size: 18px;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1318,9 +1324,10 @@
   font-weight: 900;
 }
 
-.rankingCustomer strong,
-.rankingCustomer span {
-  display: block;
+.rankingIdentity {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .rankingCustomer strong {
@@ -1329,6 +1336,7 @@
 }
 
 .rankingCustomer span {
+  display: block;
   margin-top: 5px;
   color: #8e98a8;
   font-size: 11px;
@@ -1336,6 +1344,8 @@
 
 .rankingCustomer .rankingGradeBadge {
   display: inline-block;
+  flex: 0 0 auto;
+  margin-top: 0;
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgba(255, 212, 92, 0.4);
