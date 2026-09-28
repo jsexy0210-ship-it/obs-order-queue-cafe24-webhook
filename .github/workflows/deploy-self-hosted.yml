@@ -82,17 +82,15 @@ jobs:
       - name: Install and build
         shell: pwsh
         run: |
-          npm ci
+          # 현재 운영 프로세스가 동일한 작업 폴더의 네이티브 모듈을 읽고 있습니다.
+          # npm ci는 node_modules 전체를 삭제해 Windows 파일 잠금을 유발하므로 제자리 갱신을 사용합니다.
+          npm install
           if ($LASTEXITCODE -ne 0) {
             throw "npm 의존성 설치에 실패했습니다."
           }
           npm run build
           if ($LASTEXITCODE -ne 0) {
             throw "Next.js 프로덕션 빌드에 실패했습니다."
-          }
-          npm install --global pm2@5.4.3
-          if ($LASTEXITCODE -ne 0) {
-            throw "PM2 설치에 실패했습니다."
           }
 
       - name: Restart MangoTCG production process
