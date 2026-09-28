@@ -36,6 +36,7 @@ jobs:
           CAFE24_MALL_ID: ${{ secrets.CAFE24_MALL_ID }}
           CAFE24_REDIRECT_URI: ${{ secrets.CAFE24_REDIRECT_URI }}
           CAFE24_REWARD_LIVE_ENABLED: ${{ secrets.CAFE24_REWARD_LIVE_ENABLED }}
+          CAFE24_NATIVE_REWARDS_DISABLED: ${{ secrets.CAFE24_NATIVE_REWARDS_DISABLED || 'false' }}
           CAFE24_TOKEN_ENCRYPTION_KEY: ${{ secrets.CAFE24_TOKEN_ENCRYPTION_KEY }}
           CAFE24_WEBHOOK_TOKEN: ${{ secrets.CAFE24_WEBHOOK_TOKEN }}
         run: |
@@ -62,6 +63,7 @@ jobs:
             "CAFE24_REDIRECT_URI=$env:CAFE24_REDIRECT_URI",
             "CAFE24_OAUTH_SCOPES=mall.read_order,mall.read_customer,mall.read_mileage,mall.write_mileage",
             "CAFE24_REWARD_LIVE_ENABLED=$env:CAFE24_REWARD_LIVE_ENABLED",
+            "CAFE24_NATIVE_REWARDS_DISABLED=$env:CAFE24_NATIVE_REWARDS_DISABLED",
             "CAFE24_TOKEN_ENCRYPTION_KEY=$env:CAFE24_TOKEN_ENCRYPTION_KEY",
             "CAFE24_WEBHOOK_TOKEN=$env:CAFE24_WEBHOOK_TOKEN"
           )
