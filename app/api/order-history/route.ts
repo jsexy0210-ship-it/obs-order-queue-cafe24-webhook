@@ -5,7 +5,7 @@ import {
   getOrderHistoryYears,
   resetAllHistory,
 } from "@/lib/store";
-import { getRewardSummaries } from "@/lib/rewardService";
+import { getDashboardRewardEntries, getRewardSummaries } from "@/lib/rewardService";
 import { resolveOrderBuyerNames } from "@/lib/buyerNames";
 
 export const runtime = "nodejs";
@@ -13,6 +13,19 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const range = searchParams.get("range");
+  if (range === "dashboard") {
+    const kstYear = new Date(Date.now() + 9 * 60 * 60 * 1000).getUTCFullYear();
+    const dashboardStartUtc = new Date(Date.UTC(kstYear, 0, 1) - (6 * 24 + 9) * 60 * 60 * 1000)
+      .toISOString().slice(0, 19).replace("T", " ");
+    return NextResponse.json({
+      orders: getOrderHistory()
+        .filter((order) => order.created_at >= dashboardStartUtc)
+        .map(({ created_at, quantity, unit_price, payment_method }) => ({
+          created_at, quantity, unit_price, payment_method,
+        })),
+      rewardEntries: getDashboardRewardEntries(dashboardStartUtc),
+    });
+  }
   const year = Number(searchParams.get("year"));
   const month = Number(searchParams.get("month"));
   const hasMonthFilter = Number.isInteger(year)

@@ -30,7 +30,7 @@ type PendingBonus = {
 const TROPHIES = ["🥇", "🥈", "🥉"];
 const formatWon = (amount: number) => `${amount.toLocaleString("ko-KR")}원`;
 
-export default function OrderRankingPanel() {
+export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
   const [ranking, setRanking] = useState<RankingRow[]>([]);
   const [bonusAmounts, setBonusAmounts] = useState<Record<string, string>>({});
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
@@ -94,7 +94,10 @@ export default function OrderRankingPanel() {
     <section className={styles.rankingPage} aria-labelledby="ranking-title">
       <div className={styles.rankingHero}>
         <div>
-          <h2 id="ranking-title">주문랭킹 TOP 10</h2>
+          <div className={styles.pageTitleRow}>
+            <button className={styles.pageBackButton} onClick={onBack}>← Back</button>
+            <h2 id="ranking-title">주문랭킹 TOP 10</h2>
+          </div>
           <p>카페24 결제완료 주문의 취소·환불 제외 누적 구매금액 기준 Top 10입니다.</p>
         </div>
         <button className={styles.rankingRefreshButton} onClick={() => void load()} disabled={loading}>

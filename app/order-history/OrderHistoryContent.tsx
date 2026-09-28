@@ -149,7 +149,7 @@ function Pager({
 /**
  * 주문 이력 전체 페이지입니다.
  */
-export default function OrderHistoryContent() {
+export default function OrderHistoryContent({ onBack }: { onBack?: () => void }) {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [rewardSummaries, setRewardSummaries] = useState<Record<string, RewardSummary>>({});
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -224,6 +224,9 @@ export default function OrderHistoryContent() {
     <>
       <div className={styles.headerRow}>
         <div className={styles.titleWithTooltip}>
+          {onBack
+            ? <button className={styles.backButton} onClick={onBack}>← Back</button>
+            : <a className={styles.backButton} href="/admin">← Back</a>}
           <h1>망고TCG 주문 이력</h1>
           <span
             className={styles.infoTooltip}
@@ -287,13 +290,13 @@ export default function OrderHistoryContent() {
                   <th>주문일시</th>
                   <th>구매자</th>
                   <th>회원등급</th>
+                  <th>적립금 지급/회수</th>
                   <th>유튜브 닉네임</th>
                   <th>상품명</th>
                   <th>수량</th>
                   <th>주문총액</th>
                   <th>결제방식</th>
                   <th>입금여부</th>
-                  <th>적립금 지급/회수</th>
                   <th>상태</th>
                   <th>완료일시</th>
                   <th></th>
@@ -308,18 +311,6 @@ export default function OrderHistoryContent() {
                       <td data-label="주문일시">{formatDate(order.created_at)}</td>
                       <td data-label="구매자">{order.user_id}</td>
                       <td data-label="회원등급">{order.tier || "-"}</td>
-                      <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
-                      <td data-label="상품명" className={styles.product}>{order.product}</td>
-                      <td data-label="수량">{order.quantity}</td>
-                      <td data-label="주문총액">{formatPrice(order.unit_price * order.quantity)}</td>
-                      <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
-                      <td data-label="입금여부">
-                        {order.paid_at ? (
-                          <span className={styles.paidBadge}>입금완료</span>
-                        ) : (
-                          <span className={styles.notPaid}>-</span>
-                        )}
-                      </td>
                       <td data-label="적립금 지급/회수" className={styles.rewardCell}>
                         {!reward?.issue ? (
                           <span className={styles.rewardNone}>-</span>
@@ -334,6 +325,18 @@ export default function OrderHistoryContent() {
                               </span>
                             )}
                           </>
+                        )}
+                      </td>
+                      <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
+                      <td data-label="상품명" className={styles.product}>{order.product}</td>
+                      <td data-label="수량">{order.quantity}</td>
+                      <td data-label="주문총액">{formatPrice(order.unit_price * order.quantity)}</td>
+                      <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
+                      <td data-label="입금여부">
+                        {order.paid_at ? (
+                          <span className={styles.paidBadge}>입금완료</span>
+                        ) : (
+                          <span className={styles.notPaid}>-</span>
                         )}
                       </td>
                       <td data-label="상태">

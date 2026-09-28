@@ -32,6 +32,13 @@ export function listRewardLedger(limit = 30): RewardLedgerRow[] {
   ).all(limit) as RewardLedgerRow[];
 }
 
+export function getDashboardRewardEntries(sinceUtc: string): Array<Pick<RewardLedgerRow, "amount" | "grade_id" | "processed_at">> {
+  return db.prepare(
+    `SELECT amount, grade_id, processed_at FROM reward_ledger
+     WHERE action = 'issue' AND status = 'succeeded' AND processed_at >= ?`
+  ).all(sinceUtc) as Array<Pick<RewardLedgerRow, "amount" | "grade_id" | "processed_at">>;
+}
+
 export type RewardOrderSummary = {
   issue?: Pick<RewardLedgerRow, "amount" | "status" | "grade_id">;
   recover?: Pick<RewardLedgerRow, "amount" | "status" | "grade_id">;
