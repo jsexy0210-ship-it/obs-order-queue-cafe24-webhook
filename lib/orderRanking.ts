@@ -1,10 +1,12 @@
 import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward } from "./cafe24Admin";
 import { db } from "./db";
 import { assertCafe24BonusExecutionAllowed } from "./rewardExecution";
+import { getBuyerName } from "./buyerNames";
 
 export type OrderRankingRow = {
   rank: number;
   userId: string;
+  buyerName: string | null;
   youtubeNickname: string | null;
   tier: string | null;
   totalPurchaseAmount: number;
@@ -66,6 +68,7 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
   return sources.map((row, index) => ({
     rank: index + 1,
     userId: row.user_id,
+    buyerName: null,
     youtubeNickname: row.youtube_nickname,
     tier: row.tier || null,
     totalPurchaseAmount: Number(row.total_purchase_amount ?? 0),
@@ -82,18 +85,18 @@ export async function getOrderRankingWithGrades(limit = 10): Promise<OrderRankin
   if (ranking.length === 0) return ranking;
 
   const groups = await getCafe24CustomerGroups().catch(() => []);
-  if (groups.length === 0) return ranking.map((row) => ({ ...row, tier: null }));
   const groupNames = new Map(groups.map((group) => [String(group.group_no), group.group_name]));
 
   return Promise.all(ranking.map(async (row) => {
     const order = findLatestCafe24Order(row.userId);
     if (!order) return { ...row, tier: null };
+    const buyerName = await getBuyerName(order.external_order_id);
     try {
       const buyer = await getCafe24OrderForReward(order.external_order_id, { includeBuyerGroup: true });
       const groupNo = buyer.member_group_no ?? buyer.group_no;
-      return { ...row, tier: groupNo == null ? null : groupNames.get(String(groupNo)) ?? null };
+      return { ...row, buyerName, tier: groupNo == null ? null : groupNames.get(String(groupNo)) ?? null };
     } catch {
-      return { ...row, tier: null };
+      return { ...row, buyerName, tier: null };
     }
   }));
 }

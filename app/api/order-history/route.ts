@@ -6,6 +6,7 @@ import {
   resetAllHistory,
 } from "@/lib/store";
 import { getRewardSummaries } from "@/lib/rewardService";
+import { resolveOrderBuyerNames } from "@/lib/buyerNames";
 
 export const runtime = "nodejs";
 
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
     : getOrderHistory(hasMonthFilter ? { year, month } : undefined);
 
   return NextResponse.json({
-    orders,
+    orders: await resolveOrderBuyerNames(orders),
     availableYears: getOrderHistoryYears(),
     hitCards: getHitCardHistory(30),
     rewardSummaries: getRewardSummaries(

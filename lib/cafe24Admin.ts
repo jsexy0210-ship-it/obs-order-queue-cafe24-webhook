@@ -37,6 +37,15 @@ export async function getCafe24CustomerGroups() {
   return response.customergroups ?? [];
 }
 
+export async function getCafe24OrderBuyerName(orderId: string): Promise<string | null> {
+  const token = await getValidCafe24AccessToken();
+  const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
+  const response = await request<{ buyer?: { name?: string } }>(
+    `/orders/${encodeURIComponent(orderId)}/buyer?${query}`
+  );
+  return response.buyer?.name?.trim() || null;
+}
+
 export async function updateCafe24CustomerGroupName(groupNo: string, groupName: string) {
   const token = await getValidCafe24AccessToken();
   const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
