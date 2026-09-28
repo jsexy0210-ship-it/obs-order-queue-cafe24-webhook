@@ -11,6 +11,8 @@ type OrderRow = {
   product: string;
   quantity: number;
   unit_price: number;
+  actual_amount: number;
+  remote_only?: boolean;
   tier: string;
   status: "waiting" | "opening" | "done" | "cancelled";
   cancel_reason: string | null;
@@ -41,6 +43,7 @@ type OrderHistoryResponse = {
   orders?: OrderRow[];
   rewardSummaries?: Record<string, RewardSummary>;
   availableYears?: number[];
+  syncError?: boolean;
 };
 
 const ORDER_PAGE_SIZE = 50;
@@ -78,7 +81,7 @@ const formatPrice = (value: number) => value.toLocaleString("ko-KR") + "원";
 
 function formatPaymentMethod(method: string | null) {
   if (!method) return "-";
-  return PAYMENT_METHOD_LABELS[method] ?? method;
+  return method.split(",").map((part) => PAYMENT_METHOD_LABELS[part] ?? part).join(" + ");
 }
 
 function statusInfo(order: OrderRow): { label: string; className: string } {
@@ -153,6 +156,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [rewardSummaries, setRewardSummaries] = useState<Record<string, RewardSummary>>({});
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [syncError, setSyncError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [orderPage, setOrderPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
@@ -192,6 +196,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
       setOrders(data.orders ?? []);
       setRewardSummaries(data.rewardSummaries ?? {});
       setAvailableYears(data.availableYears ?? []);
+      setSyncError(Boolean(data.syncError));
     } finally {
       setLoading(false);
     }
@@ -277,6 +282,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
           <button type="button" aria-label="마지막 열로 이동" title="마지막 열로 이동" disabled={scrollEdges.atEnd} onClick={() => jumpToTableEdge("end")}>⟶</button>
         </div>
       </div>
+      {syncError && <p className={styles.syncWarning}>카페24 최신 주문 조회에 실패했습니다. 현재 저장된 주문 기준으로 표시합니다.</p>}
       <div className={styles.tableWrap}>
         {loading ? (
           <div className={styles.empty}>불러오는 중...</div>
@@ -288,16 +294,17 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
               <thead>
                 <tr>
                   <th>주문일시</th>
+                  <th>주문번호</th>
                   <th>구매자</th>
-                  <th>회원등급</th>
+                  <th>상태</th>
+                  <th>실결제액</th>
                   <th>적립금 지급/회수</th>
-                  <th>유튜브 닉네임</th>
+                  <th>회원등급</th>
                   <th>상품명</th>
                   <th>수량</th>
-                  <th>주문총액</th>
                   <th>결제방식</th>
                   <th>입금여부</th>
-                  <th>상태</th>
+                  <th>유튜브 닉네임</th>
                   <th>완료일시</th>
                   <th></th>
                 </tr>
@@ -309,8 +316,10 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   return (
                     <tr key={order.id}>
                       <td data-label="주문일시">{formatDate(order.created_at)}</td>
+                      <td data-label="주문번호">{order.external_order_id ?? "-"}</td>
                       <td data-label="구매자">{order.user_id}</td>
-                      <td data-label="회원등급">{order.tier || "-"}</td>
+                      <td data-label="상태"><span className={`${styles.statusBadge} ${className}`}>{label}</span></td>
+                      <td data-label="실결제액">{formatPrice(order.actual_amount)}</td>
                       <td data-label="적립금 지급/회수" className={styles.rewardCell}>
                         {!reward?.issue ? (
                           <span className={styles.rewardNone}>-</span>
@@ -327,10 +336,9 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                           </>
                         )}
                       </td>
-                      <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
+                      <td data-label="회원등급">{order.tier || "-"}</td>
                       <td data-label="상품명" className={styles.product}>{order.product}</td>
                       <td data-label="수량">{order.quantity}</td>
-                      <td data-label="주문총액">{formatPrice(order.unit_price * order.quantity)}</td>
                       <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
                       <td data-label="입금여부">
                         {order.paid_at ? (
@@ -339,17 +347,15 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                           <span className={styles.notPaid}>-</span>
                         )}
                       </td>
-                      <td data-label="상태">
-                        <span className={`${styles.statusBadge} ${className}`}>{label}</span>
-                      </td>
+                      <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
                       <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
                       <td data-label="관리">
-                        <button
+                        {!order.remote_only && <button
                           className={styles.rowDeleteButton}
                           onClick={() => deleteOrderRow(order.id)}
                         >
                           삭제
-                        </button>
+                        </button>}
                       </td>
                     </tr>
                   );
