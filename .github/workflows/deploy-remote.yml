@@ -1,0 +1,37 @@
+name: Deploy production remotely
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mangotcg-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || vars.MANGO_REMOTE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Deploy to the existing production Windows host
+        env:
+          MANGO_DEPLOY_HOST: ${{ secrets.MANGO_DEPLOY_HOST }}
+          MANGO_DEPLOY_PORT: ${{ secrets.MANGO_DEPLOY_PORT }}
+          MANGO_DEPLOY_USER: ${{ secrets.MANGO_DEPLOY_USER }}
+          MANGO_DEPLOY_SSH_KEY: ${{ secrets.MANGO_DEPLOY_SSH_KEY }}
+          MANGO_DEPLOY_KNOWN_HOSTS: ${{ secrets.MANGO_DEPLOY_KNOWN_HOSTS }}
+          MANGO_DEPLOY_APP_PATH: ${{ secrets.MANGO_DEPLOY_APP_PATH }}
+        run: python scripts/remote-deploy.py

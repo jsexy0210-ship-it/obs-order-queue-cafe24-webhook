@@ -1,0 +1,81 @@
+"""Deploy main through pinned SSH without copying production credentials or data."""
+import base64
+import os
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+
+
+def ps_quote(value):
+    return "'" + value.replace("'", "''") + "'"
+
+
+def encoded_command(script):
+    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+    return "powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand " + encoded
+
+
+def configuration(environ):
+    names = ("HOST", "USER", "SSH_KEY", "KNOWN_HOSTS", "APP_PATH")
+    missing = ["MANGO_DEPLOY_" + n for n in names if not environ.get("MANGO_DEPLOY_" + n, "").strip()]
+    if missing:
+        raise ValueError("Missing GitHub production secrets: " + ", ".join(missing))
+    config = {n: environ["MANGO_DEPLOY_" + n] for n in names}
+    config["PORT"] = environ.get("MANGO_DEPLOY_PORT") or "22"
+    if not re.fullmatch(r"[A-Za-z0-9_.:-]+", config["HOST"]):
+        raise ValueError("Invalid deployment host")
+    if not re.fullmatch(r"[A-Za-z0-9_.@\\-]+", config["USER"]):
+        raise ValueError("Invalid deployment user")
+    if not config["PORT"].isdigit() or not 1 <= int(config["PORT"]) <= 65535:
+        raise ValueError("Invalid SSH port")
+    if not re.match(r"^[A-Za-z]:[\\/]", config["APP_PATH"]) or any(ord(c) < 32 for c in config["APP_PATH"]):
+        raise ValueError("APP_PATH must be an absolute Windows production directory")
+    return config
+
+
+def main():
+    config = configuration(os.environ)
+    sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise ValueError("Invalid commit SHA")
+    with tempfile.TemporaryDirectory(prefix="mangotcg-deploy-") as directory:
+        root = Path(directory)
+        key = root / "identity"
+        key.write_text(config["SSH_KEY"].rstrip() + "\n")
+        key.chmod(0o600)
+        known_hosts = root / "known_hosts"
+        known_hosts.write_text(config["KNOWN_HOSTS"].rstrip() + "\n")
+        ssh_config = root / "config"
+        ssh_config.write_text(
+            "Host production\n"
+            f"  HostName {config['HOST']}\n  User {config['USER']}\n  Port {config['PORT']}\n"
+            f"  IdentityFile {key}\n  UserKnownHostsFile {known_hosts}\n"
+            "  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n  BatchMode yes\n  ConnectTimeout 15\n"
+        )
+        ssh_config.chmod(0o600)
+        archive = root / "release.zip"
+        subprocess.run(["git", "archive", "--format=zip", f"--output={archive}", sha], check=True)
+        incoming = ".mangotcg-incoming/" + sha
+        create = "$ErrorActionPreference='Stop'; New-Item -ItemType Directory -Force -Path (Join-Path $HOME " + ps_quote(incoming) + ") | Out-Null"
+        subprocess.run(["ssh", "-F", str(ssh_config), "production", encoded_command(create)], check=True)
+        subprocess.run(["scp", "-F", str(ssh_config), str(archive), "scripts/deploy-windows.ps1", f"production:{incoming}/"], check=True)
+        command = (
+            "$ErrorActionPreference='Stop'; $incoming=Join-Path $HOME " + ps_quote(incoming) + "; "
+            "& (Join-Path $incoming 'deploy-windows.ps1') -AppPath " + ps_quote(config["APP_PATH"]) +
+            " -ArchivePath (Join-Path $incoming 'release.zip') -CommitSha " + ps_quote(sha)
+        )
+        subprocess.run(["ssh", "-F", str(ssh_config), "production", encoded_command(command)], check=True)
+        print("Remote deployment and local health check completed for " + sha)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, subprocess.CalledProcessError) as error:
+        # Never echo subprocess arguments: they can contain connection metadata.
+        if isinstance(error, ValueError):
+            print(str(error))
+        else:
+            print("Remote deployment failed; review the preceding deployment stage.")
+        raise SystemExit(1)
