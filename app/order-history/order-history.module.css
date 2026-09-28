@@ -27,7 +27,14 @@
 .titleWithTooltip {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 10px;
+}
+
+.mobileMenuArea,
+.mobileMenuButton,
+.mobileMenu {
+  display: none;
 }
 
 .backButton {
@@ -404,15 +411,67 @@
   }
 
   .page {
-    padding-inline: 14px;
+    padding-inline: 16px;
   }
 
   .headerRow {
+    position: relative;
     align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .mobileMenuArea {
+    display: block;
+    position: relative;
+  }
+
+  .mobileMenuButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .mobileMenu {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + 4px);
+    right: 0;
+    display: flex;
+    width: min(280px, calc(100vw - 32px));
     flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    background: #141923;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
+  }
+
+  .mobileMenu a,
+  .mobileMenu button {
+    width: 100%;
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    text-decoration: none;
   }
 
   .historyFilters {
+    grid-column: 1 / -1;
     width: 100%;
   }
 
@@ -441,6 +500,8 @@
   }
 
   .table tr {
+    width: 100%;
+    max-width: 100%;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-bottom: 10px;
