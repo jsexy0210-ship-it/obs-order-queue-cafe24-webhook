@@ -37,7 +37,7 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'waiting',         -- 'waiting' | 'opening' | 'done' | 'cancelled'
     prev_status TEXT,                               -- 취소되기 직전 상태 ('waiting' | 'opening') - 화면 배치용
     cancel_reason TEXT,                             -- 'cancelled' | 'refunded'
-    cancelled_at TEXT,                              -- 취소/환불 처리된 시각 (라이브 표시 만료 기준, 이력은 3개월 보관)
+    cancelled_at TEXT,                              -- 취소/환불 처리된 시각 (라이브 표시 만료 기준, 이력은 누적 보관)
     started_at TEXT,                                -- status가 'opening'으로 바뀐 시각
     completed_at TEXT,                              -- '오픈 완료' 처리된 시각
     youtube_nickname TEXT,                          -- 주문서 추가입력의 유튜브 닉네임
@@ -63,7 +63,56 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS reward_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- 카페24 적립/회수 요청의 기준값과 처리 결과를 남기는 원장입니다.
+  -- 실제 API 연동 단계에서 동일 주문/동일 작업의 중복 실행을 막는 데 사용합니다.
+  CREATE TABLE IF NOT EXISTS reward_ledger (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    external_order_id TEXT NOT NULL,
+    member_id TEXT NOT NULL,
+    grade_id TEXT NOT NULL,
+    action TEXT NOT NULL CHECK (action IN ('issue', 'recover')),
+    amount INTEGER NOT NULL CHECK (amount >= 0),
+    card_rate REAL NOT NULL,
+    bank_rate REAL NOT NULL,
+    applied_rate REAL NOT NULL,
+    processing_mode TEXT NOT NULL CHECK (processing_mode IN ('automatic', 'manual')),
+    status TEXT NOT NULL CHECK (status IN ('pending', 'succeeded', 'failed')),
+    error_message TEXT,
+    processed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(external_order_id, action)
+  );
+
+  -- OAuth 토큰은 암호화된 payload로만 저장합니다. 실제 토큰 문자열을 평문으로 보관하지 않습니다.
+  CREATE TABLE IF NOT EXISTS cafe24_oauth_tokens (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    encrypted_value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- 주문 랭킹 1~3위에게 관리자가 수동 지급한 보너스 적립금 원장입니다.
+  CREATE TABLE IF NOT EXISTS ranking_bonus_ledger (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    external_order_id TEXT NOT NULL,
+    member_id TEXT,
+    amount INTEGER NOT NULL CHECK (amount > 0),
+    rank_at_issue INTEGER NOT NULL CHECK (rank_at_issue BETWEEN 1 AND 3),
+    status TEXT NOT NULL CHECK (status IN ('test', 'succeeded', 'failed')),
+    error_message TEXT,
+    processed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+  CREATE INDEX IF NOT EXISTS idx_reward_ledger_status ON reward_ledger(status, action);
+  CREATE INDEX IF NOT EXISTS idx_ranking_bonus_user ON ranking_bonus_ledger(user_id, status);
 `);
 
 // 이미 만들어져 있던 기존 DB 파일에는 completed_at 컬럼이 없을 수 있으므로,

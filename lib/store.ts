@@ -71,10 +71,9 @@ export function saveOverlaySettings(settings: OverlaySettings) {
   broadcastUpdate();
 }
 
-// 취소/환불된 주문은 라이브 화면에서만 잠깐 보여주고, 주문 이력 DB에는 3개월 보관합니다.
+// 취소/환불된 주문은 라이브 화면에서만 잠깐 보여줍니다.
+// 주문 이력은 카페24가 제공하는 조회 범위까지 계속 누적 보관합니다.
 const CANCEL_DISPLAY_SECONDS = 8;
-const ORDER_HISTORY_RETENTION_MODIFIER = "-3 months";
-const ORDER_HISTORY_CLEANUP_MS = 60 * 60 * 1000;
 
 export function getLiveState(): LiveState {
   const opening = db
@@ -113,17 +112,51 @@ export function getLiveState(): LiveState {
 }
 
 /**
- * 주문 이력 화면용: 상태와 무관하게 최근 3개월 주문을 최신순으로 반환합니다.
- * 취소/환불 주문도 동일하게 3개월 보관됩니다.
+ * 주문 이력 화면용: 상태와 무관하게 누적 주문을 최신순으로 반환합니다.
+ * 연/월을 전달하면 한국 시간(UTC+9) 기준 해당 월만 반환합니다.
  */
-export function getOrderHistory(): OrderRow[] {
+export function getOrderHistory(filters?: { year?: number; month?: number }): OrderRow[] {
+  const year = filters?.year;
+  const month = filters?.month;
+
+  if (year && month) {
+    const start = `${year}-${String(month).padStart(2, "0")}-01 00:00:00`;
+    const nextMonth = new Date(Date.UTC(year, month, 1));
+    const end = `${nextMonth.getUTCFullYear()}-${String(nextMonth.getUTCMonth() + 1).padStart(2, "0")}-01 00:00:00`;
+
+    return db
+      .prepare(
+        `SELECT * FROM orders
+         WHERE created_at >= datetime(?, '-9 hours')
+           AND created_at < datetime(?, '-9 hours')
+         ORDER BY id DESC`
+      )
+      .all(start, end) as OrderRow[];
+  }
+
   return db
     .prepare(
       `SELECT * FROM orders
-       WHERE created_at >= datetime('now', ?)
        ORDER BY id DESC`
     )
-    .all(ORDER_HISTORY_RETENTION_MODIFIER) as OrderRow[];
+    .all() as OrderRow[];
+}
+
+/** 주문 이력 필터에 표시할 연도 목록입니다. */
+export function getOrderHistoryYears(): number[] {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT strftime('%Y', datetime(created_at, '+9 hours')) AS year
+       FROM orders
+       ORDER BY year DESC`
+    )
+    .all() as { year: string }[];
+
+  const years = rows
+    .map((row) => Number(row.year))
+    .filter((year) => Number.isInteger(year) && year >= 2000 && year <= 9999);
+  const currentYear = new Date().getFullYear();
+  return Array.from(new Set([currentYear, ...years])).sort((a, b) => b - a);
 }
 
 /**
@@ -253,7 +286,7 @@ export function cancelOrder(
   broadcastUpdate();
 
   // 취소/환불 배지는 라이브 화면에서 8초만 유지합니다.
-  // DB 행은 삭제하지 않고 주문 이력으로 3개월 보관합니다.
+  // DB 행은 삭제하지 않고 누적 주문 이력으로 보관합니다.
   setTimeout(() => broadcastUpdate(), CANCEL_DISPLAY_SECONDS * 1000 + 100);
   return true;
 }
@@ -301,17 +334,10 @@ function toSqliteUtc(value?: string | null): string {
   return new Date().toISOString().slice(0, 19).replace("T", " ");
 }
 
-function cleanupExpiredOrderHistory() {
-  const result = db
-    .prepare("DELETE FROM orders WHERE created_at < datetime('now', ?)")
-    .run(ORDER_HISTORY_RETENTION_MODIFIER);
-
-  if (result.changes > 0) broadcastUpdate();
-}
-
 declare global {
   // eslint-disable-next-line no-var
   var __cardbreakCleanupTimer: ReturnType<typeof setInterval> | undefined;
+  // 이전 버전의 3개월 보관 정리 타이머를 해제하기 위한 레거시 핸들입니다.
   // eslint-disable-next-line no-var
   var __orderRetentionCleanupTimer: ReturnType<typeof setInterval> | undefined;
 }
@@ -322,11 +348,8 @@ if (global.__cardbreakCleanupTimer) {
   global.__cardbreakCleanupTimer = undefined;
 }
 
-// 서버 시작 시 한 번, 이후 1시간마다 3개월이 지난 주문 이력을 정리합니다.
-cleanupExpiredOrderHistory();
-if (!global.__orderRetentionCleanupTimer) {
-  global.__orderRetentionCleanupTimer = setInterval(
-    cleanupExpiredOrderHistory,
-    ORDER_HISTORY_CLEANUP_MS
-  );
+// 이전 서버 코드가 만든 3개월 보관 타이머가 남아 있다면 즉시 해제합니다.
+if (global.__orderRetentionCleanupTimer) {
+  clearInterval(global.__orderRetentionCleanupTimer);
+  global.__orderRetentionCleanupTimer = undefined;
 }

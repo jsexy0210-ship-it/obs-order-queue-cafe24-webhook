@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { cancelOrder, insertOrder, markOrderPaid } from "@/lib/store";
 import {
   extractCafe24OrderId,
@@ -6,6 +7,8 @@ import {
   normalizeCafe24Order,
   redactPiiForLogging,
 } from "@/lib/cafe24";
+import { issueRewardForOrder, recoverRewardForOrder } from "@/lib/rewardService";
+import { getRewardSettings } from "@/lib/rewardStore";
 
 export const runtime = "nodejs";
 
@@ -19,7 +22,17 @@ export async function POST(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
   const expected = process.env.CAFE24_WEBHOOK_TOKEN;
 
-  if (expected && token !== expected) {
+  if (!expected) {
+    console.error("[cafe24 webhook] CAFE24_WEBHOOK_TOKEN is not configured");
+    return NextResponse.json({ error: "webhook_not_configured" }, { status: 503 });
+  }
+
+  const expectedBuffer = Buffer.from(expected);
+  const tokenBuffer = Buffer.from(token ?? "");
+  if (
+    expectedBuffer.length !== tokenBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, tokenBuffer)
+  ) {
     return NextResponse.json({ error: "invalid token" }, { status: 401 });
   }
 
@@ -52,6 +65,16 @@ export async function POST(req: NextRequest) {
       console.warn(`[cafe24 webhook][${event}] 큐에 없는 주문(${orderId}) - 무시`);
     }
 
+    // 실패해도 카페24 웹훅을 재전송시키지 않습니다. 원장에 실패를 남기고 관리자에서 수동 회수할 수 있게 합니다.
+    try {
+      await recoverRewardForOrder(orderId, "automatic");
+    } catch (error) {
+      console.error("[cafe24 reward] automatic recovery failed", {
+        orderId,
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    }
+
     return NextResponse.json({ ok: true, matched });
   }
 
@@ -69,7 +92,36 @@ export async function POST(req: NextRequest) {
       console.warn(`[cafe24 webhook][paid] 큐에 없거나 이미 입금완료 처리된 주문(${orderId}) - 무시`);
     }
 
+    if (getRewardSettings().issueTrigger === "paid") {
+      try {
+        await issueRewardForOrder(orderId, "paid");
+      } catch (error) {
+        console.error("[cafe24 reward] issue failed", {
+          orderId,
+          message: error instanceof Error ? error.message : "unknown",
+        });
+      }
+    }
+
     return NextResponse.json({ ok: true, matched });
+  }
+
+  if (event === "delivered") {
+    const orderId = extractCafe24OrderId(payload);
+    if (!orderId) {
+      return NextResponse.json({ ok: true, warning: "order_id_not_found" });
+    }
+    if (getRewardSettings().issueTrigger === "delivered") {
+      try {
+        await issueRewardForOrder(orderId, "delivered");
+      } catch (error) {
+        console.error("[cafe24 reward] issue failed", {
+          orderId,
+          message: error instanceof Error ? error.message : "unknown",
+        });
+      }
+    }
+    return NextResponse.json({ ok: true });
   }
 
   // 기본값: 주문 접수(생성)

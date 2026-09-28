@@ -2,9 +2,12 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
-import OrderHistoryContent from "@/app/order-history/OrderHistoryContent";
+import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import CardBreakFrame, { type CardBreakFrameHandle } from "@/app/overlay-cardbreak/CardBreakFrame";
 import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "@/lib/overlaySettings";
+import RewardSettingsPanel from "./RewardSettingsPanel";
+import OrderDashboard from "./OrderDashboard";
+import OrderRankingPanel from "./OrderRankingPanel";
 import styles from "./admin.module.css";
 
 const DEFAULT_TIMER_SECONDS = 60;
@@ -28,6 +31,9 @@ export default function AdminPage() {
   });
   const [hitForm, setHitForm] = useState({ userId: "", card: "", youtubeNickname: "" });
   const [showHistory, setShowHistory] = useState(false);
+  const [showRanking, setShowRanking] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [showHitHistory, setShowHitHistory] = useState(false);
   const [showOverlayPreview, setShowOverlayPreview] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
@@ -73,6 +79,19 @@ export default function AdminPage() {
   useEffect(() => {
     setOrderVisibleSetting(overlaySettings.orderVisible);
   }, [overlaySettings.orderVisible]);
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("mangotcg-admin-theme");
+    if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
+  }, []);
+
+  function toggleTheme() {
+    setTheme((current) => {
+      const next = current === "dark" ? "light" : "dark";
+      window.localStorage.setItem("mangotcg-admin-theme", next);
+      return next;
+    });
+  }
 
   async function toggleOrderVisibilitySetting() {
     setSavingOrderVisible(true);
@@ -251,14 +270,13 @@ export default function AdminPage() {
     }
   }, [waiting, orderAlertsEnabled, playOrderChime]);
 
-  // 주문 이력/대기 주문 팝업이 열려 있는 동안에는 뒤쪽 관리자 화면이 같이 스크롤되지 않도록 막습니다.
+  // 히트카드 이력 모달이 열려 있는 동안에는 뒤쪽 화면이 같이 스크롤되지 않도록 막습니다.
   useEffect(() => {
-    const locked = showHistory || showOverlayPreview;
-    document.body.style.overflow = locked ? "hidden" : "";
+    document.body.style.overflow = showHitHistory ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showHistory, showOverlayPreview]);
+  }, [showHitHistory]);
 
   useEffect(() => {
     setWaitingPage((page) => Math.min(page, waitingPageCount));
@@ -381,14 +399,14 @@ export default function AdminPage() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.headerRow}>
+    <main className={styles.page} data-theme={theme}>
+      <div className={`${styles.headerRow} ${showHistory || showRanking || showOverlayPreview ? styles.historyHeader : ""}`}>
         <div className={styles.headerBrand}>
           <span>LIVE OPERATIONS</span>
           <h1>망고TCG 관리자</h1>
         </div>
         <div className={styles.headerButtons}>
-          {!showSettings && (
+          {!showSettings && !showHistory && !showRanking && !showOverlayPreview && (
             <>
               <a
                 className={styles.historyButton}
@@ -401,14 +419,39 @@ export default function AdminPage() {
               <button className={styles.historyButton} onClick={() => setShowOverlayPreview(true)}>
                 📺 오버레이 미리보기
               </button>
+              <button className={styles.historyButton} onClick={() => setShowRanking(true)}>
+                🏆 주문랭킹 보기
+              </button>
               <button className={styles.historyButton} onClick={() => setShowHistory(true)}>
                 🗂️ 주문이력 보기
               </button>
             </>
           )}
-          <button className={styles.historyButton} onClick={() => setShowSettings((value) => !value)} aria-pressed={showSettings}>
-            {showSettings ? "← 관리자 홈" : "⚙️ 설정"}
+          <button
+            className={styles.historyButton}
+            onClick={() => {
+              if (showOverlayPreview) {
+                closeOverlayPreview();
+                return;
+              }
+              if (showSettings || showHistory || showRanking) {
+                setShowSettings(false);
+                setShowHistory(false);
+                setShowRanking(false);
+                setShowHitHistory(false);
+                return;
+              }
+              setShowSettings(true);
+            }}
+            aria-pressed={showSettings}
+          >
+            {showSettings || showHistory || showRanking || showOverlayPreview ? "← 관리자 홈" : "⚙️ 설정"}
           </button>
+          {showHistory && (
+            <button className={styles.historyButton} onClick={() => setShowHitHistory(true)}>
+              🃏 히트카드 이력
+            </button>
+          )}
           <button className={styles.logoutButton} onClick={logout}>
             로그아웃
           </button>
@@ -449,32 +492,22 @@ export default function AdminPage() {
               주문 접수 {orderVisibleSetting ? "ON" : "OFF"}
             </button>
           </div>
+          <RewardSettingsPanel />
         </section>
+      ) : showHistory ? (
+        <section className={styles.historyPage} aria-label="주문 이력">
+          <OrderHistoryContent />
+        </section>
+      ) : showRanking ? (
+        <OrderRankingPanel />
       ) : (
       <>
-      <p className={styles.hint}>
-        카페24 웹훅은 &quot;주문 접수&quot;까지만 알려줍니다. 지금 오픈 중인 주문 지정과
-        히트카드 등록은 여기서 직접 조작하세요.
-      </p>
+      {!showOverlayPreview && (
+      <>
+      <h2 className={styles.homeSectionTitle}>대시보드</h2>
+      <OrderDashboard />
 
-      <section className={styles.statusGrid} aria-label="라이브 운영 현황">
-        <div className={`${styles.statusCard} ${opening ? styles.statusLive : ""}`}>
-          <span className={styles.statusLabel}>현재 방송</span>
-          <strong>{opening ? "오픈 진행 중" : "대기 상태"}</strong>
-          <small>{opening ? `${opening.user_id} · ${opening.product}` : "진행 중인 주문이 없습니다"}</small>
-        </div>
-        <div className={styles.statusCard}>
-          <span className={styles.statusLabel}>대기 주문</span>
-          <strong>{waiting.length}건</strong>
-          <small>{waiting.length > 0 ? "처리할 주문이 있습니다" : "대기열이 비어 있습니다"}</small>
-        </div>
-        <div className={styles.statusCard}>
-          <span className={styles.statusLabel}>오늘의 히트카드</span>
-          <strong>{hitCards.length}건</strong>
-          <small>최근 등록 기준</small>
-        </div>
-      </section>
-
+      <h2 className={styles.homeSectionTitle}>오버레이 설정</h2>
       <div className={styles.operationsGrid}>
       <section className={`${styles.block} ${styles.primaryBlock}`}>
         <h2>지금 오픈 중</h2>
@@ -642,16 +675,15 @@ export default function AdminPage() {
           ))}
         </div>
       )}
+      </>
+      )}
 
       {showOverlayPreview && (
-        <div className={styles.modalOverlay} onClick={closeOverlayPreview}>
-          <div
-            className={`${styles.modalCard} ${styles.overlayEditorModal}`}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <section className={styles.overlayPreviewPage} aria-labelledby="overlay-preview-title">
+          <div className={`${styles.overlayEditorModal} ${styles.overlayEditorPage}`}>
             <div className={`${styles.modalTopBarWithTitle} ${styles.overlayModalHeader}`}>
               <div className={styles.overlayModalHero}>
-                <h2 className={styles.modalTitle}>라이브 오버레이 미리보기</h2>
+                <h2 className={styles.modalTitle} id="overlay-preview-title">라이브 오버레이 미리보기</h2>
               </div>
               <div className={styles.overlayModalActions}>
                 <button
@@ -677,9 +709,6 @@ export default function AdminPage() {
                     </button>
                   </>
                 )}
-                <button className={styles.modalCloseBtn} onClick={closeOverlayPreview}>
-                  닫기 ✕
-                </button>
               </div>
             </div>
             {editingOverlay && (
@@ -734,23 +763,26 @@ export default function AdminPage() {
               />
             </div>
           </div>
-        </div>
-      )}
-
-      {showHistory && (
-        <div className={styles.modalOverlay} onClick={() => setShowHistory(false)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalTopBar}>
-              <button className={styles.modalCloseBtn} onClick={() => setShowHistory(false)}>
-                닫기 ✕
-              </button>
-            </div>
-            <OrderHistoryContent />
-          </div>
-        </div>
+        </section>
       )}
       </>
       )}
+      {showHitHistory && (
+        <div className={styles.modalOverlay} onClick={() => setShowHitHistory(false)}>
+          <div className={`${styles.modalCard} ${styles.hitHistoryModal}`} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalTopBarWithTitle}>
+              <h2 className={styles.modalTitle}>히트카드 이력</h2>
+              <button className={styles.modalCloseBtn} onClick={() => setShowHitHistory(false)}>
+                닫기 ✕
+              </button>
+            </div>
+            <HitCardHistoryContent />
+          </div>
+        </div>
+      )}
+      <button className={styles.themeFab} onClick={toggleTheme} aria-label={`${theme === "dark" ? "라이트" : "다크"} 모드로 전환`}>
+        {theme === "dark" ? "☀ 라이트" : "◐ 다크"}
+      </button>
     </main>
   );
 }

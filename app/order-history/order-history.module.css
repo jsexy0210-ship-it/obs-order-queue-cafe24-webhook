@@ -10,7 +10,7 @@
 }
 
 .headerRow {
-  max-width: 1320px;
+  max-width: 1120px;
   margin: 0 auto 20px;
   display: flex;
   align-items: center;
@@ -20,6 +20,65 @@
 
 .headerRow h1 {
   margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.titleWithTooltip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.historyFilters {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.historyFilters label {
+  display: grid;
+  gap: 5px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.historyFilters select {
+  min-width: 82px;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4f7fb;
+  color-scheme: dark;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  outline: none;
+}
+
+.historyFilters select option {
+  background: #101720;
+  color: #f4f7fb;
+}
+
+.historyFilters select:focus {
+  border-color: #62e3ff;
+  box-shadow: 0 0 0 3px rgba(98, 227, 255, 0.14);
+}
+
+.infoTooltip {
+  color: rgba(255, 255, 255, 0.52);
+  cursor: help;
+  font-size: 16px;
+  line-height: 1;
+  outline: none;
+}
+
+.infoTooltip:focus,
+.infoTooltip:hover {
+  color: #62e3ff;
 }
 
 .hint {
@@ -61,7 +120,7 @@
 }
 
 .tableWrap {
-  max-width: 1320px;
+  max-width: 1120px;
   margin: 0 auto;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -73,11 +132,11 @@
 
 .scrollArea {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 .pager {
-  max-width: 1320px;
+  max-width: 1120px;
   margin: 10px auto 28px;
   display: flex;
   align-items: center;
@@ -128,7 +187,7 @@
 }
 
 .sectionTitle {
-  max-width: 1320px;
+  max-width: 1120px;
   margin: 0 auto 10px;
   font-size: 14px;
   opacity: 0.75;
@@ -136,7 +195,7 @@
 
 .table {
   width: 100%;
-  min-width: 0;
+  min-width: 1560px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
@@ -167,6 +226,100 @@
   max-width: 260px;
 }
 
+:global([data-theme="light"]) .headerRow h1,
+:global([data-theme="light"]) .sectionTitle {
+  color: #162033;
+}
+
+:global([data-theme="light"]) .infoTooltip {
+  color: #526276;
+}
+
+:global([data-theme="light"]) .historyFilters label {
+  color: #526276;
+}
+
+:global([data-theme="light"]) .historyFilters select {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #162033;
+  color-scheme: light;
+}
+
+:global([data-theme="light"]) .historyFilters select option {
+  background: #fff;
+  color: #162033;
+}
+
+:global([data-theme="light"]) .tableWrap {
+  border-color: rgba(30, 45, 70, 0.15);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(27, 39, 59, 0.08);
+}
+
+:global([data-theme="light"]) .table th,
+:global([data-theme="light"]) .table td {
+  color: #162033;
+  border-bottom-color: rgba(30, 45, 70, 0.1);
+}
+
+:global([data-theme="light"]) .table th,
+:global([data-theme="light"]) .table td::before,
+:global([data-theme="light"]) .hint,
+:global([data-theme="light"]) .pagerInfo,
+:global([data-theme="light"]) .sourceTag,
+:global([data-theme="light"]) .notPaid,
+:global([data-theme="light"]) .rewardNone,
+:global([data-theme="light"]) .empty {
+  color: #526276;
+  opacity: 1;
+}
+
+:global([data-theme="light"]) .pagerButton {
+  border-color: rgba(30, 45, 70, 0.18);
+  background: #fff;
+  color: #162033;
+}
+
+:global([data-theme="light"]) .pagerButton:disabled {
+  border-color: #e1e6ed;
+  background: #f1f4f8;
+  color: #8b97a8;
+  opacity: 1;
+}
+
+:global([data-theme="light"]) .statusDone {
+  background: #e8edf4;
+  color: #405066;
+}
+
+:global([data-theme="light"]) .statusWaiting {
+  background: #e8f8fd;
+  color: #12648a;
+}
+
+:global([data-theme="light"]) .statusOpening {
+  background: #f1edff;
+  color: #5a3aba;
+}
+
+:global([data-theme="light"]) .paidBadge,
+:global([data-theme="light"]) .rewardsucceeded {
+  background: #e7f8ee;
+  color: #137a49;
+}
+
+:global([data-theme="light"]) .rewardpending {
+  background: #fff7e5;
+  color: #795415;
+}
+
+:global([data-theme="light"]) .rewardfailed,
+:global([data-theme="light"]) .statusCancelled {
+  background: #ffedf0;
+  color: #b4233a;
+}
+
 @media (max-width: 900px) {
   .page {
     padding-inline: 14px;
@@ -175,6 +328,15 @@
   .headerRow {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .historyFilters {
+    width: 100%;
+  }
+
+  .historyFilters label,
+  .historyFilters select {
+    flex: 1 1 0;
   }
 
   .tableWrap {
@@ -186,6 +348,10 @@
   .table,
   .table tbody {
     display: block;
+  }
+
+  .table {
+    min-width: 0;
   }
 
   .table thead {
@@ -200,6 +366,12 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.05);
+  }
+
+  :global([data-theme="light"]) .table tr {
+    border-color: #d9e1ec;
+    background: #ffffff;
+    box-shadow: 0 8px 20px rgba(27, 39, 59, 0.06);
   }
 
   .table td {
@@ -273,6 +445,40 @@
 }
 
 .notPaid {
+  opacity: 0.35;
+}
+
+.rewardCell {
+  min-width: 130px;
+}
+
+.rewardBadge {
+  display: block;
+  width: fit-content;
+  margin: 2px 0;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rewardsucceeded {
+  background: rgba(53, 208, 127, 0.16);
+  color: #63eda3;
+}
+
+.rewardpending {
+  background: rgba(255, 183, 77, 0.14);
+  color: #ffd28c;
+}
+
+.rewardfailed {
+  background: rgba(255, 77, 95, 0.15);
+  color: #ff9fa9;
+}
+
+.rewardNone {
   opacity: 0.35;
 }
 

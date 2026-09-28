@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styles from "./order-history.module.css";
 
 type OrderRow = {
@@ -31,7 +31,20 @@ type HitCardRow = {
   created_at: string;
 };
 
-const PAGE_SIZE = 10;
+type RewardStatus = "pending" | "succeeded" | "failed";
+type RewardSummary = {
+  issue?: { amount: number; grade_id: string; status: RewardStatus };
+  recover?: { amount: number; grade_id: string; status: RewardStatus };
+};
+
+type OrderHistoryResponse = {
+  orders?: OrderRow[];
+  rewardSummaries?: Record<string, RewardSummary>;
+  availableYears?: number[];
+};
+
+const ORDER_PAGE_SIZE = 50;
+const HIT_CARD_PAGE_SIZE = 50;
 
 // 카페24 결제방식 원본 코드 -> 화면에 보여줄 한글 라벨.
 // 목록에 없는 코드가 들어오면(카페24가 새 결제수단을 추가하는 등) 원본 코드를 그대로 보여줍니다.
@@ -68,15 +81,6 @@ function formatPaymentMethod(method: string | null) {
   return PAYMENT_METHOD_LABELS[method] ?? method;
 }
 
-function formatPaymentProvider(order: OrderRow) {
-  return [order.easypay_name, order.payment_gateway_name].filter(Boolean).join(" · ") || "-";
-}
-
-// 출처(거래방식): 카페24 웹훅으로 들어온 주문은 "사이트", 관리자가 직접 입력한 주문은 "직접등록"으로 표시합니다.
-function formatSource(source: string) {
-  return source === "cafe24" ? "사이트" : "직접등록";
-}
-
 function statusInfo(order: OrderRow): { label: string; className: string } {
   if (order.status === "cancelled") {
     return {
@@ -87,6 +91,12 @@ function statusInfo(order: OrderRow): { label: string; className: string } {
   if (order.status === "opening") return { label: "오픈중", className: styles.statusOpening };
   if (order.status === "done") return { label: "완료", className: styles.statusDone };
   return { label: "대기중", className: styles.statusWaiting };
+}
+
+function rewardStatusLabel(status: RewardStatus) {
+  if (status === "succeeded") return "완료";
+  if (status === "failed") return "실패";
+  return "대기";
 }
 
 function formatDate(value: string) {
@@ -101,7 +111,7 @@ function formatDate(value: string) {
 }
 
 /**
- * 페이지네이션 버튼 UI. 목록 컴포넌트 하나로 주문 이력 / 히트카드 이력 양쪽에서 재사용합니다.
+ * 주문 이력과 히트카드 이력에서 재사용하는 페이지네이션 버튼 UI입니다.
  */
 function Pager({
   page,
@@ -137,34 +147,32 @@ function Pager({
 }
 
 /**
- * 주문 이력 + 히트카드 등록 이력을 보여주는 재사용 가능한 컴포넌트.
- * /order-history 단독 페이지와, 관리자 화면의 팝업 양쪽에서 씁니다.
+ * 주문 이력 전체 페이지입니다.
  */
 export default function OrderHistoryContent() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [hitCards, setHitCards] = useState<HitCardRow[]>([]);
+  const [rewardSummaries, setRewardSummaries] = useState<Record<string, RewardSummary>>({});
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [orderPage, setOrderPage] = useState(1);
-  const [hitPage, setHitPage] = useState(1);
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/order-history");
-      const data = await res.json();
+      const params = new URLSearchParams({
+        year: String(selectedYear),
+        month: String(selectedMonth),
+      });
+      const res = await fetch(`/api/order-history?${params.toString()}`, { cache: "no-store" });
+      const data = await res.json() as OrderHistoryResponse;
       setOrders(data.orders ?? []);
-      setHitCards(data.hitCards ?? []);
+      setRewardSummaries(data.rewardSummaries ?? {});
+      setAvailableYears(data.availableYears ?? []);
     } finally {
       setLoading(false);
     }
-  }
-
-  async function resetAll() {
-    if (!window.confirm("주문 이력과 히트카드 등록 이력을 전부 초기화하시겠습니까? 되돌릴 수 없습니다.")) {
-      return;
-    }
-    await fetch("/api/order-history", { method: "DELETE" });
-    await load();
-  }
+  }, [selectedMonth, selectedYear]);
 
   async function deleteOrderRow(id: number) {
     if (!window.confirm("이 주문 이력을 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
@@ -173,43 +181,70 @@ export default function OrderHistoryContent() {
   }
 
   useEffect(() => {
-    load();
-    const interval = setInterval(load, 10000); // 10초마다 자동 새로고침
+    void load();
+    const interval = setInterval(() => void load(), 10000); // 10초마다 자동 새로고침
     return () => clearInterval(interval);
-  }, []);
+  }, [load]);
 
   // 새로고침 등으로 목록 길이가 줄어들어 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정합니다.
-  const orderTotalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+  const orderTotalPages = Math.max(1, Math.ceil(orders.length / ORDER_PAGE_SIZE));
   useEffect(() => {
     if (orderPage > orderTotalPages) setOrderPage(orderTotalPages);
   }, [orderTotalPages, orderPage]);
 
-  const hitTotalPages = Math.max(1, Math.ceil(hitCards.length / PAGE_SIZE));
-  useEffect(() => {
-    if (hitPage > hitTotalPages) setHitPage(hitTotalPages);
-  }, [hitTotalPages, hitPage]);
-
-  const pagedOrders = orders.slice((orderPage - 1) * PAGE_SIZE, orderPage * PAGE_SIZE);
-  const pagedHitCards = hitCards.slice((hitPage - 1) * PAGE_SIZE, hitPage * PAGE_SIZE);
+  const pagedOrders = orders.slice(
+    (orderPage - 1) * ORDER_PAGE_SIZE,
+    orderPage * ORDER_PAGE_SIZE
+  );
 
   return (
     <>
       <div className={styles.headerRow}>
-        <div>
+        <div className={styles.titleWithTooltip}>
           <h1>망고TCG 주문 이력</h1>
-          <p className={styles.hint}>최근 3개월 주문 이력을 보관합니다. (10초마다 자동 새로고침)</p>
+          <span
+            className={styles.infoTooltip}
+            tabIndex={0}
+            role="img"
+            aria-label="주문 이력 안내"
+            title="카페24가 제공하는 조회 범위까지 주문 이력을 누적 보관합니다. (10초마다 자동 새로고침)"
+          >
+            ⓘ
+          </span>
         </div>
-        <div className={styles.headerButtons}>
-          <button className={styles.refreshButton} onClick={load}>
-            새로고침
-          </button>
-          <button className={styles.resetButton} onClick={resetAll}>
-            전체 초기화
-          </button>
+        <div className={styles.historyFilters} aria-label="주문 이력 기간 선택">
+          <label>
+            <span>연도</span>
+            <select
+              value={selectedYear}
+              onChange={(event) => {
+                setSelectedYear(Number(event.target.value));
+                setOrderPage(1);
+              }}
+            >
+              {(availableYears.length > 0 ? availableYears : [selectedYear]).map((year) => (
+                <option key={year} value={year}>{year}년</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>월</span>
+            <select
+              value={selectedMonth}
+              onChange={(event) => {
+                setSelectedMonth(Number(event.target.value));
+                setOrderPage(1);
+              }}
+            >
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                <option key={month} value={month}>{month}월</option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
-      <h2 className={styles.sectionTitle}>주문 이력 ({orders.length})</h2>
+      <h2 className={styles.sectionTitle}>{selectedYear}년 {selectedMonth}월 주문 이력 ({orders.length})</h2>
       <div className={styles.tableWrap}>
         {loading ? (
           <div className={styles.empty}>불러오는 중...</div>
@@ -222,32 +257,33 @@ export default function OrderHistoryContent() {
                 <tr>
                   <th>주문일시</th>
                   <th>구매자</th>
+                  <th>회원등급</th>
                   <th>유튜브 닉네임</th>
                   <th>상품명</th>
                   <th>수량</th>
-                  <th>금액</th>
+                  <th>주문총액</th>
                   <th>결제방식</th>
-                  <th>PG·간편결제</th>
                   <th>입금여부</th>
+                  <th>적립금 지급/회수</th>
                   <th>상태</th>
                   <th>완료일시</th>
-                  <th>거래방식</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {pagedOrders.map((order) => {
                   const { label, className } = statusInfo(order);
+                  const reward = order.external_order_id ? rewardSummaries[order.external_order_id] : undefined;
                   return (
                     <tr key={order.id}>
                       <td data-label="주문일시">{formatDate(order.created_at)}</td>
                       <td data-label="구매자">{order.user_id}</td>
+                      <td data-label="회원등급">{order.tier || "-"}</td>
                       <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
                       <td data-label="상품명" className={styles.product}>{order.product}</td>
                       <td data-label="수량">{order.quantity}</td>
-                      <td data-label="금액">{formatPrice(order.unit_price * order.quantity)}</td>
+                      <td data-label="주문총액">{formatPrice(order.unit_price * order.quantity)}</td>
                       <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
-                      <td data-label="PG·간편결제">{formatPaymentProvider(order)}</td>
                       <td data-label="입금여부">
                         {order.paid_at ? (
                           <span className={styles.paidBadge}>입금완료</span>
@@ -255,11 +291,26 @@ export default function OrderHistoryContent() {
                           <span className={styles.notPaid}>-</span>
                         )}
                       </td>
+                      <td data-label="적립금 지급/회수" className={styles.rewardCell}>
+                        {!reward?.issue ? (
+                          <span className={styles.rewardNone}>-</span>
+                        ) : (
+                          <>
+                            <span className={`${styles.rewardBadge} ${styles[`reward${reward.issue.status}`]}`}>
+                              지급 {formatPrice(reward.issue.amount)} · {rewardStatusLabel(reward.issue.status)}
+                            </span>
+                            {reward.recover && (
+                              <span className={`${styles.rewardBadge} ${styles[`reward${reward.recover.status}`]}`}>
+                                회수 {formatPrice(reward.recover.amount)} · {rewardStatusLabel(reward.recover.status)}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </td>
                       <td data-label="상태">
                         <span className={`${styles.statusBadge} ${className}`}>{label}</span>
                       </td>
                       <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
-                      <td data-label="거래방식" className={styles.sourceTag}>{formatSource(order.source)}</td>
                       <td data-label="관리">
                         <button
                           className={styles.rowDeleteButton}
@@ -277,7 +328,43 @@ export default function OrderHistoryContent() {
         )}
       </div>
       <Pager page={orderPage} totalPages={orderTotalPages} onChange={setOrderPage} />
+    </>
+  );
+}
 
+/** 주문 이력 화면의 별도 모달에서 쓰는 히트카드 등록 이력입니다. */
+export function HitCardHistoryContent() {
+  const [hitCards, setHitCards] = useState<HitCardRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+
+  async function load() {
+    try {
+      const response = await fetch("/api/order-history");
+      const data = await response.json() as { hitCards?: HitCardRow[] };
+      setHitCards(data.hitCards ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+    const interval = window.setInterval(() => void load(), 10_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(hitCards.length / HIT_CARD_PAGE_SIZE));
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+  const pagedHitCards = hitCards.slice(
+    (page - 1) * HIT_CARD_PAGE_SIZE,
+    page * HIT_CARD_PAGE_SIZE
+  );
+
+  return (
+    <>
       <h2 className={styles.sectionTitle}>히트카드 등록 이력 ({hitCards.length})</h2>
       <div className={styles.tableWrap}>
         {loading ? (
@@ -309,7 +396,7 @@ export default function OrderHistoryContent() {
           </div>
         )}
       </div>
-      <Pager page={hitPage} totalPages={hitTotalPages} onChange={setHitPage} />
+      <Pager page={page} totalPages={totalPages} onChange={setPage} />
     </>
   );
 }
