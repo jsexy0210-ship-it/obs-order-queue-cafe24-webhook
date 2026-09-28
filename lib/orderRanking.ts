@@ -1,4 +1,4 @@
-import { changeCafe24Points, getCafe24OrderForReward } from "./cafe24Admin";
+import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward } from "./cafe24Admin";
 import { db } from "./db";
 import { assertCafe24BonusExecutionAllowed } from "./rewardExecution";
 
@@ -73,6 +73,28 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
     rewardPoints: rewards.get(row.user_id) ?? 0,
     bonusPoints: bonuses.get(row.user_id) ?? 0,
     eligibleForBonus: index < 3 && hasCafe24Order(row.user_id),
+  }));
+}
+
+/** 최근 결제 주문의 카페24 회원등급을 현재 등급명으로 표시합니다. */
+export async function getOrderRankingWithGrades(limit = 10): Promise<OrderRankingRow[]> {
+  const ranking = getOrderRanking(limit);
+  if (ranking.length === 0) return ranking;
+
+  const groups = await getCafe24CustomerGroups().catch(() => []);
+  if (groups.length === 0) return ranking.map((row) => ({ ...row, tier: null }));
+  const groupNames = new Map(groups.map((group) => [String(group.group_no), group.group_name]));
+
+  return Promise.all(ranking.map(async (row) => {
+    const order = findLatestCafe24Order(row.userId);
+    if (!order) return { ...row, tier: null };
+    try {
+      const buyer = await getCafe24OrderForReward(order.external_order_id, { includeBuyerGroup: true });
+      const groupNo = buyer.member_group_no ?? buyer.group_no;
+      return { ...row, tier: groupNo == null ? null : groupNames.get(String(groupNo)) ?? null };
+    } catch {
+      return { ...row, tier: null };
+    }
   }));
 }
 

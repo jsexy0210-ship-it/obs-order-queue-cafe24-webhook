@@ -1260,6 +1260,32 @@
   font-size: 11px;
 }
 
+.rankingCustomer .rankingGradeBadge {
+  display: inline-block;
+  width: fit-content;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 212, 92, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 212, 92, 0.12);
+  color: #ffe092;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.rankingCustomer .rankingGradeUnknown {
+  border-color: rgba(167, 180, 198, 0.3);
+  background: rgba(167, 180, 198, 0.1);
+  color: #aeb7c5;
+}
+
+.page[data-theme="light"] .rankingCustomer .rankingGradeBadge {
+  color: #755200;
+}
+
+.page[data-theme="light"] .rankingCustomer .rankingGradeUnknown {
+  color: #526276;
+}
+
 .rankingMetrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

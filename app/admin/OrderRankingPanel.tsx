@@ -118,7 +118,13 @@ export default function OrderRankingPanel() {
                 </div>
                 <div className={styles.rankingCustomer}>
                   <strong>{row.userId}</strong>
-                  <span>{row.youtubeNickname ? `YT: ${row.youtubeNickname}` : row.tier ?? "회원등급 미확인"}</span>
+                  <span
+                    className={`${styles.rankingGradeBadge} ${row.tier ? "" : styles.rankingGradeUnknown}`}
+                    title="최근 결제 주문에서 확인한 카페24 회원등급"
+                  >
+                    {row.tier ?? "등급 확인 불가"}
+                  </span>
+                  {row.youtubeNickname && <span>YT: {row.youtubeNickname}</span>}
                 </div>
                 <dl className={styles.rankingMetrics}>
                   <div><dt>총 구매금액</dt><dd>{formatWon(row.totalPurchaseAmount)}</dd></div>
