@@ -5,9 +5,10 @@ import styles from "./admin.module.css";
 
 type Order = {
   created_at: string;
-  quantity: number;
-  unit_price: number;
+  actual_amount: number;
   payment_method: string | null;
+  paid_at: string | null;
+  status: string;
 };
 
 type RewardEntry = { amount: number; grade_id: string; processed_at: string };
@@ -66,10 +67,11 @@ function makeSeries(orders: Order[], range: DashboardRange, now: number): Series
       : range === "year" ? kstOrder.getUTCMonth()
         : Math.floor((time - start) / DAY_MS);
     if (index < 0 || index >= length) return;
-    series[index].amount += order.unit_price * order.quantity;
-    const method = order.payment_method?.toLowerCase() ?? "";
-    if (method === "card") series[index].cardCount += 1;
-    if (BANK_DEPOSIT_METHODS.has(method)) series[index].bankCount += 1;
+    series[index].amount += order.actual_amount;
+    if (!order.paid_at) return;
+    const methods = (order.payment_method ?? "").toLowerCase().split(",");
+    if (methods.includes("card")) series[index].cardCount += 1;
+    else if (methods.some((method) => BANK_DEPOSIT_METHODS.has(method))) series[index].bankCount += 1;
   });
   return series;
 }
@@ -99,6 +101,7 @@ export default function OrderDashboard() {
   const [paymentRange, setPaymentRange] = useState<DashboardRange>("month");
   const [rewardRange, setRewardRange] = useState<DashboardRange>("month");
   const [now, setNow] = useState(0);
+  const [syncError, setSyncError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -111,12 +114,14 @@ export default function OrderDashboard() {
         const history = await historyResponse.json() as {
           orders?: Order[];
           rewardEntries?: RewardEntry[];
+          syncError?: boolean;
         };
         const settings = await settingsResponse.json() as { settings?: { grades?: Grade[] } };
         if (!active || !historyResponse.ok || !settingsResponse.ok) return;
         setOrders(history.orders ?? []);
         setRewardEntries(history.rewardEntries ?? []);
         setGrades(settings.settings?.grades ?? []);
+        setSyncError(Boolean(history.syncError));
         setNow(Date.now());
       } catch {
         // 다음 갱신 때 재시도합니다.
@@ -132,22 +137,24 @@ export default function OrderDashboard() {
 
   const amountOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
-    return time >= rangeStart(amountRange, now) && time <= now;
+    return order.status !== "cancelled" && time >= rangeStart(amountRange, now) && time <= now;
   });
   const paymentOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
-    return time >= rangeStart(paymentRange, now) && time <= now;
+    return order.status !== "cancelled" && Boolean(order.paid_at)
+      && time >= rangeStart(paymentRange, now) && time <= now;
   });
   const currentRewards = rewardEntries.filter((entry) => {
     const time = parseUtc(entry.processed_at);
     return time >= rangeStart(rewardRange, now) && time <= now;
   });
-  const totalAmount = amountOrders.reduce((total, order) => total + order.unit_price * order.quantity, 0);
+  const totalAmount = amountOrders.reduce((total, order) => total + order.actual_amount, 0);
   const cardCount = paymentOrders.filter(
-      (order) => order.payment_method?.toLowerCase() === "card"
+      (order) => (order.payment_method ?? "").toLowerCase().split(",").includes("card")
     ).length;
   const bankCount = paymentOrders.filter((order) =>
-      BANK_DEPOSIT_METHODS.has(order.payment_method?.toLowerCase() ?? "")
+      !(order.payment_method ?? "").toLowerCase().split(",").includes("card")
+      && (order.payment_method ?? "").toLowerCase().split(",").some((method) => BANK_DEPOSIT_METHODS.has(method))
     ).length;
   const paymentCount = cardCount + bankCount;
   const rewardTotal = currentRewards.reduce((total, entry) => total + entry.amount, 0);
@@ -175,6 +182,7 @@ export default function OrderDashboard() {
 
   return (
     <section className={styles.orderDashboard} aria-label="주문 요약 대시보드">
+      {syncError && <p className={styles.syncWarning}>카페24 최신 주문 조회에 실패했습니다. 현재 저장된 주문 기준으로 표시합니다.</p>}
       <div className={`${styles.dashboardCard} ${styles.chartDashboardCard}`}>
         <div className={styles.dashboardCardHeader}>
           <span>총 주문금액</span>

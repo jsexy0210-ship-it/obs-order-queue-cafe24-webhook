@@ -70,6 +70,7 @@ export async function updateCafe24CustomerGroupName(groupNo: string, groupName: 
 }
 
 export type Cafe24OrderItem = {
+  product_name?: string;
   payment_amount?: string | number;
   quantity?: string | number;
   order_status?: string;
@@ -77,6 +78,13 @@ export type Cafe24OrderItem = {
 };
 
 export type Cafe24RewardOrder = {
+  order_id?: string;
+  billing_name?: string;
+  canceled?: string;
+  cancel_date?: string | null;
+  actual_order_amount?: { order_price_amount?: string | number };
+  initial_order_amount?: { payment_amount?: string | number };
+  additional_order_info_list?: string | null;
   member_id?: string;
   member_group_no?: string | number;
   group_no?: string | number;
@@ -85,8 +93,25 @@ export type Cafe24RewardOrder = {
   paid?: string | boolean | number;
   payment_confirmation?: string | boolean | number;
   payment_method?: string | string[];
+  payment_amount?: string | number;
   items?: Cafe24OrderItem[];
 };
+
+export async function listCafe24Orders(startDate: string, endDate: string): Promise<Cafe24RewardOrder[]> {
+  const token = await getValidCafe24AccessToken();
+  const orders: Cafe24RewardOrder[] = [];
+  for (let offset = 0; offset <= 15_000; offset += 100) {
+    const query = new URLSearchParams({
+      shop_no: token.shopNo || "1", start_date: startDate, end_date: endDate,
+      limit: "100", offset: String(offset),
+    });
+    const page = await request<{ orders?: Cafe24RewardOrder[] }>(`/orders?${query}`);
+    const rows = page.orders ?? [];
+    orders.push(...rows);
+    if (rows.length < 100) return orders;
+  }
+  throw new Error("카페24 주문 조회 범위가 페이지 제한을 초과했습니다.");
+}
 
 /** 주문 원본을 다시 조회해 웹훅의 축약 payload에 의존하지 않습니다. */
 export async function getCafe24OrderForReward(
