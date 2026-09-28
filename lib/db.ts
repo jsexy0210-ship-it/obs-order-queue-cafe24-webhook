@@ -22,7 +22,16 @@ if (process.env.NODE_ENV !== "production") {
   global.__cardbreakDb = db;
 }
 
-db.pragma("journal_mode = WAL");
+db.pragma("busy_timeout = 5000");
+try {
+  db.pragma("journal_mode = WAL");
+} catch (error) {
+  // Next 빌드의 병렬 프로세스가 이미 WAL 전환 중이면 현재 연결은 기존 저널 모드로 열립니다.
+  // 다른 SQLite 오류는 숨기지 않아 운영 문제를 정상적으로 드러냅니다.
+  if (!(typeof error === "object" && error !== null && "code" in error && error.code === "SQLITE_BUSY")) {
+    throw error;
+  }
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS orders (
