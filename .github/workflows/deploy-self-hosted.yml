@@ -22,6 +22,56 @@ jobs:
         with:
           clean: false
 
+      # GitHub Secrets는 자동으로 서버 환경변수가 되지 않습니다. 배포 때만 .env.local로
+      # 전달하며, 파일 내용이나 비밀값은 로그에 출력하지 않습니다.
+      - name: Prepare protected runtime environment
+        shell: pwsh
+        env:
+          ADMIN_PRIMARY_ID: ${{ secrets.ADMIN_PRIMARY_ID }}
+          ADMIN_PRIMARY_PASSWORD: ${{ secrets.ADMIN_PRIMARY_PASSWORD }}
+          ADMIN_SECONDARY_ID: ${{ secrets.ADMIN_SECONDARY_ID }}
+          ADMIN_SECONDARY_PASSWORD: ${{ secrets.ADMIN_SECONDARY_PASSWORD }}
+          CAFE24_CLIENT_ID: ${{ secrets.CAFE24_CLIENT_ID }}
+          CAFE24_CLIENT_SECRET: ${{ secrets.CAFE24_CLIENT_SECRET }}
+          CAFE24_MALL_ID: ${{ secrets.CAFE24_MALL_ID }}
+          CAFE24_REDIRECT_URI: ${{ secrets.CAFE24_REDIRECT_URI }}
+          CAFE24_REWARD_LIVE_ENABLED: ${{ secrets.CAFE24_REWARD_LIVE_ENABLED }}
+          CAFE24_TOKEN_ENCRYPTION_KEY: ${{ secrets.CAFE24_TOKEN_ENCRYPTION_KEY }}
+          CAFE24_WEBHOOK_TOKEN: ${{ secrets.CAFE24_WEBHOOK_TOKEN }}
+        run: |
+          $required = @(
+            "ADMIN_PRIMARY_ID", "ADMIN_PRIMARY_PASSWORD",
+            "ADMIN_SECONDARY_ID", "ADMIN_SECONDARY_PASSWORD",
+            "CAFE24_CLIENT_ID", "CAFE24_CLIENT_SECRET", "CAFE24_MALL_ID",
+            "CAFE24_REDIRECT_URI", "CAFE24_REWARD_LIVE_ENABLED",
+            "CAFE24_TOKEN_ENCRYPTION_KEY", "CAFE24_WEBHOOK_TOKEN"
+          )
+          $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) }
+          if ($missing) {
+            throw "필수 GitHub Actions Secret이 없습니다: $($missing -join ', ')"
+          }
+
+          $environmentLines = @(
+            "ADMIN_PRIMARY_ID=$env:ADMIN_PRIMARY_ID",
+            "ADMIN_PRIMARY_PASSWORD=$env:ADMIN_PRIMARY_PASSWORD",
+            "ADMIN_SECONDARY_ID=$env:ADMIN_SECONDARY_ID",
+            "ADMIN_SECONDARY_PASSWORD=$env:ADMIN_SECONDARY_PASSWORD",
+            "CAFE24_MALL_ID=$env:CAFE24_MALL_ID",
+            "CAFE24_CLIENT_ID=$env:CAFE24_CLIENT_ID",
+            "CAFE24_CLIENT_SECRET=$env:CAFE24_CLIENT_SECRET",
+            "CAFE24_REDIRECT_URI=$env:CAFE24_REDIRECT_URI",
+            "CAFE24_OAUTH_SCOPES=mall.read_application,mall.write_application,mall.read_category,mall.read_product,mall.write_product,mall.read_collection,mall.read_supply,mall.read_order,mall.read_customer,mall.write_customer,mall.read_promotion,mall.read_mileage,mall.write_mileage",
+            "CAFE24_REWARD_LIVE_ENABLED=$env:CAFE24_REWARD_LIVE_ENABLED",
+            "CAFE24_TOKEN_ENCRYPTION_KEY=$env:CAFE24_TOKEN_ENCRYPTION_KEY",
+            "CAFE24_WEBHOOK_TOKEN=$env:CAFE24_WEBHOOK_TOKEN"
+          )
+          [System.IO.File]::WriteAllLines(
+            (Join-Path $env:GITHUB_WORKSPACE ".env.local"),
+            $environmentLines,
+            [System.Text.UTF8Encoding]::new($false)
+          )
+          Write-Host "운영 환경변수 파일을 준비했습니다."
+
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
