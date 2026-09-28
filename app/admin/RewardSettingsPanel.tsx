@@ -37,10 +37,8 @@ type LedgerRow = {
 
 export default function RewardSettingsPanel() {
   const [settings, setSettings] = useState<RewardSettings>(DEFAULT_REWARD_SETTINGS);
-  const [integrationReady, setIntegrationReady] = useState(false);
   const [oauthConfigured, setOauthConfigured] = useState(false);
   const [oauthConnected, setOauthConnected] = useState(false);
-  const [executionMode, setExecutionMode] = useState<"test" | "live">("test");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -60,10 +58,8 @@ export default function RewardSettingsPanel() {
       .then((data) => {
         if (!active) return;
         setSettings(data.settings);
-        setIntegrationReady(data.integrationReady);
         setOauthConfigured(data.oauth.configured);
         setOauthConnected(data.oauth.connected);
-        setExecutionMode(data.executionMode);
       })
       .catch(() => {
         if (active) setError("적립금 설정을 불러오지 못했습니다.");
@@ -142,10 +138,8 @@ export default function RewardSettingsPanel() {
       const data = await response.json() as ApiResponse & { error?: string };
       if (!response.ok) throw new Error(data.error ?? "save failed");
       setSettings(data.settings);
-      setIntegrationReady(data.integrationReady);
       setOauthConfigured(data.oauth.configured);
       setOauthConnected(data.oauth.connected);
-      setExecutionMode(data.executionMode);
       if (data.groupNameSync?.pending.length) {
         setMessage(`적립금 정책을 저장했습니다. ${data.groupNameSync.pending.join(", ")} 등급명은 카페24 연결 후 반영됩니다.`);
       } else if (data.groupNameSync?.updated.length) {
@@ -184,24 +178,6 @@ export default function RewardSettingsPanel() {
         </button>
       </div>
 
-      <div className={`${styles.executionMode} ${executionMode === "live" ? styles.executionModeLive : ""}`}>
-        <strong>{executionMode === "live" ? "LIVE MODE" : "TEST MODE"}</strong>
-        <span>
-          {executionMode === "live"
-            ? "운영 실행이 허용된 상태입니다."
-            : "설정과 처리 결과만 검증하며 실제 적립금은 지급·회수하지 않습니다."}
-        </span>
-      </div>
-
-      <div className={`${styles.integrationStatus} ${integrationReady ? styles.integrationReady : ""}`}>
-        <span aria-hidden="true">{integrationReady ? "●" : "○"}</span>
-        {oauthConnected
-          ? "카페24 OAuth 연결이 완료되었습니다. 테스트 모드에서는 실거래가 발생하지 않습니다."
-          : oauthConfigured
-            ? "카페24 OAuth 연결이 필요합니다. 연결 후에도 테스트 모드에서는 실거래가 발생하지 않습니다."
-            : "서버 OAuth 환경변수가 설정되지 않아 현재는 적립금 정책만 저장됩니다."}
-      </div>
-
       <div className={styles.oauthActions}>
         {oauthConfigured ? (
           <a className={styles.oauthConnectButton} href="/api/cafe24/oauth/start">
@@ -215,10 +191,6 @@ export default function RewardSettingsPanel() {
             {loadingGroups ? "등급 불러오는 중..." : "카페24 등급 불러오기"}
           </button>
         )}
-      </div>
-
-      <div className={styles.rewardNotice}>
-        적립 기준은 결제완료 즉시가 기본입니다. 배송완료 후 지급으로 변경할 수 있으며, 전체 지급을 OFF로 바꾸면 신규 지급만 중단됩니다.
       </div>
 
       <label className={styles.rewardTrigger}>

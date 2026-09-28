@@ -1524,43 +1524,6 @@
   color: #607086;
 }
 
-.page[data-theme="light"] .integrationStatus {
-  border-color: #ebc36c;
-  background: #fff8e7;
-  color: #785313;
-}
-
-.page[data-theme="light"] .integrationReady {
-  border-color: #8ad4ad;
-  background: #eaf8ef;
-  color: #176e42;
-}
-
-.page[data-theme="light"] .executionMode {
-  border-color: #88cdea;
-  background: #eaf7fd;
-  color: #155b7b;
-}
-
-.page[data-theme="light"] .executionMode strong {
-  color: #12648a;
-}
-
-.page[data-theme="light"] .executionModeLive {
-  border-color: #f2a4ae;
-  background: #fff0f2;
-  color: #9e2638;
-}
-
-.page[data-theme="light"] .executionModeLive strong {
-  color: #b4233a;
-}
-
-.page[data-theme="light"] .rewardNotice {
-  background: #edf7fd;
-  color: #155b7b;
-}
-
 .page[data-theme="light"] .groupLoadButton {
   border-color: #bba9f5;
   background: #f2eeff;
@@ -1831,59 +1794,6 @@
   color: #63eda3;
 }
 
-.integrationStatus {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 18px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 183, 77, 0.25);
-  border-radius: 10px;
-  background: rgba(255, 183, 77, 0.08);
-  color: #e9bd77;
-  font-size: 12px;
-}
-
-.executionMode {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 18px;
-  padding: 12px 14px;
-  border: 1px solid rgba(40, 183, 255, 0.34);
-  border-radius: 10px;
-  background: rgba(40, 183, 255, 0.1);
-  color: #9eddfa;
-  font-size: 12px;
-}
-
-.executionMode strong {
-  flex: 0 0 auto;
-  color: #70cefa;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-}
-
-.executionModeLive {
-  border-color: rgba(255, 77, 95, 0.42);
-  background: rgba(255, 77, 95, 0.1);
-  color: #ffb1b8;
-}
-
-.executionModeLive strong {
-  color: #ff8a95;
-}
-
-.executionMode + .integrationStatus {
-  margin-top: 8px;
-}
-
-.integrationReady {
-  border-color: rgba(53, 208, 127, 0.3);
-  background: rgba(53, 208, 127, 0.08);
-  color: #70e3a5;
-}
-
 .oauthActions {
   display: flex;
   align-items: center;
@@ -1927,16 +1837,6 @@
 
 .oauthConnectButton:hover {
   background: rgba(40, 183, 255, 0.18);
-}
-
-.rewardNotice {
-  margin-top: 12px;
-  padding: 11px 13px;
-  border-radius: 10px;
-  background: rgba(40, 183, 255, 0.08);
-  color: #9eddfa;
-  font-size: 12px;
-  line-height: 1.55;
 }
 
 .rewardTrigger {
