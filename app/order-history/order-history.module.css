@@ -180,7 +180,6 @@
 
 .tableScroller {
   position: relative;
-  padding-inline: 48px;
 }
 
 .gridScrollButton {
@@ -208,11 +207,11 @@
 }
 
 .gridScrollLeft {
-  left: 8px;
+  left: -44px;
 }
 
 .gridScrollRight {
-  right: 8px;
+  right: -44px;
 }
 
 .scrollArea::-webkit-scrollbar {
@@ -521,10 +520,6 @@
     min-height: 0;
     border: 0;
     background: transparent;
-  }
-
-  .tableScroller {
-    padding-inline: 0;
   }
 
   .gridScrollButton {
