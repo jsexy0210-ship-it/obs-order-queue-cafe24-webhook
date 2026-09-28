@@ -171,7 +171,7 @@
 
 .scrollArea {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .pager {
@@ -245,58 +245,26 @@
   margin: 0;
 }
 
-.tableNavigation {
-  display: flex;
-  gap: 6px;
-}
-
-.tableNavigation button {
-  width: 34px;
-  height: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f4f7fb;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.tableNavigation button:hover:not(:disabled) {
-  background: rgba(98, 227, 255, 0.17);
-  border-color: #62e3ff;
-}
-
-.tableNavigation button:disabled {
-  cursor: default;
-  opacity: 0.35;
-}
-
-:global([data-theme="light"]) .tableNavigation button {
-  border-color: #cbd5e1;
-  background: #fff;
-  color: #162033;
-}
-
 .table {
   width: 100%;
-  min-width: 1560px;
+  min-width: 0;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .table th,
 .table td {
-  padding: 10px 14px;
+  padding: 8px 6px;
   text-align: left;
+  vertical-align: top;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
 .table th {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   opacity: 0.55;
   letter-spacing: 0.03em;
@@ -310,6 +278,21 @@
   white-space: normal;
   max-width: 260px;
 }
+
+.table th:nth-child(1) { width: 7%; }
+.table th:nth-child(2) { width: 7%; }
+.table th:nth-child(3) { width: 6%; }
+.table th:nth-child(4) { width: 5%; }
+.table th:nth-child(5) { width: 7%; }
+.table th:nth-child(6) { width: 7%; }
+.table th:nth-child(7) { width: 7%; }
+.table th:nth-child(8) { width: 15%; }
+.table th:nth-child(9) { width: 3%; }
+.table th:nth-child(10) { width: 8%; }
+.table th:nth-child(11) { width: 5%; }
+.table th:nth-child(12) { width: 9%; }
+.table th:nth-child(13) { width: 7%; }
+.table th:nth-child(14) { width: 4%; }
 
 :global([data-theme="light"]) .headerRow h1,
 :global([data-theme="light"]) .sectionTitle {
@@ -406,10 +389,6 @@
 }
 
 @media (max-width: 900px) {
-  .tableNavigation {
-    display: none;
-  }
-
   .page {
     padding-inline: 16px;
   }

@@ -2482,7 +2482,7 @@
 /* 관리자 홈은 3열 × 4행을 데스크톱 한 화면에서 조작할 수 있도록 압축합니다. */
 @media (min-width: 901px) {
   .page {
-    padding-top: 20px;
+    padding-top: 0;
     padding-bottom: 24px;
   }
 
