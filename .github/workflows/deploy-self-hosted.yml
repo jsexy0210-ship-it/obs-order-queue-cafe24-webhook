@@ -75,9 +75,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          # Windows용 better-sqlite3 사전 빌드가 제공되는 LTS ABI를 사용합니다.
-          # Node 22에서는 사무실 PC에 없는 MSVC C++ 도구 체인을 요구할 수 있습니다.
-          node-version: 20
+          # 애플리케이션 런타임과 동일한 Node.js LTS를 사용합니다.
+          node-version: 22
           cache: npm
 
       - name: Install and build
