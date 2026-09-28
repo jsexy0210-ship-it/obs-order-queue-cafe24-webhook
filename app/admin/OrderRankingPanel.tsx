@@ -17,13 +17,13 @@ type RankingRow = {
 
 type RankingResponse = {
   ranking?: RankingRow[];
-  executionMode?: "test" | "live";
   error?: string;
 };
 
 type PendingBonus = {
   row: RankingRow;
   amount: number;
+  requestId: string;
 };
 
 const TROPHIES = ["🥇", "🥈", "🥉"];
@@ -31,7 +31,6 @@ const formatWon = (amount: number) => `${amount.toLocaleString("ko-KR")}원`;
 
 export default function OrderRankingPanel() {
   const [ranking, setRanking] = useState<RankingRow[]>([]);
-  const [executionMode, setExecutionMode] = useState<"test" | "live">("test");
   const [bonusAmounts, setBonusAmounts] = useState<Record<string, string>>({});
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [pendingBonus, setPendingBonus] = useState<PendingBonus | null>(null);
@@ -44,7 +43,6 @@ export default function OrderRankingPanel() {
       const data = await response.json() as RankingResponse;
       if (!response.ok) throw new Error(data.error ?? "주문 랭킹을 불러올 수 없습니다.");
       setRanking(data.ranking ?? []);
-      setExecutionMode(data.executionMode ?? "test");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "주문 랭킹을 불러올 수 없습니다.");
     } finally {
@@ -58,16 +56,16 @@ export default function OrderRankingPanel() {
 
   function requestBonus(row: RankingRow) {
     const amount = Number(bonusAmounts[row.userId] ?? "");
-    if (!Number.isInteger(amount) || amount <= 0) {
-      setNotice("보너스 적립금은 1원 이상의 정수로 입력하세요.");
+    if (!Number.isInteger(amount) || amount <= 0 || amount > 1_000_000) {
+      setNotice("보너스 적립금은 1원 이상 100만 원 이하의 정수로 입력하세요.");
       return;
     }
-    setPendingBonus({ row, amount });
+    setPendingBonus({ row, amount, requestId: crypto.randomUUID() });
   }
 
   async function confirmBonus() {
     if (!pendingBonus) return;
-    const { row, amount } = pendingBonus;
+    const { row, amount, requestId } = pendingBonus;
     setPendingBonus(null);
 
     setSavingUserId(row.userId);
@@ -76,16 +74,13 @@ export default function OrderRankingPanel() {
       const response = await fetch("/api/order-ranking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: row.userId, amount }),
+        body: JSON.stringify({ userId: row.userId, amount, requestId }),
       });
-      const data = await response.json() as RankingResponse & { result?: { mode: "test" | "live"; amount: number } };
+      const data = await response.json() as RankingResponse & { result?: { amount: number } };
       if (!response.ok) throw new Error(data.error ?? "보너스 적립금 지급에 실패했습니다.");
       setRanking(data.ranking ?? []);
-      setExecutionMode(data.executionMode ?? executionMode);
       setBonusAmounts((current) => ({ ...current, [row.userId]: "" }));
-      setNotice(data.result?.mode === "live"
-        ? `${row.userId}님에게 ${formatWon(data.result.amount)}을 실제 지급했습니다.`
-        : `${row.userId}님 보너스 ${formatWon(data.result?.amount ?? amount)} 지급을 테스트로 기록했습니다.`);
+      setNotice(`${row.userId}님에게 ${formatWon(data.result?.amount ?? amount)}을 카페24 적립금으로 지급했습니다.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "보너스 적립금 지급에 실패했습니다.");
     } finally {
@@ -99,17 +94,13 @@ export default function OrderRankingPanel() {
       <div className={styles.rankingHero}>
         <div>
           <h2 id="ranking-title">주문랭킹 TOP 10</h2>
-          <p>최근 3개월 MangoTCG 주문의 취소·환불 제외 누적 구매금액 기준 Top 10입니다.</p>
+          <p>카페24 결제완료 주문의 취소·환불 제외 누적 구매금액 기준 Top 10입니다.</p>
         </div>
         <button className={styles.rankingRefreshButton} onClick={() => void load()} disabled={loading}>
           {loading ? "불러오는 중" : "새로고침"}
         </button>
       </div>
 
-      <div className={`${styles.rankingMode} ${executionMode === "live" ? styles.rankingModeLive : ""}`}>
-        <strong>{executionMode === "live" ? "실운영 모드" : "테스트 모드"}</strong>
-        <span>{executionMode === "live" ? "보너스 적립금은 카페24 고객 적립금에 실제 지급됩니다." : "보너스 적립금은 카페24에 지급되지 않고 테스트 기록만 남습니다."}</span>
-      </div>
       {notice && <p className={styles.rankingNotice}>{notice}</p>}
 
       {loading ? (
@@ -142,6 +133,7 @@ export default function OrderRankingPanel() {
                       <input
                         type="number"
                         min="1"
+                        max="1000000"
                         step="1"
                         placeholder="금액"
                         value={bonusAmounts[row.userId] ?? ""}
@@ -174,30 +166,19 @@ export default function OrderRankingPanel() {
           aria-describedby="bonus-confirm-description"
         >
           <p className={styles.bonusConfirmEyebrow}>지급 전 최종 확인</p>
-          <h3 id="bonus-confirm-title">
-            {executionMode === "live" ? "실제 적립금 지급을 진행합니다" : "테스트 지급 기록을 남깁니다"}
-          </h3>
+          <h3 id="bonus-confirm-title">카페24 적립금 실지급을 진행합니다</h3>
           <p className={styles.bonusConfirmAmount}>
             {pendingBonus.row.userId} · {formatWon(pendingBonus.amount)}
           </p>
           <div id="bonus-confirm-description" className={styles.bonusConfirmWarning}>
-            {executionMode === "live" ? (
-              <>
-                <strong>주의: 카페24 고객 적립금 잔액이 즉시 증가합니다.</strong>
-                <span>이 지급은 주문 적립금과 별개이며, 취소·환불 시 자동 회수되지 않습니다.</span>
-                <span>지급 후에는 이 화면에서 되돌릴 수 없습니다.</span>
-              </>
-            ) : (
-              <>
-                <strong>테스트 모드: 카페24 고객 적립금에는 실제 지급되지 않습니다.</strong>
-                <span>관리자 테스트 지급 이력만 남습니다.</span>
-              </>
-            )}
+            <strong>주의: 카페24 고객 적립금 잔액이 즉시 증가합니다.</strong>
+            <span>이 지급은 주문 적립금과 별개이며, 취소·환불 시 자동 회수되지 않습니다.</span>
+            <span>지급 후에는 이 화면에서 되돌릴 수 없습니다.</span>
           </div>
           <div className={styles.bonusConfirmActions}>
             <button onClick={() => setPendingBonus(null)}>취소</button>
             <button className={styles.bonusConfirmProceed} onClick={() => void confirmBonus()}>
-              {executionMode === "live" ? "실제 지급 확정" : "테스트 지급 기록"}
+              실제 지급 확정
             </button>
           </div>
         </section>

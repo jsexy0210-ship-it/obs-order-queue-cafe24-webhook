@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { changeCafe24Points, getCafe24OrderForReward, type Cafe24RewardOrder } from "./cafe24Admin";
+import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward, type Cafe24RewardOrder } from "./cafe24Admin";
 import { canExecuteCafe24RewardChanges } from "./rewardExecution";
 import { getRewardSettings } from "./rewardStore";
 
@@ -116,13 +116,24 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
   // 네트워크 오류 뒤 카페24가 이미 반영했을 가능성까지 막기 위한 이중 지급 방지 장치입니다.
   if (getLedger(orderId, "issue")) return { outcome: "duplicate" as const };
 
-  const order = await getCafe24OrderForReward(orderId);
+  const order = await getCafe24OrderForReward(orderId, { includeBuyerGroup: true });
   // 웹훅 URL의 event=paid만 신뢰하지 않고 카페24 주문 원본에서 결제를 다시 확인합니다.
   if (!isPaymentConfirmed(order) || isFullyCancelled(order)) return { outcome: "skipped" as const };
   const memberId = order.member_id?.trim();
-  const grade = findGrade(settings, order.member_group_no ?? order.group_no);
+  const groupNo = order.member_group_no ?? order.group_no;
+  const grade = findGrade(settings, groupNo);
   const baseAmount = netProductAmount(order);
   if (!memberId || !grade || baseAmount === null) return { outcome: "skipped" as const };
+
+  // 카페24 자체 등급별 적립이 남아 있으면 망고TCG 지급과 중복될 수 있으므로 실패 안전으로 차단합니다.
+  const groups = await getCafe24CustomerGroups();
+  const cafe24Group = groups.find((group) => String(group.group_no) === String(groupNo));
+  if (!cafe24Group || !["F", "D"].includes(cafe24Group.buy_benefits ?? "")) {
+    return { outcome: "native_reward_active" as const };
+  }
+  if (process.env.CAFE24_NATIVE_REWARDS_DISABLED !== "true") {
+    return { outcome: "native_reward_unverified" as const };
+  }
 
   const isBankDeposit = order.payment_method?.toLowerCase() === "cash";
   const appliedRate = isBankDeposit ? grade.bankRate : grade.cardRate;

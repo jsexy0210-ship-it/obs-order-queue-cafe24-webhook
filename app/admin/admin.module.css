@@ -572,7 +572,6 @@
   color: #526276;
 }
 
-.page[data-theme="light"] .rankingMode,
 .page[data-theme="light"] .rankingNotice {
   color: #34435a;
 }
@@ -1193,7 +1192,6 @@
   opacity: 0.6;
 }
 
-.rankingMode,
 .rankingNotice,
 .rankingEmpty {
   margin: 0 0 14px;
@@ -1204,18 +1202,6 @@
   color: #a9e5ff;
   font-size: 12px;
   line-height: 1.5;
-}
-
-.rankingMode strong {
-  margin-right: 8px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-}
-
-.rankingModeLive {
-  border-color: rgba(255, 77, 95, 0.45);
-  background: rgba(255, 77, 95, 0.1);
-  color: #ffb1b8;
 }
 
 .rankingNotice {

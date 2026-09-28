@@ -24,7 +24,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
-export type Cafe24CustomerGroup = { group_no: number | string; group_name: string };
+export type Cafe24CustomerGroup = {
+  group_no: number | string;
+  group_name: string;
+  buy_benefits?: string;
+};
 
 export async function getCafe24CustomerGroups() {
   const token = await getValidCafe24AccessToken();
@@ -60,13 +64,28 @@ export type Cafe24RewardOrder = {
 };
 
 /** 주문 원본을 다시 조회해 웹훅의 축약 payload에 의존하지 않습니다. */
-export async function getCafe24OrderForReward(orderId: string): Promise<Cafe24RewardOrder> {
+export async function getCafe24OrderForReward(
+  orderId: string,
+  options: { includeBuyerGroup?: boolean } = {}
+): Promise<Cafe24RewardOrder> {
   const token = await getValidCafe24AccessToken();
   const query = new URLSearchParams({ shop_no: token.shopNo || "1", embed: "items" });
   const response = await request<{ order?: Cafe24RewardOrder }>(
     `/orders/${encodeURIComponent(orderId)}?${query}`
   );
   if (!response.order) throw new Error("카페24 주문 상세를 찾을 수 없습니다.");
+  if (options.includeBuyerGroup && !response.order.member_group_no && !response.order.group_no) {
+    const buyer = await request<{ buyer?: { member_id?: string; member_group_no?: string | number } }>(
+      `/orders/${encodeURIComponent(orderId)}/buyer?shop_no=${encodeURIComponent(token.shopNo || "1")}`
+    );
+    if (buyer.buyer) {
+      if (response.order.member_id && buyer.buyer.member_id && response.order.member_id !== buyer.buyer.member_id) {
+        throw new Error("카페24 주문과 구매자 정보의 회원 ID가 일치하지 않습니다.");
+      }
+      response.order.member_id = response.order.member_id || buyer.buyer.member_id;
+      response.order.member_group_no = buyer.buyer.member_group_no;
+    }
+  }
   return response.order;
 }
 

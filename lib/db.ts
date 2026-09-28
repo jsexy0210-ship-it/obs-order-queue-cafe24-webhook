@@ -99,6 +99,7 @@ db.exec(`
   -- 주문 랭킹 1~3위에게 관리자가 수동 지급한 보너스 적립금 원장입니다.
   CREATE TABLE IF NOT EXISTS ranking_bonus_ledger (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id TEXT,
     user_id TEXT NOT NULL,
     external_order_id TEXT NOT NULL,
     member_id TEXT,
@@ -141,3 +142,9 @@ const hitCardColumns = db.prepare("PRAGMA table_info(hit_cards)").all() as { nam
 if (!hitCardColumns.some((col) => col.name === "youtube_nickname")) {
   db.exec("ALTER TABLE hit_cards ADD COLUMN youtube_nickname TEXT");
 }
+
+const rankingBonusColumns = db.prepare("PRAGMA table_info(ranking_bonus_ledger)").all() as { name: string }[];
+if (!rankingBonusColumns.some((col) => col.name === "request_id")) {
+  db.exec("ALTER TABLE ranking_bonus_ledger ADD COLUMN request_id TEXT");
+}
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_ranking_bonus_request ON ranking_bonus_ledger(request_id)");
