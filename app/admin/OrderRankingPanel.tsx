@@ -133,7 +133,7 @@ export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
                 <dl className={styles.rankingMetrics}>
                   <div><dt>총 구매금액</dt><dd>{formatWon(row.totalPurchaseAmount)}</dd></div>
                   <div><dt>주문 건수</dt><dd>{row.orderCount}건</dd></div>
-                  <div><dt>적립 포인트</dt><dd>{formatWon(row.rewardPoints)}</dd></div>
+                  <div><dt>누적 적립금</dt><dd>{formatWon(row.rewardPoints)}</dd></div>
                   <div><dt>보너스 적립금</dt><dd>{formatWon(row.bonusPoints)}</dd></div>
                 </dl>
                 {isTopThree && (
