@@ -90,29 +90,34 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Next.js 프로덕션 빌드에 실패했습니다."
           }
+          npm install --global pm2@5.4.3
+          if ($LASTEXITCODE -ne 0) {
+            throw "PM2 설치에 실패했습니다."
+          }
 
       - name: Restart MangoTCG production process
         shell: pwsh
         run: |
-          $processName = "mangotcg-admin"
-          if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
+          $npmGlobalBin = (& npm prefix -g).Trim()
+          $pm2Command = Join-Path $npmGlobalBin "pm2.cmd"
+          if (-not (Test-Path $pm2Command)) {
             throw "PM2가 설치되어 있지 않습니다. 기존 운영 프로세스를 건드리지 않았습니다."
+          }
+
+          $pm2Config = Join-Path $env:GITHUB_WORKSPACE "ecosystem.config.cjs"
+          if (-not (Test-Path $pm2Config)) {
+            throw "PM2 운영 설정 파일을 찾지 못했습니다."
           }
 
           if (-not (Test-Path "$env:GITHUB_WORKSPACE\.env.local")) {
             Write-Warning ".env.local을 찾지 못했습니다. runner의 시스템 환경변수로 운영 중인지 확인하세요."
           }
 
-          & pm2 describe $processName 2>$null
-          if ($LASTEXITCODE -eq 0) {
-            & pm2 reload $processName --update-env
-          } else {
-            & pm2 start npm --name $processName --cwd $env:GITHUB_WORKSPACE -- run start -- -p 3000
-          }
+          & $pm2Command startOrReload $pm2Config --update-env
           if ($LASTEXITCODE -ne 0) {
             throw "MangoTCG PM2 프로세스를 시작 또는 재시작하지 못했습니다."
           }
-          & pm2 save
+          & $pm2Command save
 
       - name: Verify local production endpoint
         shell: pwsh
