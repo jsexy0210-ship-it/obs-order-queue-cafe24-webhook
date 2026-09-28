@@ -42,6 +42,7 @@ db.exec(`
     product TEXT NOT NULL,
     quantity INTEGER NOT NULL,
     unit_price INTEGER NOT NULL DEFAULT 15000,
+    actual_amount INTEGER,
     tier TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'waiting',         -- 'waiting' | 'opening' | 'done' | 'cancelled'
     prev_status TEXT,                               -- 취소되기 직전 상태 ('waiting' | 'opening') - 화면 배치용
@@ -145,6 +146,9 @@ if (!orderColumns.some((col) => col.name === "payment_gateway_name")) {
 }
 if (!orderColumns.some((col) => col.name === "easypay_name")) {
   db.exec("ALTER TABLE orders ADD COLUMN easypay_name TEXT");
+}
+if (!orderColumns.some((col) => col.name === "actual_amount")) {
+  db.exec("ALTER TABLE orders ADD COLUMN actual_amount INTEGER");
 }
 
 const hitCardColumns = db.prepare("PRAGMA table_info(hit_cards)").all() as { name: string }[];

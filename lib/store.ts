@@ -12,6 +12,7 @@ export type OrderRow = {
   product: string;
   quantity: number;
   unit_price: number;
+  actual_amount: number | null;
   tier: string;
   status: OrderStatus;
   prev_status: string | null;
@@ -175,6 +176,7 @@ export function insertOrder(input: {
   product: string;
   quantity: number;
   unitPrice?: number;
+  actualAmount?: number | null;
   tier?: string;
   youtubeNickname?: string | null;
   paymentMethod?: string | null;
@@ -186,10 +188,10 @@ export function insertOrder(input: {
   const stmt = db.prepare(`
     INSERT INTO orders (
       source, external_order_id, user_id, product, quantity, unit_price, tier,
-      youtube_nickname, payment_method, payment_gateway_name, easypay_name, paid_at, status
+      actual_amount, youtube_nickname, payment_method, payment_gateway_name, easypay_name, paid_at, status
     ) VALUES (
       @source, @externalOrderId, @userId, @product, @quantity, @unitPrice, @tier,
-      @youtubeNickname, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting'
+      @actualAmount, @youtubeNickname, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting'
     )
   `);
 
@@ -202,6 +204,7 @@ export function insertOrder(input: {
       quantity: input.quantity,
       unitPrice: input.unitPrice ?? 15000,
       tier: input.tier ?? "",
+      actualAmount: input.actualAmount ?? null,
       youtubeNickname: input.youtubeNickname ?? null,
       paymentMethod: input.paymentMethod ?? null,
       paymentGatewayName: input.paymentGatewayName ?? null,

@@ -61,6 +61,10 @@ function actualAmount(order: Cafe24RewardOrder, localAmount: number) {
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : localAmount;
 }
 
+function localActualAmount(order: OrderRow) {
+  return order.actual_amount ?? order.unit_price * order.quantity;
+}
+
 function paymentMethod(order: Cafe24RewardOrder, fallback: string | null) {
   if (Array.isArray(order.payment_method)) return order.payment_method.join(",");
   return order.payment_method || fallback;
@@ -92,7 +96,7 @@ export async function currentOrderView(localOrders: OrderRow[], cafe24Orders: Ca
   const current = localOrders.map((order): CurrentOrder => {
     const remote = order.external_order_id ? remoteById.get(order.external_order_id) : undefined;
     if (!remote || order.source !== "cafe24") {
-      return { ...order, actual_amount: order.status === "cancelled" ? 0 : order.unit_price * order.quantity };
+      return { ...order, actual_amount: order.status === "cancelled" ? 0 : localActualAmount(order) };
     }
     const items = details.get(remote.order_id!)?.items;
     const productNames = items?.map((item) => item.product_name).filter((name): name is string => Boolean(name));
@@ -108,7 +112,7 @@ export async function currentOrderView(localOrders: OrderRow[], cafe24Orders: Ca
         : order.status === "cancelled" ? (order.prev_status === "done" ? "done" : "waiting") : order.status,
       cancel_reason: remote.canceled === "T" ? order.cancel_reason ?? "cancelled" : null,
       cancelled_at: remote.canceled === "T" ? sqliteUtc(remote.cancel_date, order.cancelled_at) : null,
-      actual_amount: actualAmount(remote, order.unit_price * order.quantity),
+      actual_amount: actualAmount(remote, localActualAmount(order)),
     };
   });
 

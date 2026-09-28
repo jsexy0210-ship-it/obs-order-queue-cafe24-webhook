@@ -31,7 +31,7 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
     `SELECT user_id,
             MAX(youtube_nickname) AS youtube_nickname,
             MAX(NULLIF(tier, '')) AS tier,
-            SUM(unit_price * quantity) AS total_purchase_amount,
+            SUM(COALESCE(actual_amount, unit_price * quantity)) AS total_purchase_amount,
             COUNT(*) AS order_count
        FROM orders
       WHERE source = 'cafe24'

@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     : getOrderHistory(hasMonthFilter ? { year, month } : undefined);
 
   let orders = localOrders.map((order) => ({
-    ...order, actual_amount: order.status === "cancelled" ? 0 : order.unit_price * order.quantity,
+    ...order, actual_amount: order.status === "cancelled" ? 0 : (order.actual_amount ?? order.unit_price * order.quantity),
   }));
   let syncError = false;
   if (hasMonthFilter) {
