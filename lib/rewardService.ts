@@ -39,6 +39,31 @@ export function getDashboardRewardEntries(sinceUtc: string): Array<Pick<RewardLe
   ).all(sinceUtc) as Array<Pick<RewardLedgerRow, "external_order_id" | "action" | "amount" | "grade_id" | "processed_at">>;
 }
 
+export function getDashboardCumulativeRewardBalance() {
+  const snapshot = db.prepare(
+    `SELECT COUNT(*) AS member_count, COALESCE(SUM(balance), 0) AS amount
+       FROM cafe24_member_point_balance_snapshots`
+  ).get() as { member_count: number; amount: number };
+  if (Number(snapshot.member_count) > 0) {
+    return { amount: Number(snapshot.amount ?? 0), source: "cafe24" as const };
+  }
+
+  const ledger = db.prepare(
+    `SELECT COALESCE(SUM(CASE
+       WHEN l.action = 'issue' THEN l.amount
+       WHEN l.action = 'recover' THEN -l.amount
+       ELSE 0
+     END), 0) AS amount
+       FROM reward_ledger l
+       JOIN orders o ON o.external_order_id = l.external_order_id
+      WHERE l.status = 'succeeded'
+        AND o.source = 'cafe24'
+        AND o.paid_at IS NOT NULL
+        AND o.status <> 'cancelled'`
+  ).get() as { amount: number };
+  return { amount: Number(ledger.amount ?? 0), source: "ledger" as const };
+}
+
 export type RewardOrderSummary = {
   issue?: Pick<RewardLedgerRow, "amount" | "status" | "grade_id">;
   recover?: Pick<RewardLedgerRow, "amount" | "status" | "grade_id">;

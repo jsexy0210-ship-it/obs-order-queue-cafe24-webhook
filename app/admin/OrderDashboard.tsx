@@ -96,6 +96,8 @@ function RangePicker({ value, onChange, title }: {
 export default function OrderDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [rewardEntries, setRewardEntries] = useState<RewardEntry[]>([]);
+  const [cumulativeRewardBalance, setCumulativeRewardBalance] = useState(0);
+  const [cumulativeRewardSource, setCumulativeRewardSource] = useState<"cafe24" | "ledger">("ledger");
   const [grades, setGrades] = useState<Grade[]>([]);
   const [amountRange, setAmountRange] = useState<DashboardRange>("month");
   const [paymentRange, setPaymentRange] = useState<DashboardRange>("month");
@@ -114,12 +116,16 @@ export default function OrderDashboard() {
         const history = await historyResponse.json() as {
           orders?: Order[];
           rewardEntries?: RewardEntry[];
+          cumulativeRewardBalance?: number;
+          cumulativeRewardSource?: "cafe24" | "ledger";
           syncError?: boolean;
         };
         const settings = await settingsResponse.json() as { settings?: { grades?: Grade[] } };
         if (!active || !historyResponse.ok || !settingsResponse.ok) return;
         setOrders(history.orders ?? []);
         setRewardEntries(history.rewardEntries ?? []);
+        setCumulativeRewardBalance(Number(history.cumulativeRewardBalance ?? 0));
+        setCumulativeRewardSource(history.cumulativeRewardSource === "cafe24" ? "cafe24" : "ledger");
         setGrades(settings.settings?.grades ?? []);
         setSyncError(Boolean(history.syncError));
         setNow(Date.now());
@@ -240,11 +246,11 @@ export default function OrderDashboard() {
       </div>
       <div className={`${styles.dashboardCard} ${styles.rewardDashboardCard}`}>
         <div className={styles.dashboardCardHeader}>
-          <span>적립금 지급 총액</span>
-          <RangePicker title="적립금 지급 총액" value={rewardRange} onChange={setRewardRange} />
+          <span>적립금 정보</span>
+          <RangePicker title="기간별 적립금" value={rewardRange} onChange={setRewardRange} />
         </div>
-        <strong>{rewardTotal.toLocaleString("ko-KR")}원</strong>
-        <small>{RANGE_OPTIONS.find((option) => option.value === rewardRange)?.description} · 지급 완료 원장 기준</small>
+        <strong>{cumulativeRewardBalance.toLocaleString("ko-KR")}원</strong>
+        <small>누적 적립금 · {cumulativeRewardSource === "cafe24" ? "카페24 현재 잔액" : "지급 완료 원장"} 기준 · {RANGE_OPTIONS.find((option) => option.value === rewardRange)?.description} 순지급 {rewardTotal.toLocaleString("ko-KR")}원</small>
         <div className={styles.rewardBreakdown} aria-label="등급별 적립금 지급 총액">
           {rewardByGrade.map((grade) => (
             <div className={styles.rewardGradeTotal} key={grade.id}>
