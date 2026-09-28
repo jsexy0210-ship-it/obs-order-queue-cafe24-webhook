@@ -23,6 +23,7 @@ type ApiResponse = {
 };
 
 type Cafe24Group = { group_no: number | string; group_name: string };
+const formatAmount = (value: number) => value.toLocaleString("ko-KR");
 type LedgerRow = {
   id: number;
   external_order_id: string;
@@ -41,6 +42,7 @@ export default function RewardSettingsPanel() {
   const [oauthConnected, setOauthConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [groups, setGroups] = useState<Cafe24Group[]>([]);
@@ -72,6 +74,23 @@ export default function RewardSettingsPanel() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!oauthConnected) return;
+    let active = true;
+    fetch("/api/cafe24/groups", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("load failed");
+        return response.json() as Promise<{ groups?: Cafe24Group[] }>;
+      })
+      .then((data) => {
+        if (active) setGroups(data.groups ?? []);
+      })
+      .catch(() => {
+        if (active) setError("카페24 등급 목록을 불러오지 못했습니다. 저장된 등급번호는 유지됩니다.");
+      });
+    return () => { active = false; };
+  }, [oauthConnected]);
 
   function updateGrade(id: string, patch: Partial<RewardGradeSetting>) {
     setMessage(null);
@@ -236,12 +255,11 @@ export default function RewardSettingsPanel() {
                   <label className={styles.thresholdInput}>
                     <input
                       aria-label={`${grade.name} 누적 구매금액 기준`}
-                      type="number"
-                      min="0"
-                      step="10000"
-                      value={grade.minimumPurchaseAmount ?? 0}
+                      type="text"
+                      inputMode="numeric"
+                      value={formatAmount(grade.minimumPurchaseAmount ?? 0)}
                       onChange={(event) => updateGrade(grade.id, {
-                        minimumPurchaseAmount: Math.max(0, Number(event.target.value || 0)),
+                        minimumPurchaseAmount: Math.min(Number.MAX_SAFE_INTEGER, Number(event.target.value.replace(/[^0-9]/g, "") || 0)),
                       })}
                     />
                     <span>원 이상</span>
@@ -308,6 +326,9 @@ export default function RewardSettingsPanel() {
                     })}
                   >
                     <option value="">{groups.length ? "선택" : "미연결"}</option>
+                    {grade.cafe24GroupNo && !groups.some((group) => String(group.group_no) === grade.cafe24GroupNo) && (
+                      <option value={grade.cafe24GroupNo}>저장된 등급번호 ({grade.cafe24GroupNo})</option>
+                    )}
                     {groups.map((group) => (
                       <option key={String(group.group_no)} value={String(group.group_no)}>
                         {group.group_name} ({group.group_no})
@@ -326,7 +347,7 @@ export default function RewardSettingsPanel() {
           {error && <span className={styles.rewardError}>{error}</span>}
           {!error && message && <span className={styles.rewardSuccess}>{message}</span>}
         </div>
-        <button type="button" className={styles.rewardSaveButton} onClick={save} disabled={saving}>
+        <button type="button" className={styles.rewardSaveButton} onClick={() => setConfirmSave(true)} disabled={saving}>
           {saving ? "저장 중..." : "저장 및 반영"}
         </button>
       </div>
@@ -360,6 +381,31 @@ export default function RewardSettingsPanel() {
           </div>
         )}
       </section>
+      {confirmSave && (
+        <div className={styles.bonusConfirmBackdrop} role="presentation">
+          <section
+            className={styles.bonusConfirmDialog}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="reward-save-confirm-title"
+            aria-describedby="reward-save-confirm-description"
+          >
+            <p className={styles.bonusConfirmEyebrow}>저장 전 최종 확인</p>
+            <h3 id="reward-save-confirm-title">적립금 설정을 저장 및 반영하시겠습니까?</h3>
+            <p className={styles.bonusConfirmAmount}>
+              전체 설정 {settings.enabled ? "ON" : "OFF"} · 적립 시점 {settings.issueTrigger === "paid" ? "결제완료 즉시" : "배송완료 후"} · 카페24 등급번호 {settings.grades.filter((grade) => grade.cafe24GroupNo).length}개
+            </p>
+            <div id="reward-save-confirm-description" className={styles.bonusConfirmWarning}>
+              <strong>카페24 자체 적립이 켜져 있으면 이중 지급 위험이 있습니다.</strong>
+              <span>운영 안전 검증을 마치기 전에는 주문 자동 적립금 실지급이 차단됩니다.</span>
+            </div>
+            <div className={styles.bonusConfirmActions}>
+              <button type="button" onClick={() => setConfirmSave(false)}>취소</button>
+              <button type="button" className={styles.bonusConfirmProceed} onClick={() => { setConfirmSave(false); void save(); }}>저장 및 반영</button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
