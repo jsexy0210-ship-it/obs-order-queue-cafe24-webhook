@@ -537,7 +537,7 @@
   min-width: 0;
   color: #f0edff;
   /* 카드 폭을 기준으로 금액 글자를 축소해 큰 누적금도 한 줄 안에 유지한다. */
-  font-size: clamp(8px, 9cqw, 11px);
+  font-size: clamp(10px, 9cqw, 11px);
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
