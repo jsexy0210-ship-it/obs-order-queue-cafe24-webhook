@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward, type Cafe24RewardOrder } from "./cafe24Admin";
+import { getCurrentCustomerGroupNo } from "./buyerNames";
 import { canExecuteCafe24RewardChanges } from "./rewardExecution";
 import { isAfterRewardStart } from "./rewardCutoff";
 import { getRewardSettings } from "./rewardStore";
@@ -62,6 +63,54 @@ export function getDashboardCumulativeRewardBalance() {
         AND o.status <> 'cancelled'`
   ).get() as { amount: number };
   return { amount: Number(ledger.amount ?? 0), source: "ledger" as const };
+}
+
+export type DashboardRewardBalanceByGrade = {
+  source: "cafe24" | "ledger";
+  amounts: Record<string, number>;
+  unassignedMemberCount: number;
+};
+
+/**
+ * 카페24에서 가져온 회원별 현재 잔액을, 현재 회원등급과 망고TCG 등급 매핑으로 합산합니다.
+ * 스냅샷이 없을 때는 기존 지급 원장 기반의 기간별 표시를 유지하도록 ledger를 반환합니다.
+ */
+export async function getDashboardRewardBalanceByGrade(): Promise<DashboardRewardBalanceByGrade> {
+  const snapshots = db.prepare(
+    `SELECT member_id, balance FROM cafe24_member_point_balance_snapshots`
+  ).all() as Array<{ member_id: string; balance: number }>;
+  if (snapshots.length === 0) {
+    return { source: "ledger", amounts: {}, unassignedMemberCount: 0 };
+  }
+
+  const settings = getRewardSettings();
+  const gradeIdByCafe24GroupNo = new Map(
+    settings.grades.flatMap((grade) => grade.cafe24GroupNo
+      ? [[grade.cafe24GroupNo, grade.id] as const]
+      : [])
+  );
+  const amounts = Object.fromEntries(settings.grades.map((grade) => [grade.id, 0])) as Record<string, number>;
+  let unassignedMemberCount = 0;
+
+  // 카페24 API 요청량을 제한하고 buyerNames의 1분 캐시를 함께 사용합니다.
+  for (let offset = 0; offset < snapshots.length; offset += 5) {
+    const results = await Promise.all(snapshots.slice(offset, offset + 5).map(async (snapshot) => {
+      const groupNo = await getCurrentCustomerGroupNo(snapshot.member_id);
+      return {
+        balance: Number(snapshot.balance ?? 0),
+        gradeId: groupNo ? gradeIdByCafe24GroupNo.get(groupNo) : undefined,
+      };
+    }));
+    for (const result of results) {
+      if (!result.gradeId) {
+        unassignedMemberCount += 1;
+        continue;
+      }
+      amounts[result.gradeId] += result.balance;
+    }
+  }
+
+  return { source: "cafe24", amounts, unassignedMemberCount };
 }
 
 export type RewardOrderSummary = {
