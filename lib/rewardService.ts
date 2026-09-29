@@ -6,6 +6,7 @@ import {
   getCafe24OrderForReward,
   type Cafe24RewardOrder,
 } from "./cafe24Admin";
+import { getCurrentCustomerGroupNo } from "./buyerNames";
 import { canExecuteCafe24RewardChanges } from "./rewardExecution";
 import { isAfterRewardStart } from "./rewardCutoff";
 import { getRewardSettings } from "./rewardStore";
@@ -77,32 +78,47 @@ export type DashboardRewardBalanceByGrade = {
 };
 
 /**
- * 등급별 카드는 카페24 회원의 전체 보유 적립금이 아니라,
- * 망고TCG가 지급하고 회수한 순적립금만 표시합니다. 그래야 기존 카페24 잔액이
- * 회수된 주문의 적립금처럼 남아 보이지 않습니다.
+ * 카페24 회원별 실제 보유 적립금 잔액을 현재 회원등급에 따라 합산합니다.
+ * 망고TCG 지급·회수 성공 직후에는 해당 회원 스냅샷을 즉시 다시 읽기 때문에,
+ * 회수된 금액은 카페24가 반환한 현재 잔액에 이미 반영됩니다.
  */
 export async function getDashboardRewardBalanceByGrade(): Promise<DashboardRewardBalanceByGrade> {
-  const settings = getRewardSettings();
-  const amounts = Object.fromEntries(settings.grades.map((grade) => [grade.id, 0])) as Record<string, number>;
-  const rows = db.prepare(
-    `SELECT grade_id,
-      COALESCE(SUM(CASE
-        WHEN action = 'issue' THEN amount
-        WHEN action = 'recover' THEN -amount
-        ELSE 0
-      END), 0) AS amount
-     FROM reward_ledger
-     WHERE status = 'succeeded'
-     GROUP BY grade_id`
-  ).all() as Array<{ grade_id: string; amount: number }>;
+  const snapshots = db.prepare(
+    `SELECT member_id, balance FROM cafe24_member_point_balance_snapshots`
+  ).all() as Array<{ member_id: string; balance: number }>;
+  if (snapshots.length === 0) {
+    return { source: "ledger", amounts: {}, unassignedMemberCount: 0 };
+  }
 
-  for (const row of rows) {
-    if (row.grade_id in amounts) {
-      amounts[row.grade_id] = Number(row.amount ?? 0);
+  const settings = getRewardSettings();
+  const gradeIdByCafe24GroupNo = new Map(
+    settings.grades.flatMap((grade) => grade.cafe24GroupNo
+      ? [[grade.cafe24GroupNo, grade.id] as const]
+      : [])
+  );
+  const amounts = Object.fromEntries(settings.grades.map((grade) => [grade.id, 0])) as Record<string, number>;
+  let unassignedMemberCount = 0;
+
+  // 현재 등급은 1분 캐시된 카페24 조회값을 사용해, 잔액이 등급 이동 후에도
+  // 이전 등급에 남지 않도록 합니다.
+  for (let offset = 0; offset < snapshots.length; offset += 5) {
+    const results = await Promise.all(snapshots.slice(offset, offset + 5).map(async (snapshot) => {
+      const groupNo = await getCurrentCustomerGroupNo(snapshot.member_id);
+      return {
+        balance: Number(snapshot.balance ?? 0),
+        gradeId: groupNo ? gradeIdByCafe24GroupNo.get(groupNo) : undefined,
+      };
+    }));
+    for (const result of results) {
+      if (!result.gradeId) {
+        unassignedMemberCount += 1;
+        continue;
+      }
+      amounts[result.gradeId] += result.balance;
     }
   }
 
-  return { source: "ledger", amounts, unassignedMemberCount: 0 };
+  return { source: "cafe24", amounts, unassignedMemberCount };
 }
 
 export type RewardOrderSummary = {
