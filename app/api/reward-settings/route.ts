@@ -6,7 +6,10 @@ import {
   isCafe24RewardIntegrationConfigured,
 } from "@/lib/rewardExecution";
 import { getCafe24OAuthStatus } from "@/lib/cafe24OAuth";
-import { updateCafe24CustomerGroupName } from "@/lib/cafe24Admin";
+import {
+  updateCafe24CustomerGroupAutoUpdateSettings,
+  updateCafe24CustomerGroupName,
+} from "@/lib/cafe24Admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +36,21 @@ export async function PUT(req: NextRequest) {
   const updatedGroupNames: string[] = [];
   const pendingGroupNames: string[] = [];
   const oauth = getCafe24OAuthStatus();
+  let autoUpdatePolicySynced = false;
+
+  if (oauth.connected) {
+    try {
+      await updateCafe24CustomerGroupAutoUpdateSettings({
+        issueTrigger: settings.issueTrigger,
+        deductCancellationRefund: settings.grades.some((grade) => grade.recoveryMode === "automatic"),
+      });
+      autoUpdatePolicySynced = true;
+    } catch (error) {
+      console.error("[reward settings] customer group auto-update sync failed", {
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    }
+  }
 
   for (const grade of settings.grades) {
     const previous = before.grades.find((item) => item.id === grade.id);
@@ -62,5 +80,6 @@ export async function PUT(req: NextRequest) {
     executionAllowed: canExecuteCafe24RewardChanges(),
     nativeRewardsDisabled: process.env.CAFE24_NATIVE_REWARDS_DISABLED === "true",
     groupNameSync: { updated: updatedGroupNames, pending: pendingGroupNames },
+    cafe24AutoUpdateSync: { updated: autoUpdatePolicySynced, pending: oauth.connected && !autoUpdatePolicySynced },
   });
 }

@@ -155,12 +155,17 @@ export default function RewardSettingsPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
-      const data = await response.json() as ApiResponse & { error?: string };
+      const data = await response.json() as ApiResponse & {
+        error?: string;
+        cafe24AutoUpdateSync?: { updated: boolean; pending: boolean };
+      };
       if (!response.ok) throw new Error(data.error ?? "save failed");
       setSettings(data.settings);
       setOauthConfigured(data.oauth.configured);
       setOauthConnected(data.oauth.connected);
-      if (data.groupNameSync?.pending.length) {
+      if (data.cafe24AutoUpdateSync?.pending) {
+        setMessage("적립금 정책은 저장됐습니다. 카페24 재연결 후 회원등급 자동변경 기준을 반영합니다.");
+      } else if (data.groupNameSync?.pending.length) {
         setMessage(`적립금 정책을 저장했습니다. ${data.groupNameSync.pending.join(", ")} 등급명은 카페24 연결 후 반영됩니다.`);
       } else if (data.groupNameSync?.updated.length) {
         setMessage(`적립금 정책과 카페24 등급명(${data.groupNameSync.updated.join(", ")})을 저장했습니다.`);

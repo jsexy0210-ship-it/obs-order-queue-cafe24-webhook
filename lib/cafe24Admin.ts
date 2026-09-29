@@ -93,6 +93,34 @@ export async function updateCafe24CustomerGroupName(groupNo: string, groupName: 
   });
 }
 
+/** 망고TCG 적립 정책과 카페24 회원등급 자동변경 기준을 같은 시점으로 맞춥니다. */
+export async function updateCafe24CustomerGroupAutoUpdateSettings(input: {
+  issueTrigger: "paid" | "delivered";
+  deductCancellationRefund: boolean;
+}) {
+  const token = await getValidCafe24AccessToken();
+  const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
+  const current = await request<{ customergroup?: Record<string, unknown> }>(
+    `/customergroups/setting?${query}`
+  );
+  if (!current.customergroup) {
+    throw new Error("카페24 회원등급 자동변경 설정을 찾을 수 없습니다.");
+  }
+  await request(`/customergroups/setting?${query}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      ...current.customergroup,
+      shop_no: Number(token.shopNo || "1"),
+      auto_update: "T",
+      use_auto_update: "T",
+      customer_tier_criteria: "purchase_amount",
+      standard_purchase_amount: "total_paid_amount",
+      auto_update_criteria: input.issueTrigger === "paid" ? "payment_complete" : "delivery_complete",
+      deduct_cancellation_refund: input.deductCancellationRefund ? "T" : "F",
+    }),
+  });
+}
+
 export type Cafe24OrderItem = {
   product_name?: string;
   payment_amount?: string | number;

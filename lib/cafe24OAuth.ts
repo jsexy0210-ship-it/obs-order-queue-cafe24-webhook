@@ -207,6 +207,7 @@ export function getRequestedCafe24Scopes() {
   return [
     "mall.read_order",
     "mall.read_customer",
+    "mall.write_customer",
     "mall.read_mileage",
     "mall.write_mileage",
   ];
