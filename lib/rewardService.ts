@@ -6,7 +6,6 @@ import {
   getCafe24OrderForReward,
   type Cafe24RewardOrder,
 } from "./cafe24Admin";
-import { getCurrentCustomerGroupNo } from "./buyerNames";
 import { canExecuteCafe24RewardChanges } from "./rewardExecution";
 import { isAfterRewardStart } from "./rewardCutoff";
 import { getRewardSettings } from "./rewardStore";
@@ -78,45 +77,32 @@ export type DashboardRewardBalanceByGrade = {
 };
 
 /**
- * 카페24에서 가져온 회원별 현재 잔액을, 현재 회원등급과 망고TCG 등급 매핑으로 합산합니다.
- * 스냅샷이 없을 때는 기존 지급 원장 기반의 기간별 표시를 유지하도록 ledger를 반환합니다.
+ * 등급별 카드는 카페24 회원의 전체 보유 적립금이 아니라,
+ * 망고TCG가 지급하고 회수한 순적립금만 표시합니다. 그래야 기존 카페24 잔액이
+ * 회수된 주문의 적립금처럼 남아 보이지 않습니다.
  */
 export async function getDashboardRewardBalanceByGrade(): Promise<DashboardRewardBalanceByGrade> {
-  const snapshots = db.prepare(
-    `SELECT member_id, balance FROM cafe24_member_point_balance_snapshots`
-  ).all() as Array<{ member_id: string; balance: number }>;
-  if (snapshots.length === 0) {
-    return { source: "ledger", amounts: {}, unassignedMemberCount: 0 };
-  }
-
   const settings = getRewardSettings();
-  const gradeIdByCafe24GroupNo = new Map(
-    settings.grades.flatMap((grade) => grade.cafe24GroupNo
-      ? [[grade.cafe24GroupNo, grade.id] as const]
-      : [])
-  );
   const amounts = Object.fromEntries(settings.grades.map((grade) => [grade.id, 0])) as Record<string, number>;
-  let unassignedMemberCount = 0;
+  const rows = db.prepare(
+    `SELECT grade_id,
+      COALESCE(SUM(CASE
+        WHEN action = 'issue' THEN amount
+        WHEN action = 'recover' THEN -amount
+        ELSE 0
+      END), 0) AS amount
+     FROM reward_ledger
+     WHERE status = 'succeeded'
+     GROUP BY grade_id`
+  ).all() as Array<{ grade_id: string; amount: number }>;
 
-  // 카페24 API 요청량을 제한하고 buyerNames의 1분 캐시를 함께 사용합니다.
-  for (let offset = 0; offset < snapshots.length; offset += 5) {
-    const results = await Promise.all(snapshots.slice(offset, offset + 5).map(async (snapshot) => {
-      const groupNo = await getCurrentCustomerGroupNo(snapshot.member_id);
-      return {
-        balance: Number(snapshot.balance ?? 0),
-        gradeId: groupNo ? gradeIdByCafe24GroupNo.get(groupNo) : undefined,
-      };
-    }));
-    for (const result of results) {
-      if (!result.gradeId) {
-        unassignedMemberCount += 1;
-        continue;
-      }
-      amounts[result.gradeId] += result.balance;
+  for (const row of rows) {
+    if (row.grade_id in amounts) {
+      amounts[row.grade_id] = Number(row.amount ?? 0);
     }
   }
 
-  return { source: "cafe24", amounts, unassignedMemberCount };
+  return { source: "ledger", amounts, unassignedMemberCount: 0 };
 }
 
 export type RewardOrderSummary = {
