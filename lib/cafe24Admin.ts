@@ -63,24 +63,31 @@ export async function getCafe24CurrentCustomerGroupNo(memberId: string): Promise
 /** 적립금 지급·회수 직후 대시보드 잔액을 갱신하기 위한 회원 현재 적립금 조회입니다. */
 export async function getCafe24CustomerPointBalance(memberId: string) {
   const token = await getValidCafe24AccessToken();
-  const query = new URLSearchParams({ shop_no: token.shopNo || "1", member_id: memberId });
+  // /customers의 total_points는 회원의 현재 사용가능 적립금이 아닐 수 있습니다.
+  // 지급/회수 후 표시할 잔액은 적립금 API가 제공하는 available_points_total을 사용합니다.
+  // 카페24 적립금 조회 API는 조회 기간을 90일 이내로 요구합니다.
+  const end = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const start = new Date(end.getTime() - 89 * 24 * 60 * 60 * 1000);
+  const query = new URLSearchParams({
+    shop_no: token.shopNo || "1",
+    member_id: memberId,
+    start_date: start.toISOString().slice(0, 10),
+    end_date: end.toISOString().slice(0, 10),
+  });
   const response = await request<{
-    customers?: Array<{
-      member_id: string;
-      group_no?: string | number;
-      available_points?: string | number;
-      total_points?: string | number;
+    points?: Array<{
+      available_points_total?: string | number;
     }>;
-  }>(`/customers?${query}`);
-  const customer = response.customers?.find((item) => item.member_id === memberId);
-  const balance = Number(customer?.available_points ?? customer?.total_points);
-  if (!customer || !Number.isFinite(balance) || balance < 0) {
+  }>(`/points?${query}`);
+  const latestBalance = response.points
+    ?.map((point) => Number(point.available_points_total))
+    .find((balance) => Number.isFinite(balance) && balance >= 0);
+  if (latestBalance === undefined) {
     throw new Error("카페24 회원의 현재 적립금을 확인할 수 없습니다.");
   }
   return {
-    memberId: customer.member_id,
-    groupNo: customer.group_no == null ? null : String(customer.group_no),
-    balance: Math.floor(balance),
+    memberId,
+    balance: Math.floor(latestBalance),
   };
 }
 
