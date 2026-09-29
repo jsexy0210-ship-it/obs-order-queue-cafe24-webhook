@@ -91,15 +91,9 @@ export type DashboardRewardBalanceByGrade = {
   unassignedMemberCount: number;
 };
 
-/**
- * 카페24 회원별 실제 보유 적립금 잔액을 현재 회원등급에 따라 합산합니다.
- * 망고TCG 지급·회수 성공 직후에는 해당 회원 스냅샷을 즉시 다시 읽기 때문에,
- * 회수된 금액은 카페24가 반환한 현재 잔액에 이미 반영됩니다.
- */
-export async function getDashboardRewardBalanceByGrade(): Promise<DashboardRewardBalanceByGrade> {
-  const snapshots = db.prepare(
-    `SELECT member_id, balance FROM cafe24_member_point_balance_snapshots`
-  ).all() as Array<{ member_id: string; balance: number }>;
+async function getDashboardRewardBalanceByGradeFromSnapshots(
+  snapshots: Array<{ member_id: string; balance: number }>
+): Promise<DashboardRewardBalanceByGrade> {
   if (snapshots.length === 0) {
     return { source: "ledger", amounts: {}, unassignedMemberCount: 0 };
   }
@@ -133,6 +127,30 @@ export async function getDashboardRewardBalanceByGrade(): Promise<DashboardRewar
   }
 
   return { source: "cafe24", amounts, unassignedMemberCount };
+}
+
+/**
+ * 카페24 회원별 실제 보유 적립금 잔액을 현재 회원등급에 따라 합산합니다.
+ * 망고TCG 지급·회수 성공 직후에는 해당 회원 스냅샷을 즉시 다시 읽기 때문에,
+ * 회수된 금액은 카페24가 반환한 현재 잔액에 이미 반영됩니다.
+ */
+export async function getDashboardRewardBalanceByGrade(): Promise<DashboardRewardBalanceByGrade> {
+  const snapshots = db.prepare(
+    `SELECT member_id, balance FROM cafe24_member_point_balance_snapshots`
+  ).all() as Array<{ member_id: string; balance: number }>;
+  return getDashboardRewardBalanceByGradeFromSnapshots(snapshots);
+}
+
+/**
+ * 초기 이관된 기존 잔액은 주문별 결제수단 정보가 없으므로, 카드 지급 원장과
+ * 중복시키지 않고 무통장 합계에만 합산해 표시합니다.
+ */
+export async function getDashboardLegacyRewardBalanceByGrade(): Promise<DashboardRewardBalanceByGrade> {
+  const snapshots = db.prepare(
+    `SELECT member_id, balance FROM cafe24_member_point_balance_snapshots
+      WHERE source_file <> 'live-cafe24'`
+  ).all() as Array<{ member_id: string; balance: number }>;
+  return getDashboardRewardBalanceByGradeFromSnapshots(snapshots);
 }
 
 export type RewardOrderSummary = {

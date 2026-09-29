@@ -538,10 +538,6 @@
   white-space: nowrap;
 }
 
-.rewardPaymentTotals .rewardAvailableBalance {
-  color: #c9b8ff;
-  font-size: 12px;
-}
 
 /* Light mode uses an intentionally complete, high-contrast palette.  The
  * administration header remains dark in both themes, while every surface
