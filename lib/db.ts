@@ -139,29 +139,9 @@ db.exec(`
     hidden_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
-  -- 한국시간 예약 시각에 확정한 일일·주간·월간 수익 브리핑입니다.
-  -- period_key 고유 제약으로 앱 재시작이나 중복 타이머 실행에도 한 번만 저장합니다.
-  CREATE TABLE IF NOT EXISTS profit_briefings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_type TEXT NOT NULL CHECK (period_type IN ('daily', 'weekly', 'monthly')),
-    period_key TEXT NOT NULL,
-    period_label TEXT NOT NULL,
-    period_start_at TEXT NOT NULL,
-    period_end_at TEXT NOT NULL,
-    scheduled_at TEXT NOT NULL,
-    total_purchase_amount INTEGER NOT NULL CHECK (total_purchase_amount >= 0),
-    margin_rate REAL NOT NULL,
-    net_margin_amount INTEGER NOT NULL CHECK (net_margin_amount >= 0),
-    source_order_count INTEGER NOT NULL CHECK (source_order_count >= 0),
-    generated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(period_type, period_key)
-  );
-
   CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
   CREATE INDEX IF NOT EXISTS idx_reward_ledger_status ON reward_ledger(status, action);
   CREATE INDEX IF NOT EXISTS idx_ranking_bonus_user ON ranking_bonus_ledger(user_id, status);
-  CREATE INDEX IF NOT EXISTS idx_profit_briefings_generated_at
-    ON profit_briefings(generated_at DESC);
 `);
 
 // 이미 만들어져 있던 기존 DB 파일에는 completed_at 컬럼이 없을 수 있으므로,
