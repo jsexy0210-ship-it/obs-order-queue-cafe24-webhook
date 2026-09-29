@@ -143,7 +143,7 @@ jobs:
           $healthy = $false
           foreach ($attempt in 1..6) {
             try {
-              $response = Invoke-WebRequest -Uri "http://127.0.0.1:3000/admin/login" -UseBasicParsing -TimeoutSec 5
+              $response = Invoke-WebRequest -Uri "http://127.0.0.1:3001/admin/login" -UseBasicParsing -TimeoutSec 5
               if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
                 $healthy = $true
                 break
@@ -153,5 +153,5 @@ jobs:
             }
           }
           if (-not $healthy) {
-            throw "로컬 운영 엔드포인트(http://127.0.0.1:3000/admin/login) 헬스체크에 실패했습니다."
+            throw "로컬 운영 엔드포인트(http://127.0.0.1:3001/admin/login) 헬스체크에 실패했습니다."
           }

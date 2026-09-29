@@ -150,12 +150,14 @@ export async function changeCafe24Points(input: {
   await request("/points", {
     method: "POST",
     body: JSON.stringify({
-      shop_no: Number(token.shopNo || "1"),
-      member_id: input.memberId,
-      order_id: input.orderId,
-      amount: input.amount,
-      type: input.type,
-      reason: input.reason,
+      request: {
+        shop_no: Number(token.shopNo || "1"),
+        member_id: input.memberId,
+        order_id: input.orderId,
+        amount: input.amount,
+        type: input.type,
+        reason: input.reason,
+      },
     }),
   });
 }

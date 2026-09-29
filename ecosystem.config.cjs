@@ -5,7 +5,7 @@ module.exports = {
       name: "mangotcg-admin",
       cwd: __dirname,
       script: "./node_modules/next/dist/bin/next",
-      args: "start -p 3000",
+      args: "start -p 3001",
       interpreter: "node",
       instances: 1,
       autorestart: true,
