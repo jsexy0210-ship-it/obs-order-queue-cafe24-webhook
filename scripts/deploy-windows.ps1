@@ -56,7 +56,7 @@ try {
     $healthy = $false
     foreach ($attempt in 1..10) {
       try {
-        $response = Invoke-WebRequest "http://127.0.0.1:3000/admin/login" -UseBasicParsing -TimeoutSec 5
+        $response = Invoke-WebRequest "http://127.0.0.1:3001/admin/login" -UseBasicParsing -TimeoutSec 5
         if ($response.StatusCode -eq 200) { $healthy = $true; break }
       } catch { Start-Sleep -Seconds 2 }
     }
