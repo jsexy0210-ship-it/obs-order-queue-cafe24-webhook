@@ -97,12 +97,6 @@ function statusInfo(order: OrderRow): { label: string; className: string } {
   return { label: "대기중", className: styles.statusWaiting };
 }
 
-function rewardStatusLabel(status: RewardStatus) {
-  if (status === "succeeded") return "완료";
-  if (status === "failed") return "실패";
-  return "대기";
-}
-
 function formatDate(value: string) {
   // SQLite CURRENT_TIMESTAMP는 UTC 기준이라 'Z'를 붙여 브라우저 로컬시간으로 정확히 변환합니다.
   const date = new Date(`${value.replace(" ", "T")}Z`);
@@ -346,19 +340,16 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                       <td data-label="구매자">{order.user_id}</td>
                       <td data-label="회원등급">{order.tier || "-"}</td>
                       <td data-label="적립금" className={styles.rewardCell}>
-                        {!reward?.issue ? (
+                        {!reward?.issue && !reward?.recover ? (
                           <span className={styles.rewardNone}>-</span>
+                        ) : reward.recover ? (
+                          <span className={`${styles.rewardBadge} ${styles.rewardRecover}`}>
+                            회수 {formatPrice(reward.recover.amount)}
+                          </span>
                         ) : (
-                          <>
-                            <span className={`${styles.rewardBadge} ${styles[`reward${reward.issue.status}`]}`}>
-                              지급 {formatPrice(reward.issue.amount)} · {rewardStatusLabel(reward.issue.status)}
-                            </span>
-                            {reward.recover && (
-                              <span className={`${styles.rewardBadge} ${styles[`reward${reward.recover.status}`]}`}>
-                                회수 {formatPrice(reward.recover.amount)} · {rewardStatusLabel(reward.recover.status)}
-                              </span>
-                            )}
-                          </>
+                          <span className={styles.rewardBadge}>
+                            지급 {formatPrice(reward.issue!.amount)}
+                          </span>
                         )}
                       </td>
                       <td data-label="상태"><span className={`${styles.statusBadge} ${className}`}>{label}</span></td>

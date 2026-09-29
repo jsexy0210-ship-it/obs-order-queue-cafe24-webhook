@@ -428,18 +428,16 @@
 }
 
 :global([data-theme="light"]) .paidBadge,
-:global([data-theme="light"]) .rewardsucceeded,
 :global([data-theme="light"]) .statusDone {
   background: #e7f8ee;
   color: #137a49;
 }
 
-:global([data-theme="light"]) .rewardpending {
+:global([data-theme="light"]) .rewardRecover {
   background: #fff7e5;
   color: #795415;
 }
 
-:global([data-theme="light"]) .rewardfailed,
 :global([data-theme="light"]) .statusCancelled {
   background: #ffedf0;
   color: #b4233a;
@@ -649,27 +647,18 @@
 .rewardBadge {
   display: block;
   width: fit-content;
-  margin: 2px 0;
   padding: 5px 9px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.rewardsucceeded {
   background: rgba(53, 208, 127, 0.16);
   color: #63eda3;
 }
 
-.rewardpending {
-  background: rgba(255, 183, 77, 0.14);
-  color: #ffd28c;
-}
-
-.rewardfailed {
-  background: rgba(255, 77, 95, 0.15);
-  color: #ff9fa9;
+.rewardRecover {
+  background: rgba(255, 193, 7, 0.18);
+  color: #ffdc6c;
 }
 
 .rewardNone {
