@@ -160,6 +160,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [syncError, setSyncError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
   const [orderPage, setOrderPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
@@ -188,9 +189,17 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   }, [selectedMonth, selectedYear]);
 
   async function deleteOrderRow(id: number) {
-    if (!window.confirm("이 주문 이력을 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
-    await fetch(`/api/orders/${id}`, { method: "DELETE" });
-    await load();
+    if (!window.confirm("이 주문 이력을 목록에서 삭제하시겠습니까? 카페24 주문과 적립금 지급 내역은 변경되지 않습니다.")) return;
+    setDeletingOrderId(id);
+    try {
+      const response = await fetch(`/api/orders/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("delete failed");
+      setOrders((current) => current.filter((order) => order.id !== id));
+    } catch {
+      window.alert("주문 이력 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setDeletingOrderId(null);
+    }
   }
 
   useEffect(() => {
@@ -359,8 +368,9 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                         {!order.remote_only && <button
                           className={styles.rowDeleteButton}
                           onClick={() => deleteOrderRow(order.id)}
+                          disabled={deletingOrderId === order.id}
                         >
-                          삭제
+                          {deletingOrderId === order.id ? "삭제 중" : "삭제"}
                         </button>}
                       </td>
                     </tr>

@@ -38,6 +38,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "invalid id" }, { status: 400 });
   }
 
-  deleteOrder(id);
+  if (!deleteOrder(id)) {
+    return NextResponse.json({ error: "order not found" }, { status: 404 });
+  }
   return NextResponse.json({ ok: true });
 }

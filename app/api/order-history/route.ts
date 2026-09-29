@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getHitCardHistory,
+  getHiddenOrderHistoryIds,
   getOrderHistory,
   getOrderHistoryYears,
   resetAllHistory,
@@ -82,7 +83,7 @@ export async function GET(request: Request) {
   if (hasMonthFilter) {
     try {
       const cafe24Orders = await getCafe24OrdersForMonths(year, [month]);
-      const merged = await currentOrderView(getOrderHistory(), cafe24Orders);
+      const merged = await currentOrderView(getOrderHistory(), cafe24Orders, getHiddenOrderHistoryIds());
       const startUtc = Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000;
       const endUtc = Date.UTC(year, month, 1) - 9 * 60 * 60 * 1000;
       orders = merged.filter((order) => {

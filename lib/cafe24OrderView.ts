@@ -79,8 +79,15 @@ async function getDetail(orderId: string) {
 }
 
 /** 원본 주문 DB는 유지하고, 화면·집계에 쓰는 주문 정보를 카페24 현재값으로 합칩니다. */
-export async function currentOrderView(localOrders: OrderRow[], cafe24Orders: Cafe24RewardOrder[]): Promise<CurrentOrder[]> {
-  const localById = new Map(localOrders.flatMap((order) =>
+export async function currentOrderView(
+  localOrders: OrderRow[],
+  cafe24Orders: Cafe24RewardOrder[],
+  hiddenOrderIds: ReadonlySet<string> = new Set()
+): Promise<CurrentOrder[]> {
+  const visibleLocalOrders = localOrders.filter((order) =>
+    !order.external_order_id || !hiddenOrderIds.has(order.external_order_id)
+  );
+  const localById = new Map(visibleLocalOrders.flatMap((order) =>
     order.source === "cafe24" && order.external_order_id ? [[order.external_order_id, order] as const] : []
   ));
   const remoteById = new Map(cafe24Orders.flatMap((order) => order.order_id ? [[order.order_id, order] as const] : []));
@@ -93,7 +100,7 @@ export async function currentOrderView(localOrders: OrderRow[], cafe24Orders: Ca
     await Promise.all(detailIds.slice(index, index + 5).map((id) => getDetail(id).catch(() => null)));
   }
 
-  const current = localOrders.map((order): CurrentOrder => {
+  const current = visibleLocalOrders.map((order): CurrentOrder => {
     const remote = order.external_order_id ? remoteById.get(order.external_order_id) : undefined;
     if (!remote || order.source !== "cafe24") {
       return { ...order, actual_amount: order.status === "cancelled" ? 0 : localActualAmount(order) };
@@ -117,7 +124,7 @@ export async function currentOrderView(localOrders: OrderRow[], cafe24Orders: Ca
   });
 
   for (const remote of cafe24Orders) {
-    if (!remote.order_id || localById.has(remote.order_id)) continue;
+    if (!remote.order_id || hiddenOrderIds.has(remote.order_id) || localById.has(remote.order_id)) continue;
     const items = details.get(remote.order_id)?.items ?? [];
     current.push({
       id: -current.length - 1,

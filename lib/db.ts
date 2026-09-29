@@ -132,6 +132,13 @@ db.exec(`
     imported_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- 카페24 주문을 삭제하지 않고 관리자 주문 이력 화면에서만 숨깁니다.
+  -- 새로고침으로 원격 주문을 다시 합칠 때에도 숨김 상태를 유지합니다.
+  CREATE TABLE IF NOT EXISTS hidden_order_history (
+    external_order_id TEXT PRIMARY KEY,
+    hidden_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
   CREATE INDEX IF NOT EXISTS idx_reward_ledger_status ON reward_ledger(status, action);
   CREATE INDEX IF NOT EXISTS idx_ranking_bonus_user ON ranking_bonus_ledger(user_id, status);

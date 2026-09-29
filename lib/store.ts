@@ -160,6 +160,12 @@ export function getOrderHistoryYears(): number[] {
   return Array.from(new Set([currentYear, ...years])).sort((a, b) => b - a);
 }
 
+/** 카페24 원격 주문을 주문 이력 화면에서만 제외하기 위한 목록입니다. */
+export function getHiddenOrderHistoryIds(): Set<string> {
+  const rows = db.prepare("SELECT external_order_id FROM hidden_order_history").all() as Array<{ external_order_id: string }>;
+  return new Set(rows.map((row) => row.external_order_id));
+}
+
 /**
  * 히트카드 등록 이력 화면용: 최근 등록순으로 반환합니다.
  */
@@ -237,9 +243,25 @@ export function completeOpening(id: number) {
   broadcastUpdate();
 }
 
-export function deleteOrder(id: number) {
-  db.prepare("DELETE FROM orders WHERE id = ?").run(id);
+export function deleteOrder(id: number): boolean {
+  const order = db.prepare(
+    "SELECT external_order_id FROM orders WHERE id = ?"
+  ).get(id) as { external_order_id: string | null } | undefined;
+  if (!order) return false;
+
+  const tx = db.transaction(() => {
+    // 카페24 주문은 원격 동기화 때 다시 표시될 수 있으므로 화면 숨김 상태를 보존합니다.
+    if (order.external_order_id) {
+      db.prepare(
+        `INSERT INTO hidden_order_history (external_order_id, hidden_at) VALUES (?, datetime('now'))
+         ON CONFLICT(external_order_id) DO UPDATE SET hidden_at = excluded.hidden_at`
+      ).run(order.external_order_id);
+    }
+    db.prepare("DELETE FROM orders WHERE id = ?").run(id);
+  });
+  tx();
   broadcastUpdate();
+  return true;
 }
 
 export function addHitCard(userId: string, card: string, youtubeNickname?: string | null) {
