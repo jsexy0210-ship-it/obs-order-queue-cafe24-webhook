@@ -499,6 +499,7 @@
 
 .rewardGradeTotal {
   min-width: 0;
+  container-type: inline-size;
   padding: 4px;
   border: 1px solid rgba(201, 184, 255, 0.16);
   border-radius: 8px;
@@ -532,10 +533,16 @@
 }
 
 .rewardPaymentTotals strong {
+  display: block;
+  min-width: 0;
   color: #f0edff;
-  font-size: 11px;
+  /* 카드 폭을 기준으로 금액 글자를 축소해 큰 누적금도 한 줄 안에 유지한다. */
+  font-size: clamp(8px, 9cqw, 11px);
   line-height: 1.25;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.03em;
 }
 
 

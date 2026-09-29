@@ -268,7 +268,7 @@ export default function OrderDashboard() {
               <span>{grade.name}</span>
               <div className={styles.rewardPaymentTotals}>
                 <strong>카드 {grade.cardAmount.toLocaleString("ko-KR")}원</strong>
-                <strong>무통장 {grade.bankAmount.toLocaleString("ko-KR")}원</strong>
+                <strong>무통 {grade.bankAmount.toLocaleString("ko-KR")}원</strong>
               </div>
             </div>
           ))}
