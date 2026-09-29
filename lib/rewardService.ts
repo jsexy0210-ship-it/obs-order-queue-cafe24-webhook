@@ -43,13 +43,19 @@ export function listRewardLedger(limit = 30): RewardLedgerRow[] {
 export type DashboardRewardEntry = Pick<
   RewardLedgerRow,
   "external_order_id" | "action" | "amount" | "grade_id" | "processed_at"
-> & { payment_method: string | null };
+> & { payment_kind: "card" | "bank" | "unknown" };
 
 export function getDashboardRewardEntries(sinceUtc: string): DashboardRewardEntry[] {
   return db.prepare(
-    `SELECT l.external_order_id, l.action, l.amount, l.grade_id, l.processed_at, o.payment_method
+    `SELECT l.external_order_id, l.action, l.amount, l.grade_id, l.processed_at,
+       CASE
+         -- 지급 당시 원장에 저장한 적용률로 결제수단을 판별한다. 주문 이력이 정리돼도
+         -- 카드/무통장 적립금 분류가 사라지지 않도록 orders 테이블에 의존하지 않는다.
+         WHEN l.applied_rate = l.bank_rate AND l.applied_rate <> l.card_rate THEN 'bank'
+         WHEN l.applied_rate = l.card_rate THEN 'card'
+         ELSE 'unknown'
+       END AS payment_kind
        FROM reward_ledger l
-       LEFT JOIN orders o ON o.external_order_id = l.external_order_id
       WHERE l.status = 'succeeded' AND l.processed_at >= ?`
   ).all(sinceUtc) as DashboardRewardEntry[];
 }

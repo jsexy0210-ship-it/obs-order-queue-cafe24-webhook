@@ -11,7 +11,7 @@ type Order = {
   status: string;
 };
 
-type RewardEntry = { amount: number; grade_id: string; payment_method: string | null; processed_at: string };
+type RewardEntry = { amount: number; grade_id: string; payment_kind: "card" | "bank" | "unknown"; processed_at: string };
 type Grade = { id: string; name: string };
 type DashboardRange = "day" | "week" | "month" | "year";
 
@@ -170,11 +170,10 @@ export default function OrderDashboard() {
     return {
       ...grade,
       cardAmount: entries
-        .filter((entry) => (entry.payment_method ?? "").toLowerCase().split(",").includes("card"))
+        .filter((entry) => entry.payment_kind === "card")
         .reduce((total, entry) => total + entry.amount, 0),
       bankAmount: entries
-        .filter((entry) => (entry.payment_method ?? "").toLowerCase().split(",")
-          .some((method) => BANK_DEPOSIT_METHODS.has(method)))
+        .filter((entry) => entry.payment_kind === "bank")
         .reduce((total, entry) => total + entry.amount, 0),
     };
   });

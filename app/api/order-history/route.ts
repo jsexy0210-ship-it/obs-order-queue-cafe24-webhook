@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         .filter((entry) => statuses.get(entry.external_order_id) !== "cancelled")
         .map((entry) => ({
           amount: entry.action === "recover" ? -entry.amount : entry.amount,
-          grade_id: entry.grade_id, payment_method: entry.payment_method, processed_at: entry.processed_at,
+          grade_id: entry.grade_id, payment_kind: entry.payment_kind, processed_at: entry.processed_at,
         })),
       cumulativeRewardBalance: cumulativeReward.amount,
       cumulativeRewardSource: cumulativeReward.source,
