@@ -30,11 +30,30 @@ export type Cafe24CustomerGroup = {
   buy_benefits?: string;
 };
 
+export type Cafe24CustomerGroupDetail = Cafe24CustomerGroup & {
+  points_information?: Record<string, string | number | null>;
+  mobile_points_information?: Record<string, string | number | null>;
+};
+
 export async function getCafe24CustomerGroups() {
   const token = await getValidCafe24AccessToken();
   const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
   const response = await request<{ customergroups?: Cafe24CustomerGroup[] }>(`/customergroups?${query}`);
   return response.customergroups ?? [];
+}
+
+/**
+ * `buy_benefits=M/P`인 등급은 실제 적립률도 함께 확인해야 합니다.
+ * 카페24에는 적립 혜택 유형만 M으로 남기고 적립률을 0으로 둔 등급이 있을 수 있어,
+ * 유형 코드만 보고 망고TCG 지급을 차단하면 해당 등급은 영구적으로 지급되지 않습니다.
+ */
+export async function getCafe24CustomerGroup(groupNo: string | number) {
+  const token = await getValidCafe24AccessToken();
+  const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
+  const response = await request<{ customergroup?: Cafe24CustomerGroupDetail }>(
+    `/customergroups/${encodeURIComponent(String(groupNo))}?${query}`
+  );
+  return response.customergroup ?? null;
 }
 
 export async function getCafe24OrderBuyerInfo(orderId: string) {

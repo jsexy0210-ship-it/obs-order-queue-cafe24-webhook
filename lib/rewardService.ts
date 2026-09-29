@@ -1,6 +1,7 @@
 import { db } from "./db";
 import {
   changeCafe24Points,
+  getCafe24CustomerGroup,
   getCafe24CustomerGroups,
   getCafe24CustomerPointBalance,
   getCafe24OrderForReward,
@@ -220,6 +221,28 @@ function findGrade(
   return settings.grades.find((grade) => grade.enabled && grade.cafe24GroupNo === String(groupNo)) ?? null;
 }
 
+function hasPositiveCafe24PointRate(values: Record<string, string | number | null> | undefined) {
+  return Object.values(values ?? {}).some((value) => {
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount > 0;
+  });
+}
+
+/** 카페24 자체 적립금이 실제로 발생하는지 확인한다. 조회 실패는 이중 지급 방지를 위해 활성으로 취급한다. */
+async function hasActiveCafe24NativeReward(groupNo: string | number, buyBenefits: string | undefined) {
+  // F: 혜택 없음, D: 구매금액 할인만 적용. 둘은 카페24 적립금을 생성하지 않는다.
+  if (["F", "D"].includes(buyBenefits ?? "")) return false;
+
+  try {
+    const group = await getCafe24CustomerGroup(groupNo);
+    if (!group) return true;
+    return hasPositiveCafe24PointRate(group.points_information) ||
+      hasPositiveCafe24PointRate(group.mobile_points_information);
+  } catch {
+    return true;
+  }
+}
+
 /**
  * 결제완료 또는 배송완료 웹훅에서 호출합니다.
  * 저장된 망고TCG 적립 시점과 일치하는 이벤트만 통과시켜, 두 시점이 함께 지급될 수 없게 합니다.
@@ -240,12 +263,14 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
   const groupNo = order.member_group_no ?? order.group_no;
   const grade = findGrade(settings, groupNo);
   const baseAmount = netProductAmount(order);
-  if (!memberId || !grade || baseAmount === null) return { outcome: "skipped" as const };
+  if (!memberId || groupNo === undefined || groupNo === null || !grade || baseAmount === null) {
+    return { outcome: "skipped" as const };
+  }
 
   // 카페24 자체 등급별 적립이 남아 있으면 망고TCG 지급과 중복될 수 있으므로 실패 안전으로 차단합니다.
   const groups = await getCafe24CustomerGroups();
   const cafe24Group = groups.find((group) => String(group.group_no) === String(groupNo));
-  if (!cafe24Group || !["F", "D"].includes(cafe24Group.buy_benefits ?? "")) {
+  if (!cafe24Group || await hasActiveCafe24NativeReward(groupNo, cafe24Group.buy_benefits)) {
     return { outcome: "native_reward_active" as const };
   }
   if (process.env.CAFE24_NATIVE_REWARDS_DISABLED !== "true") {
