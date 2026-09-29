@@ -95,6 +95,26 @@ export default function AdminPage() {
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
   }, []);
 
+  // 로그인 화면이 브라우저 기록에 남아 있어도, 대시보드에서 뒤로가기를 누르면
+  // 로그인 화면으로 이동시키지 않고 명시적인 로그아웃 확인을 거치게 합니다.
+  useEffect(() => {
+    const historyKey = "mangotcg-admin-back-guard";
+    if (!window.history.state?.[historyKey]) {
+      window.history.pushState({ ...window.history.state, [historyKey]: true }, "", window.location.href);
+    }
+
+    const handleBrowserBack = () => {
+      window.history.pushState({ ...window.history.state, [historyKey]: true }, "", window.location.href);
+      if (!window.confirm("로그아웃하시겠습니까?")) return;
+      void fetch("/api/admin/logout", { method: "POST" }).finally(() => {
+        window.location.replace("/admin/login");
+      });
+    };
+
+    window.addEventListener("popstate", handleBrowserBack);
+    return () => window.removeEventListener("popstate", handleBrowserBack);
+  }, []);
+
   function toggleTheme() {
     setTheme((current) => {
       const next = current === "dark" ? "light" : "dark";

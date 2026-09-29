@@ -1,5 +1,11 @@
 import { db } from "./db";
-import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward, type Cafe24RewardOrder } from "./cafe24Admin";
+import {
+  changeCafe24Points,
+  getCafe24CustomerGroups,
+  getCafe24CustomerPointBalance,
+  getCafe24OrderForReward,
+  type Cafe24RewardOrder,
+} from "./cafe24Admin";
 import { getCurrentCustomerGroupNo } from "./buyerNames";
 import { canExecuteCafe24RewardChanges } from "./rewardExecution";
 import { isAfterRewardStart } from "./rewardCutoff";
@@ -153,6 +159,32 @@ function markLedger(id: number, status: LedgerStatus, error?: unknown) {
   ).run(status, error instanceof Error ? error.message.slice(0, 500) : error ? String(error).slice(0, 500) : null, status, id);
 }
 
+/**
+ * 실지급/회수 성공 직후 카페24의 실제 잔액을 다시 읽어 대시보드 등급별 합계도 갱신합니다.
+ * 잔액 조회 실패는 이미 완료된 카페24 지급을 실패로 되돌리거나 재시도하지 않습니다.
+ */
+async function refreshCafe24PointBalanceSnapshot(memberId: string, buyerName?: string | null) {
+  try {
+    const customer = await getCafe24CustomerPointBalance(memberId);
+    db.prepare(
+      `INSERT INTO cafe24_member_point_balance_snapshots
+        (member_id, buyer_name, balance, source_file, source_date, imported_at)
+       VALUES (?, ?, ?, 'live-cafe24', date('now'), datetime('now'))
+       ON CONFLICT(member_id) DO UPDATE SET
+         buyer_name = excluded.buyer_name,
+         balance = excluded.balance,
+         source_file = excluded.source_file,
+         source_date = excluded.source_date,
+         imported_at = excluded.imported_at`
+    ).run(customer.memberId, buyerName?.trim() || customer.memberId, customer.balance);
+  } catch (error) {
+    console.error("[cafe24 reward] point balance snapshot refresh failed", {
+      memberId,
+      message: error instanceof Error ? error.message : "unknown error",
+    });
+  }
+}
+
 function netProductAmount(order: Cafe24RewardOrder) {
   const items = Array.isArray(order.items) ? order.items : [];
   if (items.length === 0) return null;
@@ -245,6 +277,7 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
       reason: `망고TCG ${grade.name} 구매 적립`,
     });
     markLedger(ledgerId, "succeeded");
+    await refreshCafe24PointBalanceSnapshot(memberId, order.billing_name);
     return { outcome: "issued" as const, amount };
   } catch (error) {
     markLedger(ledgerId, "failed", error);
@@ -285,6 +318,7 @@ export async function recoverRewardForOrder(orderId: string, mode: "automatic" |
       reason: "망고TCG 취소·환불 적립금 회수",
     });
     markLedger(ledgerId, "succeeded");
+    await refreshCafe24PointBalanceSnapshot(issue.member_id);
     return { outcome: "recovered" as const, amount: issue.amount };
   } catch (error) {
     markLedger(ledgerId, "failed", error);

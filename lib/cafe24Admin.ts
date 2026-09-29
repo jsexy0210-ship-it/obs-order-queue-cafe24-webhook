@@ -60,6 +60,30 @@ export async function getCafe24CurrentCustomerGroupNo(memberId: string): Promise
   return customer?.group_no == null ? null : String(customer.group_no);
 }
 
+/** 적립금 지급·회수 직후 대시보드 잔액을 갱신하기 위한 회원 현재 적립금 조회입니다. */
+export async function getCafe24CustomerPointBalance(memberId: string) {
+  const token = await getValidCafe24AccessToken();
+  const query = new URLSearchParams({ shop_no: token.shopNo || "1", member_id: memberId });
+  const response = await request<{
+    customers?: Array<{
+      member_id: string;
+      group_no?: string | number;
+      available_points?: string | number;
+      total_points?: string | number;
+    }>;
+  }>(`/customers?${query}`);
+  const customer = response.customers?.find((item) => item.member_id === memberId);
+  const balance = Number(customer?.available_points ?? customer?.total_points);
+  if (!customer || !Number.isFinite(balance) || balance < 0) {
+    throw new Error("카페24 회원의 현재 적립금을 확인할 수 없습니다.");
+  }
+  return {
+    memberId: customer.member_id,
+    groupNo: customer.group_no == null ? null : String(customer.group_no),
+    balance: Math.floor(balance),
+  };
+}
+
 export async function updateCafe24CustomerGroupName(groupNo: string, groupName: string) {
   const token = await getValidCafe24AccessToken();
   const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
