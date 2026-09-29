@@ -98,6 +98,8 @@ export default function OrderDashboard() {
   const [rewardEntries, setRewardEntries] = useState<RewardEntry[]>([]);
   const [cumulativeRewardBalance, setCumulativeRewardBalance] = useState(0);
   const [cumulativeRewardSource, setCumulativeRewardSource] = useState<"cafe24" | "ledger">("ledger");
+  const [rewardBalanceByGrade, setRewardBalanceByGrade] = useState<Record<string, number>>({});
+  const [rewardBalanceUnassignedMemberCount, setRewardBalanceUnassignedMemberCount] = useState(0);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [amountRange, setAmountRange] = useState<DashboardRange>("month");
   const [paymentRange, setPaymentRange] = useState<DashboardRange>("month");
@@ -118,6 +120,8 @@ export default function OrderDashboard() {
           rewardEntries?: RewardEntry[];
           cumulativeRewardBalance?: number;
           cumulativeRewardSource?: "cafe24" | "ledger";
+          rewardBalanceByGrade?: Record<string, number>;
+          rewardBalanceUnassignedMemberCount?: number;
           syncError?: boolean;
         };
         const settings = await settingsResponse.json() as { settings?: { grades?: Grade[] } };
@@ -126,6 +130,8 @@ export default function OrderDashboard() {
         setRewardEntries(history.rewardEntries ?? []);
         setCumulativeRewardBalance(Number(history.cumulativeRewardBalance ?? 0));
         setCumulativeRewardSource(history.cumulativeRewardSource === "cafe24" ? "cafe24" : "ledger");
+        setRewardBalanceByGrade(history.rewardBalanceByGrade ?? {});
+        setRewardBalanceUnassignedMemberCount(Number(history.rewardBalanceUnassignedMemberCount ?? 0));
         setGrades(settings.settings?.grades ?? []);
         setSyncError(Boolean(history.syncError));
         setNow(Date.now());
@@ -169,6 +175,7 @@ export default function OrderDashboard() {
     const entries = currentRewards.filter((entry) => entry.grade_id === grade.id);
     return {
       ...grade,
+      balance: Number(rewardBalanceByGrade[grade.id] ?? 0),
       cardAmount: entries
         .filter((entry) => entry.payment_kind === "card")
         .reduce((total, entry) => total + entry.amount, 0),
@@ -261,12 +268,16 @@ export default function OrderDashboard() {
             <div className={styles.rewardGradeTotal} key={grade.id}>
               <span>{grade.name}</span>
               <div className={styles.rewardPaymentTotals}>
+                <strong className={styles.rewardAvailableBalance}>보유 {grade.balance.toLocaleString("ko-KR")}원</strong>
                 <strong>카드 {grade.cardAmount.toLocaleString("ko-KR")}원</strong>
                 <strong>무통장 {grade.bankAmount.toLocaleString("ko-KR")}원</strong>
               </div>
             </div>
           ))}
         </div>
+        {rewardBalanceUnassignedMemberCount > 0 && (
+          <small>{rewardBalanceUnassignedMemberCount}명은 카페24 등급 매핑이 없어 등급별 보유 잔액에서 제외됐습니다.</small>
+        )}
       </div>
     </section>
   );
