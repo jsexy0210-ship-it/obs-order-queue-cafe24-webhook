@@ -9,6 +9,7 @@ import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "@/lib/overlaySet
 import RewardSettingsPanel from "./RewardSettingsPanel";
 import OrderDashboard from "./OrderDashboard";
 import OrderRankingPanel from "./OrderRankingPanel";
+import ProfitBriefingPanel from "./ProfitBriefingPanel";
 import styles from "./admin.module.css";
 
 const DEFAULT_TIMER_SECONDS = 60;
@@ -620,6 +621,7 @@ export default function AdminPage() {
       <>
       <h2 className={styles.homeSectionTitle}>대시보드</h2>
       <OrderDashboard />
+      <ProfitBriefingPanel />
 
       <h2 className={styles.homeSectionTitle}>오버레이</h2>
       <div className={styles.operationsGrid}>

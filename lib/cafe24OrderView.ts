@@ -12,7 +12,7 @@ function dateString(year: number, month: number, day: number) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-async function getQuarter(year: number, firstMonth: number) {
+async function getQuarter(year: number, firstMonth: number, fresh = false) {
   const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const currentYear = todayKst.getUTCFullYear();
   const currentMonth = todayKst.getUTCMonth() + 1;
@@ -23,9 +23,9 @@ async function getQuarter(year: number, firstMonth: number) {
     : new Date(Date.UTC(year, lastMonth, 0)).getUTCDate();
   const key = `${year}-${firstMonth}`;
   const cached = quarters.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.orders;
+  if (!fresh && cached && cached.expiresAt > Date.now()) return cached.orders;
   const ongoing = pending.get(key);
-  if (ongoing) return ongoing;
+  if (!fresh && ongoing) return ongoing;
   const request = listCafe24Orders(
     dateString(year, firstMonth, 1), dateString(year, lastMonth, lastDay)
   ).then((orders) => {
@@ -36,9 +36,13 @@ async function getQuarter(year: number, firstMonth: number) {
   return request;
 }
 
-export async function getCafe24OrdersForMonths(year: number, months: number[]) {
+export async function getCafe24OrdersForMonths(
+  year: number,
+  months: number[],
+  options: { fresh?: boolean } = {}
+) {
   const firstMonths = Array.from(new Set(months.map((month) => Math.floor((month - 1) / 3) * 3 + 1)));
-  const pages = await Promise.all(firstMonths.map((month) => getQuarter(year, month)));
+  const pages = await Promise.all(firstMonths.map((month) => getQuarter(year, month, options.fresh)));
   const wanted = new Set(months);
   return pages.flat().filter((order) => {
     const date = order.order_date ? new Date(order.order_date) : null;

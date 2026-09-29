@@ -1847,6 +1847,218 @@
   margin: 0;
 }
 
+.profitBriefingPanel {
+  margin: 22px 0 32px;
+  padding: 24px;
+  border: 1px solid rgba(255, 183, 77, 0.3);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 159, 67, 0.12), rgba(16, 20, 28, 0.98));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.profitBriefingHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.profitBriefingHeader > div > span {
+  color: #ffb74d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.profitBriefingHeader h2 {
+  margin: 5px 0 7px;
+  font-size: 21px;
+}
+
+.profitBriefingHeader p {
+  margin: 0;
+  color: #aeb7c5;
+  font-size: 13px;
+}
+
+.profitTimezone {
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 183, 77, 0.36);
+  border-radius: 999px;
+  color: #ffd18a;
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.profitBriefingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.profitBriefingCard {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 13px;
+  background: rgba(5, 8, 13, 0.48);
+}
+
+.profitBriefingCardTitle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 3px 8px;
+}
+
+.profitBriefingCardTitle > span {
+  grid-row: 1 / 3;
+  font-size: 20px;
+}
+
+.profitBriefingCardTitle strong {
+  color: #f6f8fb;
+  font-size: 14px;
+}
+
+.profitBriefingCardTitle small,
+.profitBriefingCard > small {
+  color: #8792a2;
+  font-size: 10px;
+}
+
+.profitPeriod {
+  margin: 16px 0 8px;
+  color: #d9e0ea;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.profitBriefingCard dl {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.profitBriefingCard dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profitBriefingCard dt {
+  color: #919cac;
+  font-size: 11px;
+}
+
+.profitBriefingCard dd {
+  margin: 0;
+  color: #f4f7fb;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.profitBriefingCard dl > div:last-child dd {
+  color: #ffca78;
+}
+
+.profitEmpty {
+  margin: 24px 0 4px;
+  color: #7f8999;
+  font-size: 12px;
+}
+
+.profitBriefingHistory {
+  margin-top: 22px;
+}
+
+.profitBriefingHistory h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.profitBriefingTableWrap {
+  overflow-x: auto;
+}
+
+.profitBriefingHistory table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.profitBriefingHistory th,
+.profitBriefingHistory td {
+  padding: 10px 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: right;
+}
+
+.profitBriefingHistory th:first-child,
+.profitBriefingHistory td:first-child,
+.profitBriefingHistory th:nth-child(2),
+.profitBriefingHistory td:nth-child(2) {
+  text-align: left;
+}
+
+.profitBriefingHistory th {
+  color: #8792a2;
+  font-size: 10px;
+}
+
+.page[data-theme="light"] .profitBriefingPanel {
+  border-color: #ead4b3;
+  background: linear-gradient(145deg, #fff8ec, #ffffff);
+  box-shadow: 0 14px 34px rgba(45, 35, 20, 0.08);
+}
+
+.page[data-theme="light"] .profitBriefingHeader h2,
+.page[data-theme="light"] .profitBriefingCardTitle strong,
+.page[data-theme="light"] .profitBriefingCard dd,
+.page[data-theme="light"] .profitBriefingHistory h3 {
+  color: #172033;
+}
+
+.page[data-theme="light"] .profitBriefingCard {
+  border-color: #e4e8ee;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.page[data-theme="light"] .profitBriefingHeader p,
+.page[data-theme="light"] .profitBriefingCard dt,
+.page[data-theme="light"] .profitPeriod {
+  color: #647084;
+}
+
+.page[data-theme="light"] .profitTimezone {
+  border-color: #e2b76f;
+  color: #8d5b0b;
+}
+
+.page[data-theme="light"] .profitBriefingCard dl > div:last-child dd {
+  color: #a95d00;
+}
+
+.page[data-theme="light"] .profitBriefingHistory th,
+.page[data-theme="light"] .profitBriefingHistory td {
+  border-bottom-color: #e5e9ef;
+}
+
+@media (max-width: 820px) {
+  .profitBriefingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .profitBriefingHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
 .settingsPage .pageTitleRow {
   margin-bottom: 20px;
 }
