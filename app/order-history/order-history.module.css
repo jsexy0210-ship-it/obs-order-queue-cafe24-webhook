@@ -447,7 +447,7 @@
 
 @media (max-width: 900px) {
   .page {
-    padding-inline: 16px;
+    padding: 24px 16px 44px;
   }
 
   .headerRow {
@@ -466,8 +466,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.06);
@@ -494,6 +494,7 @@
 
   .mobileMenu a,
   .mobileMenu button {
+    min-height: 44px;
     width: 100%;
     padding: 8px 14px;
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -514,6 +515,12 @@
   .historyFilters label,
   .historyFilters select {
     flex: 1 1 0;
+  }
+
+  .historyFilters select,
+  .backButton,
+  .gridScrollButton {
+    min-height: 44px;
   }
 
   .tableWrap {
@@ -579,6 +586,10 @@
 }
 
 @media (max-width: 520px) {
+  .page {
+    padding: 20px 14px 36px;
+  }
+
   .table tr {
     grid-template-columns: 1fr;
   }

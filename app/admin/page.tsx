@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import CardBreakFrame, { type CardBreakFrameHandle } from "@/app/overlay-cardbreak/CardBreakFrame";
@@ -25,6 +26,7 @@ const SITE_LINKS = [
 type Toast = { id: number; userId: string; product: string };
 
 export default function AdminPage() {
+  const router = useRouter();
   const { opening, waiting, hitCards, overlaySettings } = useLiveCardBreak();
 
   const [form, setForm] = useState({
@@ -299,6 +301,18 @@ export default function AdminPage() {
     setShowOverlayPreview(false);
   }
 
+  function goToDashboard() {
+    setMobileMenuOpen(false);
+    setSiteMenuOpen(false);
+    setShowSettings(false);
+    setShowHistory(false);
+    setShowRanking(false);
+    setShowHitHistory(false);
+    closeOverlayPreview();
+    router.replace("/admin");
+    router.refresh();
+  }
+
   async function startOpening(id: number) {
     if (!window.confirm("지금 카드를 오픈하시겠습니까?")) return;
 
@@ -409,10 +423,16 @@ export default function AdminPage() {
   return (
     <main className={styles.page} data-theme={theme}>
       <div className={`${styles.headerRow} ${showHistory || showRanking || showOverlayPreview ? styles.historyHeader : ""}`}>
-        <div className={styles.headerBrand}>
+        <button
+          className={styles.headerBrand}
+          type="button"
+          onClick={goToDashboard}
+          aria-label="망고TCG 관리자 대시보드로 이동하고 새로고침"
+          title="대시보드로 이동 및 새로고침"
+        >
           <span>LIVE OPERATIONS</span>
           <h1>망고TCG 관리자</h1>
-        </div>
+        </button>
         <button
           className={styles.mobileMenuButton}
           type="button"

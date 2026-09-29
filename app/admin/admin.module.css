@@ -1212,6 +1212,20 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.headerBrand:focus-visible {
+  outline: 2px solid #7ddcff;
+  outline-offset: 5px;
+  border-radius: 6px;
 }
 
 .headerBrand span {
@@ -2600,11 +2614,13 @@
 
 @media (max-width: 900px) {
   .page {
-    padding-inline: 16px;
+    padding: 24px 16px 44px;
   }
 
   .headerRow {
-    width: calc(100% - 32px);
+    position: relative;
+    z-index: 40;
+    width: 100%;
     align-items: center;
     flex-direction: row;
   }
@@ -2613,8 +2629,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.06);
@@ -2645,6 +2661,7 @@
 
   .headerButtons .historyButton,
   .headerButtons .logoutButton {
+    min-height: 44px;
     width: 100%;
     justify-content: flex-start;
   }
@@ -2680,6 +2697,18 @@
     grid-column: span 2;
   }
 
+  .dashboardRangePicker button {
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .row button,
+  .form > button,
+  .moreButton,
+  .hitDelete {
+    min-height: 44px;
+  }
+
 
   .overlayModalHeader {
     align-items: stretch;
@@ -2692,6 +2721,26 @@
 }
 
 @media (max-width: 560px) {
+  .page {
+    padding: 20px 14px 36px;
+  }
+
+  .headerBrand {
+    gap: 2px;
+  }
+
+  .headerBrand h1 {
+    font-size: 21px;
+  }
+
+  .headerBrand span {
+    font-size: 9px;
+  }
+
+  .headerButtons {
+    width: min(100%, 320px);
+  }
+
   .settingRow {
     align-items: stretch;
     flex-direction: column;
@@ -2736,6 +2785,12 @@
 
   .rewardBreakdown {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .rewardGradeTotal {
+    min-height: 48px;
+    padding: 7px;
   }
 
   .form {
