@@ -11,7 +11,7 @@ type Order = {
   status: string;
 };
 
-type RewardEntry = { amount: number; grade_id: string; processed_at: string };
+type RewardEntry = { amount: number; grade_id: string; payment_method: string | null; processed_at: string };
 type Grade = { id: string; name: string };
 type DashboardRange = "day" | "week" | "month" | "year";
 
@@ -98,9 +98,6 @@ export default function OrderDashboard() {
   const [rewardEntries, setRewardEntries] = useState<RewardEntry[]>([]);
   const [cumulativeRewardBalance, setCumulativeRewardBalance] = useState(0);
   const [cumulativeRewardSource, setCumulativeRewardSource] = useState<"cafe24" | "ledger">("ledger");
-  const [rewardBalanceByGrade, setRewardBalanceByGrade] = useState<Record<string, number>>({});
-  const [rewardBalanceSource, setRewardBalanceSource] = useState<"cafe24" | "ledger">("ledger");
-  const [rewardBalanceUnassignedMemberCount, setRewardBalanceUnassignedMemberCount] = useState(0);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [amountRange, setAmountRange] = useState<DashboardRange>("month");
   const [paymentRange, setPaymentRange] = useState<DashboardRange>("month");
@@ -121,9 +118,6 @@ export default function OrderDashboard() {
           rewardEntries?: RewardEntry[];
           cumulativeRewardBalance?: number;
           cumulativeRewardSource?: "cafe24" | "ledger";
-          rewardBalanceByGrade?: Record<string, number>;
-          rewardBalanceSource?: "cafe24" | "ledger";
-          rewardBalanceUnassignedMemberCount?: number;
           syncError?: boolean;
         };
         const settings = await settingsResponse.json() as { settings?: { grades?: Grade[] } };
@@ -132,9 +126,6 @@ export default function OrderDashboard() {
         setRewardEntries(history.rewardEntries ?? []);
         setCumulativeRewardBalance(Number(history.cumulativeRewardBalance ?? 0));
         setCumulativeRewardSource(history.cumulativeRewardSource === "cafe24" ? "cafe24" : "ledger");
-        setRewardBalanceByGrade(history.rewardBalanceByGrade ?? {});
-        setRewardBalanceSource(history.rewardBalanceSource === "cafe24" ? "cafe24" : "ledger");
-        setRewardBalanceUnassignedMemberCount(Number(history.rewardBalanceUnassignedMemberCount ?? 0));
         setGrades(settings.settings?.grades ?? []);
         setSyncError(Boolean(history.syncError));
         setNow(Date.now());
@@ -174,15 +165,19 @@ export default function OrderDashboard() {
     ).length;
   const paymentCount = cardCount + bankCount;
   const rewardTotal = currentRewards.reduce((total, entry) => total + entry.amount, 0);
-  const rewardByGrade = grades.map((grade) => ({
+  const rewardByGrade = grades.map((grade) => {
+    const entries = currentRewards.filter((entry) => entry.grade_id === grade.id);
+    return {
       ...grade,
-      amount: rewardBalanceSource === "cafe24"
-        ? Number(rewardBalanceByGrade[grade.id] ?? 0)
-        : currentRewards.reduce(
-          (total, entry) => total + (entry.grade_id === grade.id ? entry.amount : 0),
-          0
-        ),
-    }));
+      cardAmount: entries
+        .filter((entry) => (entry.payment_method ?? "").toLowerCase().split(",").includes("card"))
+        .reduce((total, entry) => total + entry.amount, 0),
+      bankAmount: entries
+        .filter((entry) => (entry.payment_method ?? "").toLowerCase().split(",")
+          .some((method) => BANK_DEPOSIT_METHODS.has(method)))
+        .reduce((total, entry) => total + entry.amount, 0),
+    };
+  });
   const amountSeries = makeSeries(amountOrders, amountRange, now);
   const paymentSeries = makeSeries(paymentOrders, paymentRange, now);
   const amountPeak = Math.max(1, ...amountSeries.map((point) => point.amount));
@@ -262,17 +257,17 @@ export default function OrderDashboard() {
         </div>
         <strong>{cumulativeRewardBalance.toLocaleString("ko-KR")}원</strong>
         <small>누적 적립금 · {cumulativeRewardSource === "cafe24" ? "카페24 현재 잔액" : "지급 완료 원장"} 기준 · {RANGE_OPTIONS.find((option) => option.value === rewardRange)?.description} 순지급 {rewardTotal.toLocaleString("ko-KR")}원</small>
-        <div className={styles.rewardBreakdown} aria-label={rewardBalanceSource === "cafe24" ? "등급별 카페24 현재 적립금 잔액" : "등급별 적립금 지급 총액"}>
+        <div className={styles.rewardBreakdown} aria-label="등급별 카드결제와 무통장 적립금 순지급">
           {rewardByGrade.map((grade) => (
             <div className={styles.rewardGradeTotal} key={grade.id}>
               <span>{grade.name}</span>
-              <strong>{grade.amount.toLocaleString("ko-KR")}원</strong>
+              <div className={styles.rewardPaymentTotals}>
+                <strong>카드 {grade.cardAmount.toLocaleString("ko-KR")}원</strong>
+                <strong>무통장 {grade.bankAmount.toLocaleString("ko-KR")}원</strong>
+              </div>
             </div>
           ))}
         </div>
-        {rewardBalanceSource === "cafe24" && rewardBalanceUnassignedMemberCount > 0 && (
-          <small>{rewardBalanceUnassignedMemberCount}명은 카페24 등급 매핑이 없어 등급별 합계에서 제외됐습니다.</small>
-        )}
       </div>
     </section>
   );

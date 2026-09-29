@@ -40,11 +40,18 @@ export function listRewardLedger(limit = 30): RewardLedgerRow[] {
   ).all(limit) as RewardLedgerRow[];
 }
 
-export function getDashboardRewardEntries(sinceUtc: string): Array<Pick<RewardLedgerRow, "external_order_id" | "action" | "amount" | "grade_id" | "processed_at">> {
+export type DashboardRewardEntry = Pick<
+  RewardLedgerRow,
+  "external_order_id" | "action" | "amount" | "grade_id" | "processed_at"
+> & { payment_method: string | null };
+
+export function getDashboardRewardEntries(sinceUtc: string): DashboardRewardEntry[] {
   return db.prepare(
-    `SELECT external_order_id, action, amount, grade_id, processed_at FROM reward_ledger
-     WHERE status = 'succeeded' AND processed_at >= ?`
-  ).all(sinceUtc) as Array<Pick<RewardLedgerRow, "external_order_id" | "action" | "amount" | "grade_id" | "processed_at">>;
+    `SELECT l.external_order_id, l.action, l.amount, l.grade_id, l.processed_at, o.payment_method
+       FROM reward_ledger l
+       LEFT JOIN orders o ON o.external_order_id = l.external_order_id
+      WHERE l.status = 'succeeded' AND l.processed_at >= ?`
+  ).all(sinceUtc) as DashboardRewardEntry[];
 }
 
 export function getDashboardCumulativeRewardBalance() {

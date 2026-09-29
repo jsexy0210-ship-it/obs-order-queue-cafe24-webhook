@@ -8,7 +8,6 @@ import {
 } from "@/lib/store";
 import {
   getDashboardCumulativeRewardBalance,
-  getDashboardRewardBalanceByGrade,
   getDashboardRewardEntries,
   getRewardSummaries,
 } from "@/lib/rewardService";
@@ -39,7 +38,6 @@ export async function GET(request: Request) {
     const statuses = new Map(current.flatMap((order) => order.external_order_id
       ? [[order.external_order_id, order.status] as const] : []));
     const cumulativeReward = getDashboardCumulativeRewardBalance();
-    const rewardBalanceByGrade = await getDashboardRewardBalanceByGrade();
     return NextResponse.json({
       orders: current.filter((order) => order.created_at >= dashboardStartUtc)
         .map(({ created_at, payment_method, paid_at, status, actual_amount }) => ({
@@ -49,13 +47,10 @@ export async function GET(request: Request) {
         .filter((entry) => statuses.get(entry.external_order_id) !== "cancelled")
         .map((entry) => ({
           amount: entry.action === "recover" ? -entry.amount : entry.amount,
-          grade_id: entry.grade_id, processed_at: entry.processed_at,
+          grade_id: entry.grade_id, payment_method: entry.payment_method, processed_at: entry.processed_at,
         })),
       cumulativeRewardBalance: cumulativeReward.amount,
       cumulativeRewardSource: cumulativeReward.source,
-      rewardBalanceByGrade: rewardBalanceByGrade.amounts,
-      rewardBalanceSource: rewardBalanceByGrade.source,
-      rewardBalanceUnassignedMemberCount: rewardBalanceByGrade.unassignedMemberCount,
       syncError,
     });
   }
