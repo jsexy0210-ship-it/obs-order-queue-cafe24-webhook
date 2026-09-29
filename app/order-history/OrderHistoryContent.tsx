@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./order-history.module.css";
 
@@ -159,7 +159,6 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/admin/login");
@@ -216,15 +215,6 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
     (orderPage - 1) * ORDER_PAGE_SIZE,
     orderPage * ORDER_PAGE_SIZE
   );
-
-  function slideOrderGrid(direction: "left" | "right") {
-    const scrollArea = scrollAreaRef.current;
-    if (!scrollArea) return;
-    scrollArea.scrollBy({
-      left: (direction === "left" ? -1 : 1) * Math.max(scrollArea.clientWidth * 0.8, 420),
-      behavior: "smooth",
-    });
-  }
 
   return (
     <>
@@ -303,16 +293,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
           <div className={styles.empty}>주문 이력이 없습니다.</div>
         ) : (
           <div className={styles.tableScroller}>
-            <button
-              className={`${styles.gridScrollButton} ${styles.gridScrollLeft}`}
-              type="button"
-              onClick={() => slideOrderGrid("left")}
-              aria-label="이전 열 보기"
-              title="이전 열 보기"
-            >
-              ←
-            </button>
-            <div className={styles.scrollArea} ref={scrollAreaRef}>
+            <div className={styles.scrollArea}>
               <table className={styles.table}>
               <thead>
                 <tr>
@@ -374,15 +355,6 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
               </tbody>
               </table>
             </div>
-            <button
-              className={`${styles.gridScrollButton} ${styles.gridScrollRight}`}
-              type="button"
-              onClick={() => slideOrderGrid("right")}
-              aria-label="다음 열 보기"
-              title="다음 열 보기"
-            >
-              →
-            </button>
           </div>
         )}
       </div>

@@ -10,7 +10,7 @@
 }
 
 .headerRow {
-  max-width: 1120px;
+  max-width: 1600px;
   margin: 0 auto 20px;
   display: flex;
   align-items: center;
@@ -153,7 +153,7 @@
 }
 
 .tableWrap {
-  max-width: 1120px;
+  max-width: 1600px;
   margin: 0 auto;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -172,65 +172,16 @@
 
 .scrollArea {
   width: 100%;
-  overflow-x: auto;
+  overflow: visible;
   overflow-y: visible;
-  scrollbar-color: rgba(98, 227, 255, 0.68) rgba(255, 255, 255, 0.08);
-  scrollbar-width: thin;
 }
 
 .tableScroller {
   position: relative;
 }
 
-.gridScrollButton {
-  position: absolute;
-  z-index: 3;
-  top: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 52px;
-  padding: 0;
-  border: 1px solid rgba(125, 220, 255, 0.48);
-  border-radius: 10px;
-  background: rgba(9, 11, 16, 0.92);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
-  color: #7ddcff;
-  font-size: 22px;
-  cursor: pointer;
-  transform: translateY(-50%);
-}
-
-.gridScrollButton:hover {
-  background: rgba(40, 183, 255, 0.2);
-}
-
-.gridScrollLeft {
-  left: -44px;
-}
-
-.gridScrollRight {
-  right: -44px;
-}
-
-.scrollArea::-webkit-scrollbar {
-  height: 12px;
-}
-
-.scrollArea::-webkit-scrollbar-thumb {
-  border: 3px solid transparent;
-  border-radius: 999px;
-  background: rgba(98, 227, 255, 0.68);
-  background-clip: padding-box;
-}
-
-.scrollArea::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.08);
-}
-
 .pager {
-  max-width: 1120px;
+  max-width: 1600px;
   margin: 10px auto 28px;
   display: flex;
   align-items: center;
@@ -281,14 +232,14 @@
 }
 
 .sectionTitle {
-  max-width: 1120px;
+  max-width: 1600px;
   margin: 0 auto 10px;
   font-size: 16px;
   opacity: 0.75;
 }
 
 .sectionHeader {
-  max-width: 1120px;
+  max-width: 1600px;
   margin: 0 auto 10px;
   display: flex;
   align-items: center;
@@ -302,7 +253,7 @@
 
 .table {
   width: 100%;
-  min-width: 1380px;
+  min-width: 0;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
@@ -310,9 +261,9 @@
 
 .table th,
 .table td {
-  padding: 13px 12px;
-  text-align: left;
-  vertical-align: top;
+  padding: 13px 8px;
+  text-align: center;
+  vertical-align: middle;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   white-space: normal;
   overflow-wrap: anywhere;
@@ -336,19 +287,19 @@
 
 .product {
   white-space: normal;
-  max-width: 260px;
+  max-width: none;
 }
 
 .table th:nth-child(1) { width: 8%; }
-.table th:nth-child(2) { width: 19%; }
-.table th:nth-child(3) { width: 9%; }
+.table th:nth-child(2) { width: 18%; }
+.table th:nth-child(3) { width: 8%; }
 .table th:nth-child(4) { width: 4%; }
 .table th:nth-child(5) { width: 8%; }
 .table th:nth-child(6) { width: 7%; }
 .table th:nth-child(7) { width: 8%; }
 .table th:nth-child(8) { width: 11%; }
 .table th:nth-child(9) { width: 6%; }
-.table th:nth-child(10) { width: 5%; }
+.table th:nth-child(10) { width: 6%; }
 .table th:nth-child(11) { width: 8%; }
 .table th:nth-child(12) { width: 8%; }
 
@@ -648,6 +599,7 @@
 .rewardBadge {
   display: block;
   width: fit-content;
+  margin: 0 auto;
   padding: 5px 9px;
   border-radius: 999px;
   font-size: 12px;
