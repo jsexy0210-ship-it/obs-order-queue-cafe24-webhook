@@ -154,5 +154,19 @@ export async function POST(req: NextRequest) {
     paymentDate: normalized.paymentDate,
   });
 
+  // 카드결제는 주문 생성 이벤트 시점에 이미 결제완료(T)로 전달될 수 있다.
+  // paid 이벤트만 기다리면 별도 결제완료 웹훅이 오지 않는 카드 주문은 영구적으로
+  // 적립 대상에서 빠지므로, 카페24 원본 주문을 다시 검증한 뒤 동일한 지급 경로를 실행한다.
+  if (normalized.paid && getRewardSettings().issueTrigger === "paid") {
+    try {
+      await issueRewardForOrder(normalized.externalOrderId, "paid");
+    } catch (error) {
+      console.error("[cafe24 reward] issue failed", {
+        orderId: normalized.externalOrderId,
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }
