@@ -11,15 +11,15 @@ npm run dev
 
 브라우저에서:
 
-- 홈: http://localhost:3000
-- OBS 오버레이: http://localhost:3000/overlay
+- 홈: http://localhost:3001
+- OBS 오버레이: http://localhost:3001/overlay
 
 ## OBS 연결
 
 OBS → 소스 → + → 브라우저
 
 URL:
-http://localhost:3000/overlay
+http://localhost:3001/overlay
 
 권장 크기:
 - Width: 500
@@ -27,8 +27,8 @@ http://localhost:3000/overlay
 
 ## 세로형 라이브
 
-- 실제 OBS 투명 오버레이: http://localhost:3000/overlay-vertical
-- 가짜 영상이 포함된 디자인 미리보기: http://localhost:3000/preview-vertical
+- 실제 OBS 투명 오버레이: http://localhost:3001/overlay-vertical
+- 가짜 영상이 포함된 디자인 미리보기: http://localhost:3001/preview-vertical
 
 OBS Browser Source 권장 크기:
 - Width: 1080
@@ -39,9 +39,9 @@ OBS Browser Source 권장 크기:
 
 ## 카드브레이크 방송형 UI (실시간 카페24 연동)
 
-- 실제 OBS 투명 오버레이: http://localhost:3000/overlay-cardbreak
-- 방송 느낌 미리보기: http://localhost:3000/preview-cardbreak
-- 관리자 화면(오픈 시작/히트카드 등록): http://localhost:3000/admin
+- 실제 OBS 투명 오버레이: http://localhost:3001/overlay-cardbreak
+- 방송 느낌 미리보기: http://localhost:3001/preview-cardbreak
+- 관리자 화면(오픈 시작/히트카드 등록): http://localhost:3001/admin
 
 권장 OBS Browser Source:
 - Width: 1080
