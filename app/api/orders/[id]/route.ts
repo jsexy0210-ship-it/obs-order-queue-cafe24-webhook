@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { completeOpening, deleteOrder, setOpening } from "@/lib/store";
+import { completeOpening, deleteOrder, hideOrderHistory, setOpening } from "@/lib/store";
 
 export const runtime = "nodejs";
 
@@ -30,7 +30,15 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: RouteParams) {
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  const body = await req.json().catch(() => ({})) as { externalOrderId?: unknown };
+  if (typeof body.externalOrderId === "string" && body.externalOrderId.trim()) {
+    if (!hideOrderHistory(body.externalOrderId)) {
+      return NextResponse.json({ error: "invalid external order id" }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   const { id: idParam } = await params;
   const id = Number(idParam);
 

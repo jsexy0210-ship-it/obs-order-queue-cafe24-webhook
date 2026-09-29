@@ -182,13 +182,17 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
     }
   }, [selectedMonth, selectedYear]);
 
-  async function deleteOrderRow(id: number) {
+  async function deleteOrderRow(order: OrderRow) {
     if (!window.confirm("이 주문 이력을 목록에서 삭제하시겠습니까? 카페24 주문과 적립금 지급 내역은 변경되지 않습니다.")) return;
-    setDeletingOrderId(id);
+    setDeletingOrderId(order.id);
     try {
-      const response = await fetch(`/api/orders/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/orders/${order.id}`, {
+        method: "DELETE",
+        headers: order.external_order_id ? { "Content-Type": "application/json" } : undefined,
+        body: order.external_order_id ? JSON.stringify({ externalOrderId: order.external_order_id }) : undefined,
+      });
       if (!response.ok) throw new Error("delete failed");
-      setOrders((current) => current.filter((order) => order.id !== id));
+      setOrders((current) => current.filter((currentOrder) => currentOrder.id !== order.id));
     } catch {
       window.alert("주문 이력 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -321,9 +325,9 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   <th>회원등급</th>
                   <th>적립금</th>
                   <th>상태</th>
+                  <th>관리</th>
                   <th>결제방식</th>
                   <th>완료일시</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -353,17 +357,17 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                         )}
                       </td>
                       <td data-label="상태"><span className={`${styles.statusBadge} ${className}`}>{label}</span></td>
-                      <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
-                      <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
                       <td data-label="관리">
-                        {!order.remote_only && <button
+                        <button
                           className={styles.rowDeleteButton}
-                          onClick={() => deleteOrderRow(order.id)}
+                          onClick={() => deleteOrderRow(order)}
                           disabled={deletingOrderId === order.id}
                         >
                           {deletingOrderId === order.id ? "삭제 중" : "삭제"}
-                        </button>}
+                        </button>
                       </td>
+                      <td data-label="결제방식">{formatPaymentMethod(order.payment_method)}</td>
+                      <td data-label="완료일시">{order.completed_at ? formatDate(order.completed_at) : "-"}</td>
                     </tr>
                   );
                 })}

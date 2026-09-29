@@ -264,6 +264,23 @@ export function deleteOrder(id: number): boolean {
   return true;
 }
 
+/** 카페24 원격 주문처럼 로컬 행이 없는 주문도 주문 이력 화면에서만 숨깁니다. */
+export function hideOrderHistory(externalOrderId: string): boolean {
+  const orderId = externalOrderId.trim();
+  if (!orderId) return false;
+
+  const tx = db.transaction(() => {
+    db.prepare(
+      `INSERT INTO hidden_order_history (external_order_id, hidden_at) VALUES (?, datetime('now'))
+       ON CONFLICT(external_order_id) DO UPDATE SET hidden_at = excluded.hidden_at`
+    ).run(orderId);
+    db.prepare("DELETE FROM orders WHERE external_order_id = ?").run(orderId);
+  });
+  tx();
+  broadcastUpdate();
+  return true;
+}
+
 export function addHitCard(userId: string, card: string, youtubeNickname?: string | null) {
   db.prepare("INSERT INTO hit_cards (user_id, card, youtube_nickname) VALUES (?, ?, ?)").run(
     userId,
