@@ -12,6 +12,7 @@ import {
   getDashboardRewardEntries,
   getRewardSummaries,
 } from "@/lib/rewardService";
+import { getRewardSettings } from "@/lib/rewardStore";
 import { resolveOrderBuyerNames } from "@/lib/buyerNames";
 import { currentOrderView, getCafe24OrdersForMonths } from "@/lib/cafe24OrderView";
 
@@ -95,13 +96,21 @@ export async function GET(request: Request) {
     }
   }
 
+  const rewardSummaries = getRewardSummaries(
+    orders.flatMap((order) => order.external_order_id ? [order.external_order_id] : [])
+  );
+  const gradeNames = new Map<string, string>(getRewardSettings().grades.map((grade) => [grade.id, grade.name]));
+  const resolvedOrders = (await resolveOrderBuyerNames(orders)).map((order) => {
+    const issuedGradeId = order.external_order_id ? rewardSummaries[order.external_order_id]?.issue?.grade_id : undefined;
+    // 과거 주문은 현재 회원등급이 아니라, 실제 적립금을 산정한 당시 원장 등급을 표시합니다.
+    return issuedGradeId ? { ...order, tier: gradeNames.get(issuedGradeId) ?? order.tier } : order;
+  });
+
   return NextResponse.json({
-    orders: await resolveOrderBuyerNames(orders),
+    orders: resolvedOrders,
     availableYears: getOrderHistoryYears(),
     hitCards: getHitCardHistory(30),
-    rewardSummaries: getRewardSummaries(
-      orders.flatMap((order) => order.external_order_id ? [order.external_order_id] : [])
-    ),
+    rewardSummaries,
     syncError,
   });
 }
