@@ -252,6 +252,13 @@ try {
   for (const status of orderStatuses) console.log(`order=${status}`);
 
   const webhookToken = readEnvValue("CAFE24_WEBHOOK_TOKEN");
+  const rewardStartLine = fs.readFileSync(path.join(releaseRoot, ".env.local"), "utf8")
+    .split(/\r?\n/).find((entry) => entry.startsWith("CAFE24_REWARD_START_AT="));
+  const rewardStartMs = Date.parse(rewardStartLine?.slice("CAFE24_REWARD_START_AT=".length).trim().replace(/^['"]|['"]$/g, "") ?? "");
+  const rewardStartKst = Number.isFinite(rewardStartMs)
+    ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "medium" }).format(rewardStartMs)
+    : "missing_or_invalid";
+  console.log(`reward_start_at_kst=${rewardStartKst}`);
   for (const candidate of paidCandidates) {
     if (!candidate.paid) {
       console.log(`reward=${candidate.orderId}:deferred_unpaid`);
