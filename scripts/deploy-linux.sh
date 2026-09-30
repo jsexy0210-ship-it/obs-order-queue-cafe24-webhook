@@ -69,9 +69,11 @@ else
   # 특정되는 기존 파일만 사용합니다. 후보가 여러 개면 잘못된 DB나 키를
   # 선택하지 않고 복구를 중단합니다.
   if [[ ! -f "$app_root/data/cardbreak.db" || ! -f "$app_root/.env.local" ]]; then
-    recovery_root="$(dirname "$app_root")"
-    mapfile -d '' -t database_candidates < <(find "$recovery_root" -maxdepth 3 -type f -name cardbreak.db -size +0c -print0)
-    mapfile -d '' -t environment_candidates < <(find "$recovery_root" -maxdepth 3 -type f -name .env.local -size +0c -print0)
+    recovery_root="$HOME"
+    mapfile -d '' -t database_candidates < <(find "$recovery_root" -maxdepth 5 -type f -name cardbreak.db -size +0c -print0)
+    mapfile -d '' -t environment_candidates < <(find "$recovery_root" -maxdepth 5 -type f -name .env.local -size +0c -print0)
+    echo "Recovery database candidates: ${#database_candidates[@]}"
+    echo "Recovery environment candidates: ${#environment_candidates[@]}"
     if [[ ! -f "$app_root/data/cardbreak.db" && "${#database_candidates[@]}" -eq 1 ]]; then
       mkdir -p "$app_root/data"
       cp "${database_candidates[0]}" "$app_root/data/cardbreak.db"
