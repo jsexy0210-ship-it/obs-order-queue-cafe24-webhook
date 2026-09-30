@@ -228,6 +228,44 @@ export function insertOrder(input: {
   broadcastUpdate();
 }
 
+/** Cafe24 품목 추가 이벤트에서 기존 주문 요약을 원본 주문 기준으로 갱신합니다. */
+export function updateCafe24Order(input: {
+  externalOrderId: string;
+  userId: string;
+  product: string;
+  quantity: number;
+  unitPrice: number;
+  actualAmount?: number | null;
+  youtubeNickname?: string | null;
+  paymentMethod?: string | null;
+  paymentGatewayName?: string | null;
+  easypayName?: string | null;
+}): boolean {
+  const result = db.prepare(
+    `UPDATE orders SET
+       user_id = ?, product = ?, quantity = ?, unit_price = ?,
+       actual_amount = COALESCE(?, actual_amount),
+       youtube_nickname = COALESCE(?, youtube_nickname),
+       payment_method = COALESCE(?, payment_method),
+       payment_gateway_name = COALESCE(?, payment_gateway_name),
+       easypay_name = COALESCE(?, easypay_name)
+     WHERE source = 'cafe24' AND external_order_id = ?`
+  ).run(
+    input.userId,
+    input.product,
+    input.quantity,
+    input.unitPrice,
+    input.actualAmount ?? null,
+    input.youtubeNickname ?? null,
+    input.paymentMethod ?? null,
+    input.paymentGatewayName ?? null,
+    input.easypayName ?? null,
+    input.externalOrderId
+  );
+  if (result.changes > 0) broadcastUpdate();
+  return result.changes > 0;
+}
+
 export function setOpening(id: number, timerSeconds = 60) {
   const tx = db.transaction(() => {
     db.prepare("UPDATE orders SET status = 'done' WHERE status = 'opening'").run();

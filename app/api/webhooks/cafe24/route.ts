@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { cancelOrder, insertOrder, markOrderPaid } from "@/lib/store";
+import { cancelOrder, insertOrder, markOrderPaid, updateCafe24Order } from "@/lib/store";
 import {
   extractCafe24OrderId,
   extractCafe24PaymentInfo,
@@ -16,6 +16,7 @@ export const runtime = "nodejs";
 // 카페24 개발자센터 WebHook 설정에서 이벤트별로 URL을 따로 등록합니다.
 // 예)
 //   주문접수 이벤트   -> .../api/webhooks/cafe24?token=xxx&event=created
+//   주문상품 추가 이벤트 -> .../api/webhooks/cafe24?token=xxx&event=product_added
 //   주문취소 이벤트   -> .../api/webhooks/cafe24?token=xxx&event=cancelled
 //   환불/입금취소 이벤트 -> .../api/webhooks/cafe24?token=xxx&event=refunded
 // payload 안의 필드로 이벤트 종류를 추측할 필요 없이 URL만으로 정확히 구분됩니다.
@@ -157,6 +158,84 @@ export async function POST(req: NextRequest) {
       matched,
       ...(includeRewardResult ? { reward: rewardResult } : {}),
     });
+  }
+
+  if (event === "product_added") {
+    const orderId = extractCafe24OrderId(payload);
+    if (!orderId) {
+      return NextResponse.json({ ok: true, warning: "order_id_not_found" });
+    }
+
+    try {
+      // 90031 payload may only identify the changed order. Re-read the authoritative
+      // order so existing local rows receive the new full item list and paid state.
+      const cafe24Order = await getCafe24OrderForReward(orderId);
+      if (cafe24Order.order_id !== orderId || cafe24Order.canceled === "T") {
+        return NextResponse.json({ ok: true, matched: false, warning: "order_missing_or_cancelled" });
+      }
+
+      const normalized = normalizeCafe24Order({ order: cafe24Order });
+      if (!normalized || normalized.externalOrderId !== orderId) {
+        throw new Error("Cafe24 원본 주문의 필수 정보가 부족합니다.");
+      }
+      const items = cafe24Order.items ?? [];
+      const quantity = items.reduce((total, item) => {
+        const value = Number(item.quantity ?? 0);
+        return total + (Number.isFinite(value) && value > 0 ? value : 0);
+      }, 0) || normalized.quantity;
+      const actualAmountRaw = cafe24Order.paid === "T"
+        ? cafe24Order.payment_amount
+        : cafe24Order.actual_order_amount?.total_amount_due
+          ?? cafe24Order.actual_order_amount?.order_price_amount
+          ?? cafe24Order.initial_order_amount?.payment_amount;
+      const actualAmount = Number(actualAmountRaw);
+      const itemAmount = items.reduce((total, item) => {
+        const value = Number(item.payment_amount ?? 0);
+        return total + (Number.isFinite(value) && value > 0 ? value : 0);
+      }, 0);
+      const unitPrice = itemAmount > 0
+        ? Math.round(itemAmount / quantity)
+        : Number.isFinite(actualAmount) && actualAmount > 0
+          ? Math.round(actualAmount / quantity)
+          : normalized.unitPrice;
+      const orderInput = {
+        externalOrderId: orderId,
+        userId: normalized.userId,
+        product: normalized.product,
+        quantity,
+        unitPrice,
+        actualAmount: Number.isFinite(actualAmount) && actualAmount >= 0 ? Math.round(actualAmount) : null,
+        youtubeNickname: normalized.youtubeNickname,
+        paymentMethod: normalized.paymentMethod,
+        paymentGatewayName: normalized.paymentGatewayName,
+        easypayName: normalized.easypayName,
+      };
+      const matched = updateCafe24Order(orderInput);
+      if (!matched) {
+        insertOrder({ source: "cafe24", ...orderInput, paid: normalized.paid, paymentDate: normalized.paymentDate });
+      }
+      if (normalized.paid) markOrderPaid(orderId, normalized);
+
+      let reward: unknown = { outcome: "not_triggered" };
+      if (normalized.paid && getRewardSettings().issueTrigger === "paid") {
+        try {
+          reward = await issueRewardForOrder(orderId, "paid");
+        } catch (error) {
+          reward = { outcome: "failed" };
+          console.error("[cafe24 reward] product-added issue failed", {
+            orderId,
+            message: error instanceof Error ? error.message : "unknown",
+          });
+        }
+      }
+      return NextResponse.json({ ok: true, matched: true, updated: matched, paid: normalized.paid, reward });
+    } catch (error) {
+      console.error("[cafe24 webhook][product_added] 원본 주문 동기화 실패", {
+        orderId,
+        message: error instanceof Error ? error.message : "unknown",
+      });
+      return NextResponse.json({ error: "product_added_sync_failed" }, { status: 503 });
+    }
   }
 
   if (event === "delivered") {
