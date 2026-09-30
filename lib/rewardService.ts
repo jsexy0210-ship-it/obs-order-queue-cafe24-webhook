@@ -11,6 +11,7 @@ import { getCurrentCustomerGroupNo } from "./buyerNames";
 import { canExecuteCafe24RewardChanges } from "./rewardExecution";
 import { isAfterRewardStart } from "./rewardCutoff";
 import { getRewardSettings } from "./rewardStore";
+import { calculateRewardAmount, collapsePartialRecoveryRows, isExcludedRewardItem } from "./rewardCalculation";
 
 type LedgerAction = "issue" | "recover";
 type LedgerStatus = "pending" | "succeeded" | "failed";
@@ -34,10 +35,11 @@ export type RewardLedgerRow = Pick<
 > & { created_at: string; processed_at: string | null; error_message: string | null };
 
 export function listRewardLedger(limit = 30): RewardLedgerRow[] {
-  return db.prepare(
+  const rows = db.prepare(
     `SELECT id, external_order_id, grade_id, action, amount, processing_mode, status, created_at, processed_at, error_message
      FROM reward_ledger ORDER BY id DESC LIMIT ?`
-  ).all(limit) as RewardLedgerRow[];
+  ).all(limit * 2) as RewardLedgerRow[];
+  return collapsePartialRecoveryRows(rows, limit);
 }
 
 export type DashboardRewardEntry = Pick<
@@ -227,26 +229,9 @@ async function refreshCafe24PointBalanceSnapshot(memberId: string, buyerName?: s
   }
 }
 
-function netProductAmount(order: Cafe24RewardOrder) {
-  const items = Array.isArray(order.items) ? order.items : [];
-  if (items.length === 0) return null;
-  let total = 0;
-  for (const item of items) {
-    const amount = Number(item.payment_amount);
-    const quantity = Number(item.quantity ?? 1);
-    if (!Number.isFinite(amount) || amount < 0 || !Number.isFinite(quantity) || quantity <= 0) return null;
-    // Cafe24 `items[].payment_amount` is the settled amount for the product line.
-    // `quantity` is metadata for that line and must not be multiplied again.
-    total += amount;
-  }
-  return Math.floor(total);
-}
-
 function isFullyCancelled(order: Cafe24RewardOrder) {
   const items = Array.isArray(order.items) ? order.items : [];
-  return items.length > 0 && items.every((item) =>
-    ["C1", "C2", "C3", "CANCELLED", "RETURNED"].includes(String(item.status_code ?? item.order_status).toUpperCase())
-  );
+  return items.length > 0 && items.every(isExcludedRewardItem);
 }
 
 function isPaymentConfirmed(order: Cafe24RewardOrder) {
@@ -303,8 +288,7 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
   const memberId = order.member_id?.trim();
   const groupNo = order.member_group_no ?? order.group_no;
   const grade = findGrade(settings, groupNo);
-  const baseAmount = netProductAmount(order);
-  if (!memberId || groupNo === undefined || groupNo === null || !grade || baseAmount === null) {
+  if (!memberId || groupNo === undefined || groupNo === null || !grade) {
     return { outcome: "skipped" as const };
   }
 
@@ -323,7 +307,9 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
     : [order.payment_method];
   const isBankDeposit = paymentMethods.some((method) => method?.toLowerCase() === "cash");
   const appliedRate = isBankDeposit ? grade.bankRate : grade.cardRate;
-  const amount = Math.floor(baseAmount * appliedRate / 100);
+  const calculation = calculateRewardAmount(order, appliedRate);
+  if (!calculation) return { outcome: "amount_unavailable" as const };
+  const amount = calculation.amount;
   if (amount <= 0) return { outcome: "skipped" as const };
 
   // UNIQUE(external_order_id, action)를 INSERT OR IGNORE로 선점합니다.
@@ -353,21 +339,26 @@ export async function issueRewardForOrder(orderId: string, trigger: "paid" | "de
   }
 }
 
-/** 전체 취소·환불만 자동 회수합니다. 부분 취소/환불은 과회수를 막기 위해 수동 회수 대상으로 남깁니다. */
+/** 자동 회수는 카페24의 현재 정상 품목 금액을 다시 계산해 전액·부분 취소 모두 정확한 차액만 회수합니다. */
 export async function recoverRewardForOrder(orderId: string, mode: "automatic" | "manual") {
   if (!canExecuteCafe24RewardChanges()) return { outcome: "blocked" as const };
   const issue = getLedger(orderId, "issue");
   if (!issue || issue.status !== "succeeded") return { outcome: "skipped" as const };
 
+  let targetRecoveryAmount = issue.amount;
   if (mode === "automatic") {
     const grade = getRewardSettings().grades.find((item) => item.id === issue.grade_id);
     if (!grade || grade.recoveryMode !== "automatic") return { outcome: "manual_required" as const };
     const order = await getCafe24OrderForReward(orderId);
-    if (!isFullyCancelled(order)) return { outcome: "manual_required" as const };
+    const target = isFullyCancelled(order) ? { amount: 0 } : calculateRewardAmount(order, issue.applied_rate);
+    if (!target) return { outcome: "amount_unavailable" as const };
+    targetRecoveryAmount = Math.max(0, issue.amount - target.amount);
   }
 
   const existingRecovery = getLedger(orderId, "recover");
-  let amountToRecover = issue.amount;
+  const alreadyRecovered = existingRecovery?.amount ?? 0;
+  if (targetRecoveryAmount <= alreadyRecovered) return { outcome: "duplicate" as const };
+  let amountToRecover = targetRecoveryAmount;
   let ledgerId: number;
   if (existingRecovery) {
     // A prior overpayment correction may have recovered only the excess. If the order
@@ -375,12 +366,12 @@ export async function recoverRewardForOrder(orderId: string, mode: "automatic" |
     if (existingRecovery.status !== "succeeded" || existingRecovery.amount >= issue.amount) {
       return { outcome: "duplicate" as const };
     }
-    amountToRecover = issue.amount - existingRecovery.amount;
+    amountToRecover = targetRecoveryAmount - existingRecovery.amount;
     const reservation = db.prepare(
       `UPDATE reward_ledger
           SET amount = ?, processing_mode = ?, status = 'pending', error_message = NULL, processed_at = NULL
         WHERE id = ? AND status = 'succeeded' AND amount = ?`
-    ).run(issue.amount, mode, existingRecovery.id, existingRecovery.amount);
+    ).run(targetRecoveryAmount, mode, existingRecovery.id, existingRecovery.amount);
     if (reservation.changes !== 1) return { outcome: "duplicate" as const };
     ledgerId = existingRecovery.id;
   } else {
@@ -388,7 +379,7 @@ export async function recoverRewardForOrder(orderId: string, mode: "automatic" |
       `INSERT OR IGNORE INTO reward_ledger (
         external_order_id, member_id, grade_id, action, amount, card_rate, bank_rate, applied_rate, processing_mode, status
       ) VALUES (?, ?, ?, 'recover', ?, ?, ?, ?, ?, 'pending')`
-    ).run(orderId, issue.member_id, issue.grade_id, issue.amount, issue.card_rate, issue.bank_rate, issue.applied_rate, mode);
+    ).run(orderId, issue.member_id, issue.grade_id, targetRecoveryAmount, issue.card_rate, issue.bank_rate, issue.applied_rate, mode);
     if (reservation.changes !== 1) return { outcome: "duplicate" as const };
     ledgerId = Number(reservation.lastInsertRowid);
   }
@@ -420,10 +411,9 @@ export async function correctOverIssuedReward(orderId: string) {
   const order = await getCafe24OrderForReward(orderId, { includeBuyerGroup: true });
   if (!isPaymentConfirmed(order) || isFullyCancelled(order)) return { outcome: "skipped" as const };
   if (order.member_id && order.member_id !== issue.member_id) return { outcome: "member_mismatch" as const };
-  const baseAmount = netProductAmount(order);
-  if (baseAmount === null) return { outcome: "amount_unavailable" as const };
-
-  const correctAmount = Math.floor(baseAmount * issue.applied_rate / 100);
+  const calculation = calculateRewardAmount(order, issue.applied_rate);
+  if (!calculation) return { outcome: "amount_unavailable" as const };
+  const correctAmount = calculation.amount;
   if (correctAmount >= issue.amount) return { outcome: "not_overpaid" as const };
   const excessAmount = issue.amount - correctAmount;
   const reservation = db.prepare(
