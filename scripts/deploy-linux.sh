@@ -28,6 +28,43 @@ if [[ "$current" == "$app_root"/mangotcg-release-* && -f "$current/data/cardbrea
   data_target="$(readlink -f "$current/data")"
   environment_source="$current/.env.local"
 else
+  # 삭제된 릴리스의 Node 프로세스가 아직 살아 있으면 열려 있는 SQLite 파일과
+  # 실행 환경만 서버 내부에서 복구합니다. 비밀값이나 DB 내용은 출력하지 않습니다.
+  runtime_pid="$(pm2 pid obs-overlay 2>/dev/null | head -n 1 || true)"
+  if [[ "$runtime_pid" =~ ^[0-9]+$ && -d "/proc/$runtime_pid/fd" ]]; then
+    mkdir -p "$app_root/data"
+    for fd in "/proc/$runtime_pid"/fd/*; do
+      [[ -L "$fd" ]] || continue
+      fd_target="$(readlink "$fd" || true)"
+      case "$fd_target" in
+        */cardbreak.db|*/cardbreak.db\ \(deleted\)) cp "$fd" "$app_root/data/cardbreak.db" || true ;;
+        */cardbreak.db-wal|*/cardbreak.db-wal\ \(deleted\)) cp "$fd" "$app_root/data/cardbreak.db-wal" || true ;;
+        */cardbreak.db-shm|*/cardbreak.db-shm\ \(deleted\)) cp "$fd" "$app_root/data/cardbreak.db-shm" || true ;;
+      esac
+    done
+
+    if [[ ! -f "$app_root/.env.local" ]]; then
+      umask 077
+      recovery_env="$(mktemp "$app_root/.env.local.recovery.XXXXXX")"
+      printf 'NODE_ENV=production\n' > "$recovery_env"
+      recovered_required=0
+      for key in ADMIN_PRIMARY_ID ADMIN_PRIMARY_PASSWORD ADMIN_SECONDARY_ID ADMIN_SECONDARY_PASSWORD CAFE24_MALL_ID CAFE24_CLIENT_ID CAFE24_CLIENT_SECRET CAFE24_REDIRECT_URI CAFE24_TOKEN_ENCRYPTION_KEY CAFE24_WEBHOOK_TOKEN CAFE24_OAUTH_SCOPES CAFE24_REWARD_LIVE_ENABLED CAFE24_NATIVE_REWARDS_DISABLED CAFE24_REWARD_START_AT; do
+        value="$(tr '\0' '\n' < "/proc/$runtime_pid/environ" | sed -n "s/^${key}=//p" | head -n 1)"
+        if [[ -n "$value" ]]; then
+          printf '%s=%s\n' "$key" "$value" >> "$recovery_env"
+          case "$key" in
+            ADMIN_PRIMARY_ID|ADMIN_PRIMARY_PASSWORD|ADMIN_SECONDARY_ID|ADMIN_SECONDARY_PASSWORD|CAFE24_MALL_ID|CAFE24_CLIENT_ID|CAFE24_CLIENT_SECRET|CAFE24_REDIRECT_URI|CAFE24_TOKEN_ENCRYPTION_KEY|CAFE24_WEBHOOK_TOKEN) recovered_required=$((recovered_required + 1)) ;;
+          esac
+        fi
+      done
+      if [[ "$recovered_required" -eq 10 ]]; then
+        mv "$recovery_env" "$app_root/.env.local"
+      else
+        rm -f -- "$recovery_env"
+      fi
+    fi
+  fi
+
   # 후보 복사 중 중단된 경우에도 원본 데이터와 환경파일만 남아 있으면 새
   # 릴리스를 다시 만들 수 있습니다. DB 파일 자체는 절대 새로 만들지 않습니다.
   data_target="$(readlink -f "$app_root/data")"
