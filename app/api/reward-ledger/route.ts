@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { correctOverIssuedReward, listRewardLedger, recoverRewardForOrder } from "@/lib/rewardService";
+import { correctOverIssuedReward, listDetailedRewardLedger, recoverRewardForOrder } from "@/lib/rewardService";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json({ rows: listRewardLedger() });
+  return NextResponse.json({ rows: await listDetailedRewardLedger() });
 }
 
 export async function POST(req: NextRequest) {
@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
     const result = body?.correctOverpayment === true
       ? await correctOverIssuedReward(orderId)
       : await recoverRewardForOrder(orderId, "manual");
-    return NextResponse.json({ result, rows: listRewardLedger() });
+    return NextResponse.json({ result, rows: await listDetailedRewardLedger() });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "적립금 회수에 실패했습니다.", rows: listRewardLedger() },
+      { error: error instanceof Error ? error.message : "적립금 회수에 실패했습니다.", rows: await listDetailedRewardLedger() },
       { status: 502 }
     );
   }

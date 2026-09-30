@@ -31,11 +31,36 @@ type LedgerRow = {
   grade_id: string;
   action: "issue" | "recover";
   amount: number;
+  applied_rate: number;
   processing_mode: "automatic" | "manual";
   status: "pending" | "succeeded" | "failed";
   created_at: string;
+  processed_at: string | null;
   error_message: string | null;
+  grade_name: string;
+  order: {
+    created_at: string | null;
+    product: string | null;
+    quantity: number | null;
+    actual_amount: number | null;
+    youtube_nickname: string | null;
+    buyer_name: string | null;
+    payment_method: string | null;
+    payment_status: "paid" | "unpaid" | "cancelled" | "unknown";
+  };
 };
+
+const formatDateTime = (value: string | null) => {
+  if (!value) return "-";
+  const date = new Date(`${value.replace(" ", "T")}Z`);
+  return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).format(date);
+};
+
+const paymentStatusLabel = (status: LedgerRow["order"]["payment_status"]) => ({
+  paid: "결제완료", unpaid: "미결제", cancelled: "취소", unknown: "확인불가",
+}[status]);
 
 export default function RewardSettingsPanel() {
   const [settings, setSettings] = useState<RewardSettings>(DEFAULT_REWARD_SETTINGS);
@@ -370,12 +395,16 @@ export default function RewardSettingsPanel() {
           <p className={styles.ledgerEmpty}>표시할 적립금 처리 내역이 없습니다.</p>
         ) : (
           <div className={styles.rewardTableWrap}>
-            <table className={styles.rewardTable}>
-              <thead><tr><th>주문번호</th><th>등급</th><th>처리</th><th>적립금</th><th>상태</th><th>조치</th></tr></thead>
+            <table className={`${styles.rewardTable} ${styles.rewardLedgerTable}`}>
+              <thead><tr><th>주문번호</th><th>주문일시</th><th>상품명</th><th>실결제액</th><th>수량</th><th>유튜브 닉네임</th><th>구매자</th><th>회원등급</th><th>결제방식</th><th>결제상태</th><th>적용률</th><th>처리</th><th>적립금</th><th>처리시각</th><th>상태</th><th>조치</th></tr></thead>
               <tbody>{ledger.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.external_order_id}</td><td>{row.grade_id}</td><td>{row.action === "issue" ? "지급" : "회수"} · {row.processing_mode === "automatic" ? "자동" : "수동"}</td>
-                  <td>{row.amount.toLocaleString("ko-KR")}원</td><td title={row.error_message ?? ""}>{row.status === "succeeded" ? "완료" : row.status === "failed" ? "실패" : "대기"}</td>
+                  <td>{row.external_order_id}</td><td>{formatDateTime(row.order.created_at)}</td><td className={styles.rewardLedgerProduct} title={row.order.product ?? ""}>{row.order.product ?? "-"}</td>
+                  <td>{row.order.actual_amount === null ? "-" : `${row.order.actual_amount.toLocaleString("ko-KR")}원`}</td><td>{row.order.quantity ?? "-"}</td>
+                  <td>{row.order.youtube_nickname || "-"}</td><td>{row.order.buyer_name ?? "-"}</td><td>{row.grade_name}</td>
+                  <td>{row.order.payment_method ?? "-"}</td><td>{paymentStatusLabel(row.order.payment_status)}</td><td>{row.applied_rate}%</td>
+                  <td>{row.action === "issue" ? "지급" : "회수"} · {row.processing_mode === "automatic" ? "자동" : "수동"}</td>
+                  <td>{row.amount.toLocaleString("ko-KR")}원</td><td>{formatDateTime(row.processed_at)}</td><td title={row.error_message ?? ""}>{row.status === "succeeded" ? "완료" : row.status === "failed" ? "실패" : "대기"}</td>
                   <td>{row.action === "issue" && row.status === "succeeded" && (
                     <button type="button" className={styles.manualRecoverButton} onClick={() => void manuallyRecover(row.external_order_id)} disabled={recoveringOrderId === row.external_order_id}>
                       {recoveringOrderId === row.external_order_id ? "처리 중..." : "수동 회수"}
