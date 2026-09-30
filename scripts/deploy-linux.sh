@@ -33,6 +33,8 @@ else
   data_target="$(readlink -f "$app_root/data")"
   environment_source="$app_root/.env.local"
   [[ -f "$data_target/cardbreak.db" && -f "$environment_source" ]] || {
+    echo "Recovery database present: $([[ -f "$data_target/cardbreak.db" ]] && echo yes || echo no)"
+    echo "Recovery environment present: $([[ -f "$environment_source" ]] && echo yes || echo no)"
     echo "Current MangoTCG runtime and recovery files are unavailable." >&2
     exit 1
   }
