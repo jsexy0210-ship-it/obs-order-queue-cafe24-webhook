@@ -224,6 +224,9 @@ export async function changeCafe24Points(input: {
   type: "increase" | "decrease";
   reason: string;
 }) {
+  if (!input.memberId.trim() || !input.orderId.trim() || !Number.isInteger(input.amount) || input.amount <= 0) {
+    throw new Error("카페24 적립금 변경 요청값이 올바르지 않습니다.");
+  }
   const token = await getValidCafe24AccessToken();
   await request("/points", {
     method: "POST",
