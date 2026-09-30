@@ -60,6 +60,20 @@ def main():
             "  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n  BatchMode yes\n  ConnectTimeout 15\n"
         )
         ssh_config.chmod(0o600)
+        if os.environ.get("MANGO_RECOVERY_DIAGNOSE") == "true":
+            if config["PLATFORM"] != "linux":
+                raise ValueError("Recovery diagnosis is available only for Linux production hosts")
+            incoming = "/root/.mangotcg-incoming/recovery-diagnose-" + sha
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
+            subprocess.run([
+                "scp", "-F", str(ssh_config), "scripts/recovery-diagnose-linux.py",
+                f"production:{incoming}/",
+            ], check=True)
+            subprocess.run([
+                "ssh", "-F", str(ssh_config), "production", "python3",
+                f"{incoming}/recovery-diagnose-linux.py", config["APP_PATH"],
+            ], check=True)
+            return
         archive = root / "release.zip"
         subprocess.run(["git", "archive", "--format=zip", f"--output={archive}", sha], check=True)
         if config["PLATFORM"] == "windows":
