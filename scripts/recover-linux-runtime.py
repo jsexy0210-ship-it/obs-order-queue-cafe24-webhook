@@ -67,8 +67,12 @@ def main() -> int:
         raise RuntimeError("Recovery environment is incomplete")
     data_path = app_root / "data"
     runtime_environment = app_root / ".env.local"
-    if data_path.exists() or runtime_environment.exists():
+    if (data_path / "cardbreak.db").exists() or runtime_environment.exists():
         raise RuntimeError("Recovery target already exists")
+    if data_path.exists():
+        if any(data_path.iterdir()):
+            raise RuntimeError("Recovery data directory is not empty")
+        data_path.rmdir()
 
     pid, files = deleted_database_files()
     with tempfile.TemporaryDirectory(prefix="mangotcg-runtime-recovery-", dir=app_root) as temporary:
