@@ -165,7 +165,15 @@ try {
       || parseNickname(listedOrder.additional_order_info_list);
     const paid = order?.paid === "T" || order?.paid === true;
     if (order && order.canceled !== "T") {
-      paidCandidates.push({ orderId: listedOrder.order_id, paid });
+      const activeItems = Array.isArray(order.items) ? order.items.filter((item) =>
+        !new Set(["C1", "C2", "C3", "CANCELLED", "RETURNED"])
+          .has(String(item.status_code ?? item.order_status ?? "").toUpperCase())) : [];
+      const baseAmount = activeItems.every((item) => Number.isFinite(Number(item.payment_amount)))
+        ? Math.floor(activeItems.reduce((sum, item) => sum + Number(item.payment_amount), 0))
+        : null;
+      const paymentMethods = Array.isArray(order.payment_method) ? order.payment_method : [order.payment_method];
+      const isBankDeposit = paymentMethods.some((method) => String(method ?? "").toLowerCase() === "cash");
+      paidCandidates.push({ orderId: listedOrder.order_id, paid, baseAmount, isBankDeposit });
     }
     if (!nickname) {
       missingInCafe24.push(listedOrder.order_id);
@@ -356,10 +364,13 @@ try {
     if (!response.ok) throw new Error(`Reward webhook failed with HTTP ${response.status}.`);
     const webhookResult = await response.json();
     const ledger = db.prepare(
-      "SELECT status, amount FROM reward_ledger WHERE external_order_id = ? AND action = 'issue'"
+      "SELECT status, amount, grade_id, applied_rate FROM reward_ledger WHERE external_order_id = ? AND action = 'issue'"
     ).get(candidate.orderId);
     const outcome = webhookResult.reward?.outcome ?? "unknown";
-    console.log(`reward=${candidate.orderId}:${outcome},ledger=${ledger?.status ?? "none"}${ledger ? `,amount=${ledger.amount}` : ""}`);
+    const audit = ledger && candidate.baseAmount !== null
+      ? `,grade=${ledger.grade_id},method=${candidate.isBankDeposit ? "bank" : "card"},rate=${ledger.applied_rate}%,base=${candidate.baseAmount},expected=${Math.floor(candidate.baseAmount * ledger.applied_rate / 100)},amount=${ledger.amount}`
+      : "";
+    console.log(`reward=${candidate.orderId}:${outcome},ledger=${ledger?.status ?? "none"}${audit}`);
   }
 } finally {
   db.close();
