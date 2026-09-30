@@ -117,13 +117,26 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
   const items = resource.extra_info ?? resource.items ?? resource.order_items ?? resource.order_products ?? [];
   const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : undefined;
 
+  const itemNames = Array.isArray(items)
+    ? items.map((item) => pick(item, ["product_name", "productName", "item_name"]))
+      .filter((name): name is string | number => typeof name === "string" || typeof name === "number")
+      .map(String)
+    : [];
   const productName =
+    (itemNames.length > 1 ? itemNames.join(" · ") : itemNames[0]) ??
     pick(firstItem ?? {}, ["product_name", "productName", "item_name"]) ??
     pick(resource, ["ordering_product_name", "product_name", "order_name"]) ??
     "미확인 상품";
 
-  const quantityRaw =
-    pick(firstItem ?? {}, ["quantity", "order_quantity"]) ?? pick(resource, ["quantity"]) ?? 1;
+  const itemQuantity = Array.isArray(items) && items.length > 0
+    ? items.reduce((total, item) => {
+      const quantity = Number(pick(item, ["quantity", "order_quantity"]));
+      return total + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
+    }, 0)
+    : 0;
+  const quantityRaw = itemQuantity || (
+    pick(firstItem ?? {}, ["quantity", "order_quantity"]) ?? pick(resource, ["quantity"]) ?? 1
+  );
 
   const unitPriceRaw =
     pick(firstItem ?? {}, ["product_price", "price", "unit_price"]) ?? 15000;
@@ -166,7 +179,7 @@ export function extractCafe24PaymentInfo(payload: any): Cafe24PaymentInfo {
   const paymentMethodRaw = pick(resource, ["payment_method", "first_payment_method", "payment_method_name"]);
   const paymentGatewayRaw = pick(resource, ["payment_gateway_name", "payment_gateway_names"]);
   const easypayRaw = pick(resource, ["easypay_name", "sub_payment_method_name"]);
-  const paidRaw = pick(resource, ["paid", "payment_status"]);
+  const paidRaw = pick(resource, ["paid", "payment_status", "payment_confirmation"]);
   const paymentDateRaw = pick(resource, ["payment_date", "paid_at", "paid_date"]);
 
   return {
