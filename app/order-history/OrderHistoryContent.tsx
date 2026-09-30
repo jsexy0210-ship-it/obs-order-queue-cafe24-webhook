@@ -330,6 +330,11 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                         ) : reward.recover ? (
                           <span className={`${styles.rewardBadge} ${styles.rewardRecover}`}>
                             회수 {formatPrice(reward.recover.amount)}
+                            {reward.issue && (
+                              <small className={styles.rewardNetAmount}>
+                                순지급 {formatPrice(Math.max(0, reward.issue.amount - reward.recover.amount))}
+                              </small>
+                            )}
                           </span>
                         ) : (
                           <span className={styles.rewardBadge}>
