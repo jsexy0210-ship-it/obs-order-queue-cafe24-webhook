@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 
 const [releaseRoot, cutoffKst] = process.argv.slice(2);
@@ -254,7 +255,12 @@ try {
   const webhookToken = readEnvValue("CAFE24_WEBHOOK_TOKEN");
   const rewardStartLine = fs.readFileSync(path.join(releaseRoot, ".env.local"), "utf8")
     .split(/\r?\n/).find((entry) => entry.startsWith("CAFE24_REWARD_START_AT="));
-  const rewardStartMs = Date.parse(rewardStartLine?.slice("CAFE24_REWARD_START_AT=".length).trim().replace(/^['"]|['"]$/g, "") ?? "");
+  const pm2Rows = JSON.parse(execFileSync("pm2", ["jlist"], { encoding: "utf8" }));
+  const liveEnv = pm2Rows.find((row) => row.name === "obs-overlay")?.pm2_env;
+  const rewardStart = liveEnv?.CAFE24_REWARD_START_AT
+    ?? liveEnv?.env?.CAFE24_REWARD_START_AT
+    ?? rewardStartLine?.slice("CAFE24_REWARD_START_AT=".length).trim().replace(/^['"]|['"]$/g, "");
+  const rewardStartMs = Date.parse(rewardStart ?? "");
   const rewardStartKst = Number.isFinite(rewardStartMs)
     ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "medium" }).format(rewardStartMs)
     : "missing_or_invalid";
