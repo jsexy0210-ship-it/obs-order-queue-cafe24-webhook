@@ -687,7 +687,6 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
                 <span style={cancelledBadgeStyle}>{cancelLabel(opening.cancel_reason)}</span>
               )}
               <div className={styles.heroMeta}>
-                <span className={styles.gradeTag}>{opening.tier || "ORDER"}</span>
                 <div className={styles.currentUser}>{formatBuyer(opening.user_id, opening.youtube_nickname)}</div>
               </div>
 
