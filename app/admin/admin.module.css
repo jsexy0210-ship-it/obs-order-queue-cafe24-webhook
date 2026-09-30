@@ -731,6 +731,9 @@
 
 .rewardLedgerModal {
   max-width: min(1720px, calc(100vw - 40px));
+  height: min(900px, calc(100vh - 40px));
+  max-height: calc(100vh - 40px);
+  overflow-y: hidden;
 }
 
 .rewardLedgerModalContent {
@@ -2266,19 +2269,57 @@
 }
 
 .rewardLedgerTable {
-  min-width: 1480px;
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 11px;
 }
 
 .rewardLedgerTable th,
 .rewardLedgerTable td {
+  padding: 7px 4px;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rewardLedgerProduct {
-  max-width: 260px;
+  max-width: none;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.rewardLedgerTable th:nth-child(1),
+.rewardLedgerTable th:nth-child(2) { width: 84px; }
+
+.rewardLedgerTable th:nth-child(3) { width: 18%; }
+
+.rewardLedgerTable th:nth-child(4),
+.rewardLedgerTable th:nth-child(11) { width: 86px; }
+
+.rewardLedgerTable th:nth-child(5),
+.rewardLedgerTable th:nth-child(10) { width: 48px; }
+
+.rewardLedgerTable th:nth-child(6),
+.rewardLedgerTable th:nth-child(7),
+.rewardLedgerTable th:nth-child(8),
+.rewardLedgerTable th:nth-child(9) { width: 82px; }
+
+.rewardLedgerTable th:nth-child(12) { width: 82px; }
+
+.rewardLedgerTable td:first-child {
+  min-width: 0;
+}
+
+.rewardLedgerModalContent .rewardTableWrap {
+  margin-top: 8px;
+  overflow-x: hidden;
+}
+
+.rewardLedgerModalContent .pagination {
+  min-height: 32px;
+  margin-top: 8px;
+  padding-top: 8px;
 }
 
 .rewardSaveButton {
