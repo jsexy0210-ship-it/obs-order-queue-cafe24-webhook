@@ -77,6 +77,20 @@ def main():
             remote = "bash " + shlex.quote(incoming + "/backfill-youtube-nickname-linux.sh") + " " + " ".join(shlex.quote(value) for value in args)
             subprocess.run(["ssh", "-F", str(ssh_config), "production", remote], check=True)
             return
+        if os.environ.get("MANGO_SYNC_AUDITED_ORDERS") == "true":
+            if config["PLATFORM"] != "linux":
+                raise ValueError("Audited order reconciliation is available only for Linux production hosts")
+            incoming = "/root/.mangotcg-incoming/order-sync-" + sha
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
+            subprocess.run([
+                "scp", "-F", str(ssh_config), "scripts/reconcile-known-orders-linux.mjs",
+                f"production:{incoming}/",
+            ], check=True)
+            subprocess.run([
+                "ssh", "-F", str(ssh_config), "production", "node",
+                f"{incoming}/reconcile-known-orders-linux.mjs", config["APP_PATH"],
+            ], check=True)
+            return
         if os.environ.get("MANGO_RECOVERY_DIAGNOSE") == "true":
             if config["PLATFORM"] != "linux":
                 raise ValueError("Recovery diagnosis is available only for Linux production hosts")

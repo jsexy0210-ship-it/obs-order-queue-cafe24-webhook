@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      sync_audited_orders:
+        description: 'Reconcile the two verified Cafe24 order records and trigger the guarded payment reward flow'
+        required: false
+        type: boolean
+        default: false
       recovery_restore:
         description: 'Restore runtime DB from deleted open files and rebuild production'
         required: false
@@ -49,6 +54,7 @@ jobs:
       - name: Deploy to the existing production Windows host
         env:
           MANGO_RECOVERY_DIAGNOSE: ${{ inputs.recovery_diagnose && 'true' || 'false' }}
+          MANGO_SYNC_AUDITED_ORDERS: ${{ inputs.sync_audited_orders && 'true' || 'false' }}
           MANGO_RECOVERY_RESTORE: ${{ inputs.recovery_restore && 'true' || 'false' }}
           MANGO_YOUTUBE_NICKNAME_BACKFILL: ${{ inputs.youtube_nickname_backfill && 'true' || 'false' }}
           MANGO_BACKFILL_CUTOFF_KST: ${{ inputs.nickname_backfill_cutoff_kst }}
