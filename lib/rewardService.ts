@@ -31,15 +31,125 @@ type RewardLedger = {
 
 export type RewardLedgerRow = Pick<
   RewardLedger,
-  "id" | "external_order_id" | "grade_id" | "action" | "amount" | "processing_mode" | "status"
+  "id" | "external_order_id" | "grade_id" | "action" | "amount" | "card_rate" | "bank_rate" | "applied_rate" | "processing_mode" | "status"
 > & { created_at: string; processed_at: string | null; error_message: string | null };
+
+export type RewardLedgerOrderDetail = {
+  created_at: string | null;
+  product: string | null;
+  quantity: number | null;
+  actual_amount: number | null;
+  youtube_nickname: string | null;
+  buyer_name: string | null;
+  payment_method: string | null;
+  payment_status: "paid" | "unpaid" | "cancelled" | "unknown";
+};
+
+export type DetailedRewardLedgerRow = RewardLedgerRow & {
+  grade_name: string;
+  order: RewardLedgerOrderDetail;
+};
 
 export function listRewardLedger(limit = 30): RewardLedgerRow[] {
   const rows = db.prepare(
-    `SELECT id, external_order_id, grade_id, action, amount, processing_mode, status, created_at, processed_at, error_message
+    `SELECT id, external_order_id, grade_id, action, amount, card_rate, bank_rate, applied_rate, processing_mode, status, created_at, processed_at, error_message
      FROM reward_ledger ORDER BY id DESC LIMIT ?`
   ).all(limit * 2) as RewardLedgerRow[];
   return collapsePartialRecoveryRows(rows, limit);
+}
+
+function toSqliteUtc(value: string | null | undefined, fallback: string | null) {
+  const timestamp = value ? new Date(value).getTime() : NaN;
+  return Number.isFinite(timestamp)
+    ? new Date(timestamp).toISOString().slice(0, 19).replace("T", " ")
+    : fallback;
+}
+
+function getRemoteActualAmount(order: Cafe24RewardOrder, fallback: number | null) {
+  if (order.canceled === "T") return 0;
+  const raw = isPaymentConfirmed(order)
+    ? order.payment_amount
+    : order.actual_order_amount?.order_price_amount ?? order.initial_order_amount?.payment_amount;
+  const amount = Number(raw);
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : fallback;
+}
+
+/**
+ * 원장에는 지급 결과뿐 아니라 해당 주문의 현재 카페24 기준 정보도 함께 표시한다.
+ * 주문 DB는 읽기만 하며, 카페24 상세 조회에 실패한 행은 저장된 주문 정보로 표시한다.
+ */
+export async function listDetailedRewardLedger(limit = 30): Promise<DetailedRewardLedgerRow[]> {
+  const rows = listRewardLedger(limit);
+  if (rows.length === 0) return [];
+
+  const orderIds = Array.from(new Set(rows.map((row) => row.external_order_id)));
+  const placeholders = orderIds.map(() => "?").join(", ");
+  const localOrders = db.prepare(
+    `SELECT external_order_id, source, created_at, product, quantity, unit_price, actual_amount,
+            youtube_nickname, user_id, payment_method, paid_at, status
+       FROM orders WHERE external_order_id IN (${placeholders})`
+  ).all(...orderIds) as Array<{
+    external_order_id: string;
+    source: string;
+    created_at: string;
+    product: string;
+    quantity: number;
+    unit_price: number;
+    actual_amount: number | null;
+    youtube_nickname: string | null;
+    user_id: string;
+    payment_method: string | null;
+    paid_at: string | null;
+    status: string;
+  }>;
+  const localByOrderId = new Map(localOrders.map((order) => [order.external_order_id, order]));
+  const remoteByOrderId = new Map<string, Cafe24RewardOrder>();
+
+  const cafe24OrderIds = orderIds.filter((orderId) => localByOrderId.get(orderId)?.source === "cafe24");
+  for (let index = 0; index < cafe24OrderIds.length; index += 5) {
+    const results = await Promise.all(cafe24OrderIds.slice(index, index + 5).map(async (orderId) => {
+      try {
+        return [orderId, await getCafe24OrderForReward(orderId)] as const;
+      } catch {
+        return null;
+      }
+    }));
+    for (const result of results) {
+      if (result) remoteByOrderId.set(result[0], result[1]);
+    }
+  }
+
+  const gradeNames = new Map<string, string>(getRewardSettings().grades.map((grade) => [grade.id, grade.name]));
+  return rows.map((row) => {
+    const local = localByOrderId.get(row.external_order_id);
+    const remote = remoteByOrderId.get(row.external_order_id);
+    const itemNames = remote?.items?.map((item) => item.product_name).filter((name): name is string => Boolean(name));
+    const remoteQuantity = remote?.items?.reduce((total, item) => total + Number(item.quantity || 0), 0);
+    const paymentMethod = Array.isArray(remote?.payment_method)
+      ? remote.payment_method.join(", ")
+      : remote?.payment_method ?? local?.payment_method ?? null;
+    const paymentStatus = remote?.canceled === "T" || local?.status === "cancelled"
+      ? "cancelled"
+      : remote ? (isPaymentConfirmed(remote) ? "paid" : "unpaid")
+      : local?.paid_at ? "paid"
+      : local ? "unpaid" : "unknown";
+
+    return {
+      ...row,
+      grade_name: gradeNames.get(row.grade_id) ?? row.grade_id,
+      order: {
+        created_at: remote ? toSqliteUtc(remote.order_date, local?.created_at ?? null) : local?.created_at ?? null,
+        product: itemNames?.length ? itemNames.join(" · ") : local?.product ?? null,
+        quantity: Number.isFinite(remoteQuantity) && remoteQuantity! > 0 ? remoteQuantity! : local?.quantity ?? null,
+        actual_amount: remote ? getRemoteActualAmount(remote, local?.actual_amount ?? (local ? local.unit_price * local.quantity : null))
+          : local?.actual_amount ?? (local ? local.unit_price * local.quantity : null),
+        youtube_nickname: local?.youtube_nickname ?? null,
+        buyer_name: remote?.billing_name ?? local?.user_id ?? null,
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+      },
+    };
+  });
 }
 
 export type DashboardRewardEntry = Pick<

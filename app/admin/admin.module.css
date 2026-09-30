@@ -2253,6 +2253,21 @@
   margin-top: 14px;
 }
 
+.rewardLedgerTable {
+  min-width: 1760px;
+}
+
+.rewardLedgerTable th,
+.rewardLedgerTable td {
+  white-space: nowrap;
+}
+
+.rewardLedgerProduct {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .rewardSaveButton {
   min-width: 128px;
   height: 42px;
