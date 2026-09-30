@@ -29,8 +29,14 @@ def configuration(environ):
         raise ValueError("Invalid deployment user")
     if not config["PORT"].isdigit() or not 1 <= int(config["PORT"]) <= 65535:
         raise ValueError("Invalid SSH port")
-    if not re.match(r"^[A-Za-z]:[\\/]", config["APP_PATH"]) or any(ord(c) < 32 for c in config["APP_PATH"]):
-        raise ValueError("APP_PATH must be an absolute Windows production directory")
+    if any(ord(c) < 32 for c in config["APP_PATH"]):
+        raise ValueError("APP_PATH contains an invalid control character")
+    if re.match(r"^[A-Za-z]:[\\/]", config["APP_PATH"]):
+        config["PLATFORM"] = "windows"
+    elif config["APP_PATH"].startswith("/"):
+        config["PLATFORM"] = "linux"
+    else:
+        raise ValueError("APP_PATH must be an absolute Windows or Linux production directory")
     return config
 
 
@@ -56,16 +62,26 @@ def main():
         ssh_config.chmod(0o600)
         archive = root / "release.zip"
         subprocess.run(["git", "archive", "--format=zip", f"--output={archive}", sha], check=True)
-        incoming = ".mangotcg-incoming/" + sha
-        create = "$ErrorActionPreference='Stop'; New-Item -ItemType Directory -Force -Path (Join-Path $HOME " + ps_quote(incoming) + ") | Out-Null"
-        subprocess.run(["ssh", "-F", str(ssh_config), "production", encoded_command(create)], check=True)
-        subprocess.run(["scp", "-F", str(ssh_config), str(archive), "scripts/deploy-windows.ps1", f"production:{incoming}/"], check=True)
-        command = (
-            "$ErrorActionPreference='Stop'; $incoming=Join-Path $HOME " + ps_quote(incoming) + "; "
-            "& (Join-Path $incoming 'deploy-windows.ps1') -AppPath " + ps_quote(config["APP_PATH"]) +
-            " -ArchivePath (Join-Path $incoming 'release.zip') -CommitSha " + ps_quote(sha)
-        )
-        subprocess.run(["ssh", "-F", str(ssh_config), "production", encoded_command(command)], check=True)
+        if config["PLATFORM"] == "windows":
+            incoming = ".mangotcg-incoming/" + sha
+            create = "$ErrorActionPreference='Stop'; New-Item -ItemType Directory -Force -Path (Join-Path $HOME " + ps_quote(incoming) + ") | Out-Null"
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", encoded_command(create)], check=True)
+            subprocess.run(["scp", "-F", str(ssh_config), str(archive), "scripts/deploy-windows.ps1", f"production:{incoming}/"], check=True)
+            command = (
+                "$ErrorActionPreference='Stop'; $incoming=Join-Path $HOME " + ps_quote(incoming) + "; "
+                "& (Join-Path $incoming 'deploy-windows.ps1') -AppPath " + ps_quote(config["APP_PATH"]) +
+                " -ArchivePath (Join-Path $incoming 'release.zip') -CommitSha " + ps_quote(sha)
+            )
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", encoded_command(command)], check=True)
+        else:
+            incoming = "/root/.mangotcg-incoming/" + sha
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
+            subprocess.run(["scp", "-F", str(ssh_config), str(archive), "scripts/deploy-linux.sh", f"production:{incoming}/"], check=True)
+            subprocess.run([
+                "ssh", "-F", str(ssh_config), "production", "bash",
+                f"{incoming}/deploy-linux.sh", "--app-root", config["APP_PATH"],
+                "--archive", f"{incoming}/release.zip", "--commit", sha,
+            ], check=True)
         print("Remote deployment and local health check completed for " + sha)
 
 
