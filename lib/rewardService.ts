@@ -69,7 +69,9 @@ function getRemoteActualAmount(order: Cafe24RewardOrder, fallback: number | null
   if (order.canceled === "T") return 0;
   const raw = isPaymentConfirmed(order)
     ? order.payment_amount
-    : order.actual_order_amount?.order_price_amount ?? order.initial_order_amount?.payment_amount;
+    : order.actual_order_amount?.total_amount_due
+      ?? order.actual_order_amount?.order_price_amount
+      ?? order.initial_order_amount?.payment_amount;
   const amount = Number(raw);
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : fallback;
 }

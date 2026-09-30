@@ -404,7 +404,7 @@ try {
     console.log(`reward=${candidate.orderId}:${outcome},ledger=${ledger?.status ?? "none"}${audit}`);
   }
 
-  const liveResponse = await fetch("http://127.0.0.1:3001/api/orders");
+  const liveResponse = await fetch("http://127.0.0.1:3001/api/overlay-live");
   if (!liveResponse.ok) throw new Error(`Live overlay verification failed with HTTP ${liveResponse.status}.`);
   const liveState = await liveResponse.json();
   const liveOrders = [...(liveState.opening ? [liveState.opening] : []), ...(liveState.waiting ?? [])];

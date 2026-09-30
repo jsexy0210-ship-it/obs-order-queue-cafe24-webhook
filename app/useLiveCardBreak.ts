@@ -53,7 +53,7 @@ const EMPTY_STATE: LiveState = {
 };
 
 /**
- * /api/orders 로 초기 상태를 받아온 뒤 /api/stream(SSE)을 구독해서
+ * 개인정보를 제거한 공개 오버레이 API에서 초기 상태와 SSE를 구독해서
  * 웹훅으로 새 주문이 들어오거나 관리자가 상태를 바꿀 때마다 자동으로 갱신됩니다.
  */
 // SSE 연결이 (드물게) 끊긴 채로 재연결이 안 되는 경우를 대비한 안전장치.
@@ -67,7 +67,7 @@ export function useLiveCardBreak(): LiveState {
     let cancelled = false;
 
     const refetch = () => {
-      fetch("/api/orders")
+      fetch("/api/overlay-live")
         .then((res) => res.json())
         .then((data: Omit<LiveState, "loading">) => {
           if (!cancelled) setState({ ...data, loading: false });
@@ -79,7 +79,7 @@ export function useLiveCardBreak(): LiveState {
 
     refetch();
 
-    const source = new EventSource("/api/stream");
+    const source = new EventSource("/api/overlay-stream");
 
     source.onmessage = (event) => {
       try {

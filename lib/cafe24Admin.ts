@@ -160,7 +160,7 @@ export type Cafe24RewardOrder = {
   billing_name?: string;
   canceled?: string;
   cancel_date?: string | null;
-  actual_order_amount?: { order_price_amount?: string | number };
+  actual_order_amount?: { order_price_amount?: string | number; total_amount_due?: string | number };
   initial_order_amount?: { payment_amount?: string | number };
   additional_order_info_list?: unknown;
   member_id?: string;

@@ -57,7 +57,9 @@ function sqliteUtc(value: string | null | undefined, fallback: string | null) {
 function actualAmount(order: Cafe24RewardOrder, localAmount: number) {
   if (order.canceled === "T") return 0;
   const raw = order.paid === "T" ? order.payment_amount
-    : order.actual_order_amount?.order_price_amount ?? order.initial_order_amount?.payment_amount;
+    : order.actual_order_amount?.total_amount_due
+      ?? order.actual_order_amount?.order_price_amount
+      ?? order.initial_order_amount?.payment_amount;
   const amount = Number(raw);
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : localAmount;
 }

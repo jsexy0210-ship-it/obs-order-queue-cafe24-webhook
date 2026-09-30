@@ -11,6 +11,8 @@ const PUBLIC_PATHS = new Set([
   "/api/admin/login",
   "/api/webhooks/cafe24",
   "/api/cafe24/oauth/callback",
+  "/api/overlay-live",
+  "/api/overlay-stream",
 ]);
 
 export async function middleware(req: NextRequest) {
