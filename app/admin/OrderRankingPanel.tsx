@@ -115,6 +115,7 @@ export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
         <div className={styles.rankingList}>
           {ranking.map((row) => {
             const isTopThree = row.rank <= 3;
+            const isTopTen = row.rank <= 10;
             return (
               <article className={`${styles.rankingCard} ${isTopThree ? styles.topRankingCard : ""}`} key={row.userId}>
                 <div className={styles.rankingRank} aria-label={`${row.rank}위`}>
@@ -135,10 +136,10 @@ export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
                 <dl className={styles.rankingMetrics}>
                   <div><dt>총 구매금액</dt><dd>{formatWon(row.totalPurchaseAmount)}</dd></div>
                   <div><dt>주문 건수</dt><dd>{row.orderCount}건</dd></div>
-                  <div><dt>누적 적립금</dt><dd>{formatWon(row.rewardPoints)}</dd></div>
+                  <div><dt>보유 적립금</dt><dd>{formatWon(row.rewardPoints)}</dd></div>
                   <div><dt>보너스 적립금</dt><dd>{formatWon(row.bonusPoints)}</dd></div>
                 </dl>
-                {isTopThree && (
+                {isTopTen && (
                   <div className={styles.bonusAction}>
                     <label>
                       <span>보너스 적립금</span>

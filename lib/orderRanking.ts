@@ -3,6 +3,7 @@ import { db } from "./db";
 import { assertCafe24BonusExecutionAllowed } from "./rewardExecution";
 import { getBuyerInfo, getCurrentCustomerGroupNo } from "./buyerNames";
 import { isAfterRewardStart } from "./rewardCutoff";
+import { refreshCafe24PointBalanceSnapshot } from "./rewardService";
 
 export type OrderRankingRow = {
   rank: number;
@@ -88,7 +89,7 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
       ?? rewards.get(row.user_id)
       ?? 0,
     bonusPoints: bonuses.get(row.user_id) ?? 0,
-    eligibleForBonus: index < 3 && hasCafe24Order(row.user_id),
+    eligibleForBonus: index < 10 && hasCafe24Order(row.user_id),
   }));
 }
 
@@ -126,7 +127,7 @@ function hasCafe24Order(userId: string) {
   return Boolean(findLatestCafe24Order(userId));
 }
 
-/** 현재 상위 3위에게만 카페24 보너스 적립금을 실제 지급합니다. */
+/** 현재 상위 10위에게 카페24 보너스 적립금을 실제 지급합니다. */
 export async function grantRankingBonus(userId: string, amount: number, requestId: string) {
   const normalizedAmount = Number(amount);
   if (!userId || !Number.isSafeInteger(normalizedAmount) || normalizedAmount <= 0 || normalizedAmount > 1_000_000) {
@@ -140,8 +141,8 @@ export async function grantRankingBonus(userId: string, amount: number, requestI
 
   const ranking = getOrderRanking(10);
   const rankingRow = ranking.find((row) => row.userId === userId);
-  if (!rankingRow || rankingRow.rank > 3) {
-    throw new Error("보너스 적립금은 현재 주문 랭킹 1~3위에게만 지급할 수 있습니다.");
+  if (!rankingRow || rankingRow.rank > 10) {
+    throw new Error("보너스 적립금은 현재 주문 랭킹 1~10위에게만 지급할 수 있습니다.");
   }
 
   const order = findLatestCafe24Order(userId);
@@ -203,6 +204,7 @@ export async function grantRankingBonus(userId: string, amount: number, requestI
           SET status = 'succeeded', processed_at = datetime('now'), error_message = NULL
         WHERE id = ?`
     ).run(ledgerId);
+    await refreshCafe24PointBalanceSnapshot(memberId, userId);
     return { amount: normalizedAmount };
   } catch (error) {
     db.prepare("UPDATE ranking_bonus_ledger SET error_message = ? WHERE id = ?")

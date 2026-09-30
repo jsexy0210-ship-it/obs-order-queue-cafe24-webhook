@@ -106,7 +106,7 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
-  -- 주문 랭킹 1~3위에게 관리자가 수동 지급한 보너스 적립금 원장입니다.
+  -- 주문 랭킹 1~10위에게 관리자가 수동 지급한 보너스 적립금 원장입니다.
   CREATE TABLE IF NOT EXISTS ranking_bonus_ledger (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     request_id TEXT,
@@ -114,7 +114,7 @@ db.exec(`
     external_order_id TEXT NOT NULL,
     member_id TEXT,
     amount INTEGER NOT NULL CHECK (amount > 0),
-    rank_at_issue INTEGER NOT NULL CHECK (rank_at_issue BETWEEN 1 AND 3),
+    rank_at_issue INTEGER NOT NULL CHECK (rank_at_issue BETWEEN 1 AND 10),
     status TEXT NOT NULL CHECK (status IN ('test', 'succeeded', 'failed')),
     error_message TEXT,
     processed_at TEXT,
@@ -178,4 +178,36 @@ const rankingBonusColumns = db.prepare("PRAGMA table_info(ranking_bonus_ledger)"
 if (!rankingBonusColumns.some((col) => col.name === "request_id")) {
   db.exec("ALTER TABLE ranking_bonus_ledger ADD COLUMN request_id TEXT");
 }
+
+// SQLite는 CHECK 제약만 단독 변경할 수 없습니다. 기존 원장 행과 요청 식별자를 보존한 채
+// 새 테이블로 교체해 4~10위 보너스 지급도 같은 원장에 기록할 수 있게 합니다.
+const rankingBonusSchema = db.prepare(
+  "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'ranking_bonus_ledger'"
+).get() as { sql: string } | undefined;
+if (rankingBonusSchema?.sql && /rank_at_issue[\s\S]*?BETWEEN\s+1\s+AND\s+3/i.test(rankingBonusSchema.sql)) {
+  db.transaction(() => {
+    db.exec(`
+      CREATE TABLE ranking_bonus_ledger_next (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        request_id TEXT,
+        user_id TEXT NOT NULL,
+        external_order_id TEXT NOT NULL,
+        member_id TEXT,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        rank_at_issue INTEGER NOT NULL CHECK (rank_at_issue BETWEEN 1 AND 10),
+        status TEXT NOT NULL CHECK (status IN ('test', 'succeeded', 'failed')),
+        error_message TEXT,
+        processed_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO ranking_bonus_ledger_next
+        (id, request_id, user_id, external_order_id, member_id, amount, rank_at_issue, status, error_message, processed_at, created_at)
+      SELECT id, request_id, user_id, external_order_id, member_id, amount, rank_at_issue, status, error_message, processed_at, created_at
+        FROM ranking_bonus_ledger;
+      DROP TABLE ranking_bonus_ledger;
+      ALTER TABLE ranking_bonus_ledger_next RENAME TO ranking_bonus_ledger;
+    `);
+  })();
+}
+db.exec("CREATE INDEX IF NOT EXISTS idx_ranking_bonus_user ON ranking_bonus_ledger(user_id, status)");
 db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_ranking_bonus_request ON ranking_bonus_ledger(request_id)");

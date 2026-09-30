@@ -319,7 +319,7 @@ function markLedger(id: number, status: LedgerStatus, error?: unknown) {
  * 실지급/회수 성공 직후 카페24의 실제 잔액을 다시 읽어 대시보드 등급별 합계도 갱신합니다.
  * 잔액 조회 실패는 이미 완료된 카페24 지급을 실패로 되돌리거나 재시도하지 않습니다.
  */
-async function refreshCafe24PointBalanceSnapshot(memberId: string, buyerName?: string | null) {
+export async function refreshCafe24PointBalanceSnapshot(memberId: string, buyerName?: string | null) {
   try {
     const customer = await getCafe24CustomerPointBalance(memberId);
     db.prepare(
