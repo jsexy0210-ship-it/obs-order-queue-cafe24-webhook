@@ -23,8 +23,15 @@ def database_summary(path: Path) -> tuple[str | None, bool] | None:
         return None
 
 
-def deleted_database_handles() -> int:
-    count = 0
+REQUIRED_ENVIRONMENT_KEYS = {
+    "ADMIN_PRIMARY_ID", "ADMIN_PRIMARY_PASSWORD", "ADMIN_SECONDARY_ID", "ADMIN_SECONDARY_PASSWORD",
+    "CAFE24_MALL_ID", "CAFE24_CLIENT_ID", "CAFE24_CLIENT_SECRET", "CAFE24_REDIRECT_URI",
+    "CAFE24_TOKEN_ENCRYPTION_KEY", "CAFE24_WEBHOOK_TOKEN",
+}
+
+
+def deleted_database_processes() -> dict[int, set[str]]:
+    processes: dict[int, set[str]] = {}
     for process in Path("/proc").iterdir():
         if not process.name.isdigit():
             continue
@@ -33,10 +40,19 @@ def deleted_database_handles() -> int:
             for descriptor in fd_directory.iterdir():
                 target = os.readlink(descriptor)
                 if "cardbreak.db" in target and "(deleted)" in target:
-                    count += 1
+                    processes.setdefault(int(process.name), set()).add(target)
         except OSError:
             continue
-    return count
+    return processes
+
+
+def required_environment_key_count(pid: int) -> int:
+    try:
+        values = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+    except OSError:
+        return 0
+    keys = {item.split(b"=", 1)[0].decode("utf-8", "ignore") for item in values if b"=" in item}
+    return len(keys & REQUIRED_ENVIRONMENT_KEYS)
 
 
 def main() -> int:
@@ -69,10 +85,19 @@ def main() -> int:
     newest = max((row[1] for row in paired if row[1]), default=None)
     newest_count = sum(1 for row in paired if row[1] == newest) if newest else 0
 
+    deleted_processes = deleted_database_processes()
+    recoverable_processes = sum(
+        1 for pid, targets in deleted_processes.items()
+        if any(target.endswith("cardbreak.db (deleted)") for target in targets)
+        and required_environment_key_count(pid) == len(REQUIRED_ENVIRONMENT_KEYS)
+    )
+
     print("recovery_diagnostic=complete")
     print(f"runtime_database_present={str((app_root / 'data' / 'cardbreak.db').is_file()).lower()}")
     print(f"runtime_environment_present={str((app_root / '.env.local').is_file()).lower()}")
-    print(f"deleted_database_handles={deleted_database_handles()}")
+    print(f"deleted_database_handles={sum(len(targets) for targets in deleted_processes.values())}")
+    print(f"deleted_database_processes={len(deleted_processes)}")
+    print(f"recoverable_runtime_processes={recoverable_processes}")
     print(f"database_candidates={len(database_paths)}")
     print(f"environment_candidates={len(environment_paths)}")
     print(f"mangotcg_database_candidates={len(valid)}")
