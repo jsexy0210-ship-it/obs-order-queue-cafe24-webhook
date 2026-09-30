@@ -297,6 +297,46 @@ try {
     ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "medium" }).format(rewardStartMs)
     : "missing_or_invalid";
   console.log(`reward_start_at_kst=${rewardStartKst}`);
+
+  const nativeDisabledLine = fs.readFileSync(path.join(releaseRoot, ".env.local"), "utf8")
+    .split(/\r?\n/).find((entry) => entry.startsWith("CAFE24_NATIVE_REWARDS_DISABLED="));
+  const nativeDisabled = liveEnv?.CAFE24_NATIVE_REWARDS_DISABLED
+    ?? liveEnv?.env?.CAFE24_NATIVE_REWARDS_DISABLED
+    ?? nativeDisabledLine?.slice("CAFE24_NATIVE_REWARDS_DISABLED=".length).trim().replace(/^['"]|['"]$/g, "");
+  if (nativeDisabled !== "true") {
+    const envPath = path.join(releaseRoot, ".env.local");
+    const envContents = fs.readFileSync(envPath, "utf8");
+    const lines = envContents.split(/\r?\n/)
+      .filter((line) => !line.startsWith("CAFE24_NATIVE_REWARDS_DISABLED="));
+    while (lines.at(-1) === "") lines.pop();
+    lines.push("CAFE24_NATIVE_REWARDS_DISABLED=true", "");
+    const stat = fs.statSync(envPath);
+    const tempPath = `${envPath}.native-reward.tmp`;
+    fs.writeFileSync(tempPath, lines.join("\n"), { mode: stat.mode });
+    fs.renameSync(tempPath, envPath);
+    execFileSync("pm2", ["restart", "obs-overlay", "--update-env"], {
+      stdio: "ignore",
+      env: {
+        ...process.env,
+        CAFE24_REWARD_START_AT: new Date(rewardStartMs).toISOString(),
+        CAFE24_NATIVE_REWARDS_DISABLED: "true",
+      },
+    });
+    let healthy = false;
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      try {
+        const health = await fetch("http://127.0.0.1:3001/admin/login");
+        if (health.status === 200) {
+          healthy = true;
+          break;
+        }
+      } catch {}
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    if (!healthy) throw new Error("Production service did not recover after Cafe24 native-reward confirmation.");
+    execFileSync("pm2", ["save"], { stdio: "ignore" });
+    console.log("cafe24_native_reward_confirmation=restored");
+  }
   for (const candidate of paidCandidates) {
     if (!candidate.paid) {
       console.log(`reward=${candidate.orderId}:deferred_unpaid`);
