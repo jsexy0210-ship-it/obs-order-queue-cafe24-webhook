@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      rotate_webhook_token:
+        description: 'Update only the Cafe24 webhook token in the active runtime and restart the app'
+        required: false
+        type: boolean
+        default: false
       sync_audited_orders:
         description: 'Reconcile the two verified Cafe24 order records and trigger the guarded payment reward flow'
         required: false
@@ -54,6 +59,8 @@ jobs:
       - name: Deploy to the existing production Windows host
         env:
           MANGO_RECOVERY_DIAGNOSE: ${{ inputs.recovery_diagnose && 'true' || 'false' }}
+          MANGO_ROTATE_WEBHOOK_TOKEN: ${{ inputs.rotate_webhook_token && 'true' || 'false' }}
+          MANGO_CAFE24_WEBHOOK_TOKEN: ${{ secrets.CAFE24_WEBHOOK_TOKEN }}
           MANGO_SYNC_AUDITED_ORDERS: ${{ inputs.sync_audited_orders && 'true' || 'false' }}
           MANGO_RECOVERY_RESTORE: ${{ inputs.recovery_restore && 'true' || 'false' }}
           MANGO_YOUTUBE_NICKNAME_BACKFILL: ${{ inputs.youtube_nickname_backfill && 'true' || 'false' }}

@@ -61,6 +61,26 @@ def main():
             "  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n  BatchMode yes\n  ConnectTimeout 15\n"
         )
         ssh_config.chmod(0o600)
+        if os.environ.get("MANGO_ROTATE_WEBHOOK_TOKEN") == "true":
+            if config["PLATFORM"] != "linux":
+                raise ValueError("Webhook token rotation is available only for Linux production hosts")
+            token = os.environ.get("MANGO_CAFE24_WEBHOOK_TOKEN", "")
+            if not re.fullmatch(r"[0-9a-f]{64}", token):
+                raise ValueError("Invalid Cafe24 webhook token")
+            incoming = "/root/.mangotcg-incoming/webhook-token-" + sha
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
+            token_file = root / "webhook-token"
+            token_file.write_text(token + "\n", encoding="ascii")
+            token_file.chmod(0o600)
+            subprocess.run([
+                "scp", "-F", str(ssh_config), str(token_file),
+                "scripts/rotate-webhook-token-linux.py", f"production:{incoming}/",
+            ], check=True)
+            subprocess.run([
+                "ssh", "-F", str(ssh_config), "production", "python3",
+                f"{incoming}/rotate-webhook-token-linux.py", config["APP_PATH"], f"{incoming}/webhook-token",
+            ], check=True)
+            return
         if os.environ.get("MANGO_YOUTUBE_NICKNAME_BACKFILL") == "true":
             if config["PLATFORM"] != "linux":
                 raise ValueError("Nickname backfill is available only for Linux production hosts")
