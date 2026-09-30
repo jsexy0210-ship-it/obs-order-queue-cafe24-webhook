@@ -28,7 +28,10 @@ unzip -q "$archive" -d "$release"
   npm ci
   npm run build
 )
-[[ ! -e "$release/data" ]] || exit 1
+if [[ -e "$release/data" ]]; then
+  [[ ! -L "$release/data" ]] || exit 1
+  rm -rf -- "$release/data"
+fi
 cp "$environment_path" "$release/.env.local"
 ln -s "$data_path" "$release/data"
 [[ "$db_before" == "$(stat -c '%i:%s:%Y' "$data_path/cardbreak.db")" ]] || exit 1
