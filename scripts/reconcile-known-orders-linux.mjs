@@ -16,16 +16,6 @@ function readEnvValue(name) {
     : value;
 }
 
-function readOptionalEnvValue(name) {
-  const contents = fs.readFileSync(path.join(appRoot, ".env.local"), "utf8");
-  const line = contents.split(/\r?\n/).find((entry) => entry.startsWith(`${name}=`));
-  if (!line) return null;
-  const value = line.slice(name.length + 1).trim();
-  return (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))
-    ? value.slice(1, -1)
-    : value;
-}
-
 const require = createRequire(path.join(appRoot, "package.json"));
 const Database = require("better-sqlite3");
 const databasePath = path.join(appRoot, "data", "cardbreak.db");
@@ -82,8 +72,7 @@ function paidOrderFacts(orderId, order, expectedAmount, expectedDate, expectedMe
 
 const targetIds = ["20260930-0000169", "20260930-0000152"];
 const token = readEnvValue("CAFE24_WEBHOOK_TOKEN");
-const port = Number(readOptionalEnvValue("PORT") || "3000");
-if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Invalid application port.");
+const port = 3001;
 const cafe24Tokens = getCafe24Tokens();
 const facts169 = paidOrderFacts(
   targetIds[0], await getCafe24Order(cafe24Tokens, targetIds[0]), 71500,

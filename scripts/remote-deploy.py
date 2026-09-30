@@ -86,9 +86,15 @@ def main():
                 "scp", "-F", str(ssh_config), "scripts/reconcile-known-orders-linux.mjs",
                 f"production:{incoming}/",
             ], check=True)
+            runtime_root = subprocess.check_output([
+                "ssh", "-F", str(ssh_config), "production",
+                "pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, \"\", $3); print $3; exit}'",
+            ], text=True).strip()
+            if not runtime_root.startswith(config["APP_PATH"].rstrip("/") + "/mangotcg-release-"):
+                raise ValueError("Could not identify the active production runtime")
             subprocess.run([
                 "ssh", "-F", str(ssh_config), "production", "node",
-                f"{incoming}/reconcile-known-orders-linux.mjs", config["APP_PATH"],
+                f"{incoming}/reconcile-known-orders-linux.mjs", runtime_root,
             ], check=True)
             return
         if os.environ.get("MANGO_RECOVERY_DIAGNOSE") == "true":
