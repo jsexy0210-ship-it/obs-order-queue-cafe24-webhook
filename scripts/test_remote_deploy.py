@@ -47,13 +47,18 @@ class RemoteDeploymentConfigurationTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     deploy.configuration(config)
 
-    def test_explicit_existing_windows_target_is_required(self):
-        for value in ("relative-path", "/tmp/project", "C:\\apps\nextra"):
+    def test_explicit_absolute_target_is_required(self):
+        for value in ("relative-path", "C:\\apps\nextra", "/tmp\nproject"):
             with self.subTest(value=value):
                 config = self.config()
                 config["MANGO_DEPLOY_APP_PATH"] = value
                 with self.assertRaises(ValueError):
                     deploy.configuration(config)
+
+    def test_linux_target_is_supported(self):
+        config = self.config()
+        config["MANGO_DEPLOY_APP_PATH"] = "/srv/mangotcg"
+        self.assertEqual(deploy.configuration(config)["PLATFORM"], "linux")
 
     def test_powershell_path_is_literal(self):
         self.assertEqual(deploy.ps_quote("C:\\team's app; $x"), "'C:\\team''s app; $x'")
