@@ -31,11 +31,22 @@ release="$app_root/mangotcg-release-${commit:0:7}-live"
   exit 1
 }
 
+# 운영 중인 릴리스와 원본 data 링크만 보존하고, 전환에 쓰이지 않는 이전 코드
+# 릴리스는 새 후보를 만들기 전에 정리합니다. data는 각 릴리스 안의 심볼릭 링크라
+# 삭제 대상 폴더를 지워도 원본 DB에는 영향을 주지 않습니다.
+shopt -s nullglob
+for old_release in "$app_root"/mangotcg-release-*; do
+  [[ "$old_release" == "$current" ]] && continue
+  [[ -d "$old_release" && ! -L "$old_release" ]] || continue
+  rm -rf --one-file-system -- "$old_release"
+done
+shopt -u nullglob
+
 data_target="$(readlink -f "$current/data")"
 db_before="$(stat -c '%i:%s:%Y' "$data_target/cardbreak.db")"
 mkdir -p "$release"
 unzip -q "$archive" -d "$release"
-cp -a "$current/node_modules" "$release/node_modules"
+cp -al "$current/node_modules" "$release/node_modules"
 cp "$current/.env.local" "$release/.env.local"
 [[ ! -e "$release/data" ]] || {
   echo "Candidate release unexpectedly contains runtime data." >&2
