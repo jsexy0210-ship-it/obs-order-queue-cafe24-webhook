@@ -52,7 +52,8 @@ function cancelLabel(reason: string | null) {
 
 /** 오버레이는 유튜브 닉네임만 표시해 구매자 실명을 노출하지 않습니다. */
 function formatYoutubeNickname(youtubeNickname: string | null | undefined) {
-  return youtubeNickname?.trim() || "-";
+  const nickname = youtubeNickname?.trim().replace(/\s*\([^)]*\)\s*$/, "").trim();
+  return nickname || "-";
 }
 
 const cancelledBadgeStyle: CSSProperties = {
