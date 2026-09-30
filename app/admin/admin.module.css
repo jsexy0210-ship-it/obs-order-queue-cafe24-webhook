@@ -2290,22 +2290,31 @@
 }
 
 .rewardLedgerTable th:nth-child(1),
-.rewardLedgerTable th:nth-child(2) { width: 84px; }
+.rewardLedgerTable th:nth-child(2) { width: 76px; }
 
-.rewardLedgerTable th:nth-child(3) { width: 18%; }
+.rewardLedgerTable th:nth-child(3) { width: 132px; }
 
-.rewardLedgerTable th:nth-child(4),
-.rewardLedgerTable th:nth-child(11) { width: 86px; }
+.rewardLedgerTable th:nth-child(4) { width: 16%; }
 
 .rewardLedgerTable th:nth-child(5),
-.rewardLedgerTable th:nth-child(10) { width: 48px; }
+.rewardLedgerTable th:nth-child(12) { width: 80px; }
 
 .rewardLedgerTable th:nth-child(6),
+.rewardLedgerTable th:nth-child(11) { width: 48px; }
+
 .rewardLedgerTable th:nth-child(7),
 .rewardLedgerTable th:nth-child(8),
-.rewardLedgerTable th:nth-child(9) { width: 82px; }
+.rewardLedgerTable th:nth-child(9),
+.rewardLedgerTable th:nth-child(10) { width: 74px; }
 
-.rewardLedgerTable th:nth-child(12) { width: 82px; }
+.rewardLedgerTable th:nth-child(13) { width: 74px; }
+
+.rewardLedgerOrderNumber {
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
 
 .rewardLedgerTable td:first-child {
   min-width: 0;

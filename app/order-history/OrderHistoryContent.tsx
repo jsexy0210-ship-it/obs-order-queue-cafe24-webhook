@@ -51,6 +51,10 @@ type OrderHistoryResponse = {
 const ORDER_PAGE_SIZE = 10;
 const HIT_CARD_PAGE_SIZE = 50;
 
+function currentKstDate() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000);
+}
+
 // 카페24 결제방식 원본 코드 -> 화면에 보여줄 한글 라벨.
 // 목록에 없는 코드가 들어오면(카페24가 새 결제수단을 추가하는 등) 원본 코드를 그대로 보여줍니다.
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
@@ -157,8 +161,8 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   const [loading, setLoading] = useState(true);
   const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
   const [orderPage, setOrderPage] = useState(1);
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(() => currentKstDate().getUTCFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(() => currentKstDate().getUTCMonth() + 1);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });

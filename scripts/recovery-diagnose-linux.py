@@ -84,6 +84,7 @@ def main() -> int:
     paired = [row for row in valid if row[3]]
     newest = max((row[1] for row in paired if row[1]), default=None)
     newest_count = sum(1 for row in paired if row[1] == newest) if newest else 0
+    active_database = next((row[0] for row in paired if row[1] == newest), None)
 
     deleted_processes = deleted_database_processes()
     recoverable_processes = sum(
@@ -105,6 +106,44 @@ def main() -> int:
     print(f"newest_order_at={newest or 'none'}")
     print(f"newest_order_candidate_count={newest_count}")
     print(f"newest_pair_has_reward_ledger={str(any(row[1] == newest and row[2] for row in paired)).lower()}")
+    if active_database:
+        print("production_order_audit_begin")
+        try:
+            connection = sqlite3.connect(f"file:{quote(str(active_database))}?mode=ro", uri=True)
+            connection.execute("PRAGMA query_only = ON")
+            tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+            orders = connection.execute(
+                "SELECT external_order_id, created_at, paid_at, status, actual_amount, payment_method "
+                "FROM orders WHERE source = 'cafe24' AND external_order_id IS NOT NULL "
+                "ORDER BY created_at DESC"
+            ).fetchall()
+            print(f"production_cafe24_order_count={len(orders)}")
+            for order_id, created_at, paid_at, status, amount, payment_method in orders:
+                reward_summary = "none"
+                if "reward_ledger" in tables:
+                    totals = connection.execute(
+                        "SELECT action, SUM(CASE WHEN status = 'succeeded' THEN amount ELSE 0 END), "
+                        "SUM(amount), COUNT(*) FROM reward_ledger WHERE external_order_id = ? GROUP BY action",
+                        (order_id,),
+                    ).fetchall()
+                    reward_summary = ",".join(
+                        f"{action}:{succeeded}/{total}({count})" for action, succeeded, total, count in totals
+                    ) or "none"
+                print(
+                    f"production_order={order_id}|{created_at}|{paid_at or '-'}|{status}|"
+                    f"{amount if amount is not None else '-'}|{payment_method or '-'}|reward={reward_summary}"
+                )
+            hidden = []
+            if "hidden_order_history" in tables:
+                hidden = [row[0] for row in connection.execute(
+                    "SELECT external_order_id FROM hidden_order_history ORDER BY external_order_id"
+                )]
+            print(f"production_hidden_order_ids={','.join(hidden) if hidden else 'none'}")
+            connection.close()
+        except (OSError, sqlite3.Error) as error:
+            print(f"production_order_audit=failed:{type(error).__name__}")
+            return 1
+        print("production_order_audit_end")
     return 0
 
 

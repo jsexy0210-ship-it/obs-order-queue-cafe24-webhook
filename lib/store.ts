@@ -95,7 +95,7 @@ export function getLiveState(): LiveState {
   const waiting = db
     .prepare(
       `SELECT * FROM orders
-       WHERE status = 'waiting'
+       WHERE (status = 'waiting' AND (source <> 'cafe24' OR paid_at IS NOT NULL))
           OR (
             status = 'cancelled'
             AND prev_status = 'waiting'
