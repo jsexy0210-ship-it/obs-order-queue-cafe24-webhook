@@ -260,7 +260,39 @@ try {
   const rewardStart = liveEnv?.CAFE24_REWARD_START_AT
     ?? liveEnv?.env?.CAFE24_REWARD_START_AT
     ?? rewardStartLine?.slice("CAFE24_REWARD_START_AT=".length).trim().replace(/^['"]|['"]$/g, "");
-  const rewardStartMs = Date.parse(rewardStart ?? "");
+  let rewardStartMs = Date.parse(rewardStart ?? "");
+  if (!Number.isFinite(rewardStartMs)) {
+    const envPath = path.join(releaseRoot, ".env.local");
+    const envContents = fs.readFileSync(envPath, "utf8");
+    const startValue = `${cutoffKst.replace(" ", "T")}:00+09:00`;
+    const lines = envContents.split(/\r?\n/)
+      .filter((line) => !line.startsWith("CAFE24_REWARD_START_AT="));
+    while (lines.at(-1) === "") lines.pop();
+    lines.push(`CAFE24_REWARD_START_AT=${startValue}`, "");
+    const stat = fs.statSync(envPath);
+    const tempPath = `${envPath}.reward-start.tmp`;
+    fs.writeFileSync(tempPath, lines.join("\n"), { mode: stat.mode });
+    fs.renameSync(tempPath, envPath);
+    execFileSync("pm2", ["restart", "obs-overlay", "--update-env"], {
+      stdio: "ignore",
+      env: { ...process.env, CAFE24_REWARD_START_AT: startValue },
+    });
+    let healthy = false;
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      try {
+        const health = await fetch("http://127.0.0.1:3001/admin/login");
+        if (health.status === 200) {
+          healthy = true;
+          break;
+        }
+      } catch {}
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    if (!healthy) throw new Error("Production service did not recover after reward cutoff configuration.");
+    execFileSync("pm2", ["save"], { stdio: "ignore" });
+    rewardStartMs = Date.parse(startValue);
+    console.log("reward_start_configuration=initialized_at_requested_cutoff");
+  }
   const rewardStartKst = Number.isFinite(rewardStartMs)
     ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "medium" }).format(rewardStartMs)
     : "missing_or_invalid";
