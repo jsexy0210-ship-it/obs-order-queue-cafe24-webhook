@@ -54,7 +54,7 @@ function parseAdditionalOrderInfo(raw: unknown): Record<string, string> {
  * additional_order_info_list 안에서 "유튜브 닉네임" 항목의 값을 찾습니다.
  * 라벨은 쇼핑몰 설정에 따라 문구가 조금 달라질 수 있어 "유튜브"/"youtube"가 들어간 라벨을 폭넓게 찾습니다.
  */
-function extractYoutubeNickname(raw: unknown): string | null {
+export function extractCafe24YoutubeNickname(raw: unknown): string | null {
   const info = parseAdditionalOrderInfo(raw);
   for (const [label, value] of Object.entries(info)) {
     if (label.includes("유튜브") || label.toLowerCase().includes("youtube")) {
@@ -110,7 +110,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
 
   // additional_order_info_list는 extra_info(품목) 안이 아니라 주문(resource) 최상위에 있습니다.
   const additionalInfoRaw = pick(resource, ["additional_order_info_list"]);
-  const youtubeNickname = extractYoutubeNickname(additionalInfoRaw);
+  const youtubeNickname = extractCafe24YoutubeNickname(additionalInfoRaw);
 
   const paymentMethodRaw = pick(resource, ["payment_method", "payment_method_name"]);
   const paymentMethod = paymentMethodRaw ? String(paymentMethodRaw) : null;

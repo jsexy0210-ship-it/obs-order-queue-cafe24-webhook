@@ -1,4 +1,5 @@
 import { getCafe24OrderForReward, listCafe24Orders, type Cafe24RewardOrder } from "./cafe24Admin";
+import { extractCafe24YoutubeNickname } from "./cafe24";
 import type { OrderRow } from "./store";
 
 export type CurrentOrder = OrderRow & { actual_amount: number; remote_only?: true };
@@ -109,6 +110,7 @@ export async function currentOrderView(
     const productNames = items?.map((item) => item.product_name).filter((name): name is string => Boolean(name));
     return {
       ...order,
+      youtube_nickname: order.youtube_nickname || extractCafe24YoutubeNickname(remote.additional_order_info_list),
       user_id: remote.billing_name || order.user_id,
       product: productNames?.length ? productNames.join(" · ") : order.product,
       quantity: items?.length ? items.reduce((total, item) => total + Number(item.quantity || 0), 0) : order.quantity,
@@ -145,7 +147,7 @@ export async function currentOrderView(
       payment_method: paymentMethod(remote, null),
       payment_gateway_name: null,
       easypay_name: null,
-      youtube_nickname: null,
+      youtube_nickname: extractCafe24YoutubeNickname(remote.additional_order_info_list),
       timer_seconds: null,
       created_at: sqliteUtc(remote.order_date, new Date().toISOString().slice(0, 19).replace("T", " "))!,
       actual_amount: actualAmount(remote, 0),
