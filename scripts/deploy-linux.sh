@@ -45,10 +45,13 @@ cp "$current/.env.local" "$release/.env.local"
   cd "$release"
   npm run build
 )
-[[ ! -e "$release/data" ]] || {
-  echo "Candidate build unexpectedly created runtime data." >&2
-  exit 1
-}
+if [[ -e "$release/data" ]]; then
+  [[ ! -L "$release/data" ]] || {
+    echo "Candidate build linked runtime data unexpectedly." >&2
+    exit 1
+  }
+  rm -rf -- "$release/data"
+fi
 ln -s "$data_target" "$release/data"
 [[ "$db_before" == "$(stat -c '%i:%s:%Y' "$data_target/cardbreak.db")" ]] || {
   echo "Database changed during candidate build." >&2
