@@ -19,131 +19,24 @@ done
   exit 2
 }
 
-app_root="${app_root%/}"
 current="$(pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, "", $3); print $3; exit}')"
-current="${current%/}"
-current_ready=false
-if [[ "$current" == "$app_root"/mangotcg-release-* && -f "$current/data/cardbreak.db" && -f "$current/.env.local" && -d "$current/node_modules" ]]; then
-  current_ready=true
-  data_target="$(readlink -f "$current/data")"
-  environment_source="$current/.env.local"
-else
-  # 삭제된 릴리스의 Node 프로세스가 아직 살아 있으면 열려 있는 SQLite 파일과
-  # 실행 환경만 서버 내부에서 복구합니다. 비밀값이나 DB 내용은 출력하지 않습니다.
-  runtime_pid="$(pm2 pid obs-overlay 2>/dev/null | head -n 1 || true)"
-  if [[ "$runtime_pid" =~ ^[0-9]+$ && -d "/proc/$runtime_pid/fd" ]]; then
-    mkdir -p "$app_root/data"
-    for fd in "/proc/$runtime_pid"/fd/*; do
-      [[ -L "$fd" ]] || continue
-      fd_target="$(readlink "$fd" || true)"
-      case "$fd_target" in
-        */cardbreak.db|*/cardbreak.db\ \(deleted\)) cp "$fd" "$app_root/data/cardbreak.db" || true ;;
-        */cardbreak.db-wal|*/cardbreak.db-wal\ \(deleted\)) cp "$fd" "$app_root/data/cardbreak.db-wal" || true ;;
-        */cardbreak.db-shm|*/cardbreak.db-shm\ \(deleted\)) cp "$fd" "$app_root/data/cardbreak.db-shm" || true ;;
-      esac
-    done
-
-    if [[ ! -f "$app_root/.env.local" ]]; then
-      umask 077
-      recovery_env="$(mktemp "$app_root/.env.local.recovery.XXXXXX")"
-      printf 'NODE_ENV=production\n' > "$recovery_env"
-      recovered_required=0
-      for key in ADMIN_PRIMARY_ID ADMIN_PRIMARY_PASSWORD ADMIN_SECONDARY_ID ADMIN_SECONDARY_PASSWORD CAFE24_MALL_ID CAFE24_CLIENT_ID CAFE24_CLIENT_SECRET CAFE24_REDIRECT_URI CAFE24_TOKEN_ENCRYPTION_KEY CAFE24_WEBHOOK_TOKEN CAFE24_OAUTH_SCOPES CAFE24_REWARD_LIVE_ENABLED CAFE24_NATIVE_REWARDS_DISABLED CAFE24_REWARD_START_AT; do
-        value="$(tr '\0' '\n' < "/proc/$runtime_pid/environ" | sed -n "s/^${key}=//p" | head -n 1)"
-        if [[ -n "$value" ]]; then
-          printf '%s=%s\n' "$key" "$value" >> "$recovery_env"
-          case "$key" in
-            ADMIN_PRIMARY_ID|ADMIN_PRIMARY_PASSWORD|ADMIN_SECONDARY_ID|ADMIN_SECONDARY_PASSWORD|CAFE24_MALL_ID|CAFE24_CLIENT_ID|CAFE24_CLIENT_SECRET|CAFE24_REDIRECT_URI|CAFE24_TOKEN_ENCRYPTION_KEY|CAFE24_WEBHOOK_TOKEN) recovered_required=$((recovered_required + 1)) ;;
-          esac
-        fi
-      done
-      if [[ "$recovered_required" -eq 10 ]]; then
-        mv "$recovery_env" "$app_root/.env.local"
-      else
-        rm -f -- "$recovery_env"
-      fi
-    fi
-  fi
-
-  # 실행 프로세스가 이미 없으면 운영 루트와 상위 운영 디렉터리에서 하나로
-  # 특정되는 기존 파일만 사용합니다. 후보가 여러 개면 잘못된 DB나 키를
-  # 선택하지 않고 복구를 중단합니다.
-  if [[ ! -f "$app_root/data/cardbreak.db" || ! -f "$app_root/.env.local" ]]; then
-    recovery_root="$HOME"
-    mapfile -d '' -t database_candidates < <(find "$recovery_root" -maxdepth 5 -type f -name cardbreak.db -size +0c -print0)
-    mapfile -d '' -t environment_candidates < <(find "$recovery_root" -maxdepth 5 -type f -name .env.local -size +0c -print0)
-    paired_database=""
-    paired_environment=""
-    paired_candidates=0
-    newest_pair_modified=0
-    for database_candidate in "${database_candidates[@]}"; do
-      application_candidate="$(dirname "$(dirname "$database_candidate")")"
-      environment_candidate="$application_candidate/.env.local"
-      [[ -f "$environment_candidate" ]] || continue
-      paired_candidates=$((paired_candidates + 1))
-      candidate_modified="$(stat -c '%Y' "$database_candidate")"
-      if [[ "$candidate_modified" -gt "$newest_pair_modified" ]]; then
-        paired_database="$database_candidate"
-        paired_environment="$environment_candidate"
-        newest_pair_modified="$candidate_modified"
-      fi
-    done
-    echo "Recovery database candidates: ${#database_candidates[@]}"
-    echo "Recovery environment candidates: ${#environment_candidates[@]}"
-    echo "Recovery paired candidates: $paired_candidates"
-    recovery_age=$(( $(date +%s) - newest_pair_modified ))
-    if [[ ! -f "$app_root/data/cardbreak.db" && "$paired_candidates" -gt 0 && "$recovery_age" -le 86400 ]]; then
-      mkdir -p "$app_root/data"
-      cp "$paired_database" "$app_root/data/cardbreak.db"
-    fi
-    if [[ ! -f "$app_root/.env.local" && "$paired_candidates" -gt 0 && "$recovery_age" -le 86400 ]]; then
-      cp "$paired_environment" "$app_root/.env.local"
-    fi
-  fi
-
-  # 후보 복사 중 중단된 경우에도 원본 데이터와 환경파일만 남아 있으면 새
-  # 릴리스를 다시 만들 수 있습니다. DB 파일 자체는 절대 새로 만들지 않습니다.
-  data_target="$(readlink -f "$app_root/data")"
-  environment_source="$app_root/.env.local"
-  [[ -f "$data_target/cardbreak.db" && -f "$environment_source" ]] || {
-    echo "Recovery database present: $([[ -f "$data_target/cardbreak.db" ]] && echo yes || echo no)"
-    echo "Recovery environment present: $([[ -f "$environment_source" ]] && echo yes || echo no)"
-    echo "Current MangoTCG runtime and recovery files are unavailable." >&2
-    exit 1
-  }
-  echo "Current release is unavailable; rebuilding from the original runtime data."
-fi
+[[ "$current" == "$app_root"/mangotcg-release-* && -f "$current/data/cardbreak.db" && -f "$current/.env.local" ]] || {
+  echo "Current MangoTCG runtime files are unavailable." >&2
+  exit 1
+}
 
 release="$app_root/mangotcg-release-${commit:0:7}-live"
-
-# 운영 중인 릴리스와 원본 data 링크만 보존하고, 전환에 쓰이지 않는 이전 코드
-# 릴리스는 새 후보를 만들기 전에 정리합니다. data는 각 릴리스 안의 심볼릭 링크라
-# 삭제 대상 폴더를 지워도 원본 DB에는 영향을 주지 않습니다.
-shopt -s nullglob
-for old_release in "$app_root"/mangotcg-release-*; do
-  [[ "${old_release%/}" == "$current" ]] && continue
-  [[ -d "$old_release" && ! -L "$old_release" ]] || continue
-  rm -rf --one-file-system -- "$old_release"
-done
-shopt -u nullglob
-
 [[ ! -e "$release" ]] || {
   echo "Release target already exists." >&2
   exit 1
 }
 
+data_target="$(readlink -f "$current/data")"
 db_before="$(stat -c '%i:%s:%Y' "$data_target/cardbreak.db")"
 mkdir -p "$release"
 unzip -q "$archive" -d "$release"
-if [[ "$current_ready" == true ]]; then
-  cp -al "$current/node_modules" "$release/node_modules"
-else
-  (
-    cd "$release"
-    npm ci
-  )
-fi
-cp "$environment_source" "$release/.env.local"
+cp -a "$current/node_modules" "$release/node_modules"
+cp "$current/.env.local" "$release/.env.local"
 [[ ! -e "$release/data" ]] || {
   echo "Candidate release unexpectedly contains runtime data." >&2
   exit 1
@@ -189,12 +82,8 @@ for _ in {1..6}; do
 done
 if [[ "$live_code" != "200" ]]; then
   pm2 delete obs-overlay || true
-  if [[ "$current_ready" == true ]]; then
-    pm2 start npm --name obs-overlay --cwd "$current" -- start -- -H 127.0.0.1 -p 3001
-    echo "Live health check failed; restored the previous release." >&2
-  else
-    echo "Live health check failed; the previous release was unavailable." >&2
-  fi
+  pm2 start npm --name obs-overlay --cwd "$current" -- start -- -H 127.0.0.1 -p 3001
+  echo "Live health check failed; restored the previous release." >&2
   exit 1
 fi
 pm2 save
