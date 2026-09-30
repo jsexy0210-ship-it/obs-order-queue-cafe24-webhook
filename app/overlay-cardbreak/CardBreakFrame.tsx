@@ -49,20 +49,9 @@ function cancelLabel(reason: string | null) {
   return reason === "refunded" ? "환불됨" : "취소됨";
 }
 
-function maskBuyerName(value: string) {
-  const name = value.trim();
-  if (!name || name === "구매자 확인 불가" || name.includes("*")) return name;
-
-  const characters = Array.from(name);
-  if (characters.length === 1) return "*";
-  if (characters.length === 2) return `${characters[0]}*`;
-  return `${characters[0]}${"*".repeat(characters.length - 2)}${characters.at(-1)}`;
-}
-
-/** 오버레이에서만 유튜브 닉네임과 마스킹된 구매자명을 함께 표시합니다. */
-function formatBuyer(userId: string, youtubeNickname: string | null | undefined) {
-  const buyerName = maskBuyerName(userId);
-  return youtubeNickname ? `${youtubeNickname}(${buyerName})` : buyerName;
+/** 오버레이는 유튜브 닉네임만 표시해 구매자 실명을 노출하지 않습니다. */
+function formatYoutubeNickname(youtubeNickname: string | null | undefined) {
+  return youtubeNickname?.trim() || "-";
 }
 
 const cancelledBadgeStyle: CSSProperties = {
@@ -635,7 +624,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
               hitCards.map((item) => (
                 <div className={styles.hitRow} key={item.id}>
                   <span className={styles.rowIcon}>◆</span>
-                  <strong>{formatBuyer(item.user_id, item.youtube_nickname)}</strong>
+                  <strong>{formatYoutubeNickname(item.youtube_nickname)}</strong>
                   <span>{item.card}</span>
                 </div>
               ))
@@ -687,7 +676,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
                 <span style={cancelledBadgeStyle}>{cancelLabel(opening.cancel_reason)}</span>
               )}
               <div className={styles.heroMeta}>
-                <div className={styles.currentUser}>{formatBuyer(opening.user_id, opening.youtube_nickname)}</div>
+                <div className={styles.currentUser}>{formatYoutubeNickname(opening.youtube_nickname)}</div>
               </div>
 
               <div className={styles.nowProduct}>
@@ -716,7 +705,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
                   <span className={styles.gradeMini}>
                     {cancelled ? cancelLabel(order.cancel_reason) : order.tier || "-"}
                   </span>
-                  <strong>{formatBuyer(order.user_id, order.youtube_nickname)}</strong>
+                  <strong>{formatYoutubeNickname(order.youtube_nickname)}</strong>
                   <span className={styles.product}>{order.product}</span>
                   <b>x{order.quantity}</b>
                 </div>
