@@ -65,6 +65,22 @@ else
     fi
   fi
 
+  # 실행 프로세스가 이미 없으면 운영 루트와 상위 운영 디렉터리에서 하나로
+  # 특정되는 기존 파일만 사용합니다. 후보가 여러 개면 잘못된 DB나 키를
+  # 선택하지 않고 복구를 중단합니다.
+  if [[ ! -f "$app_root/data/cardbreak.db" || ! -f "$app_root/.env.local" ]]; then
+    recovery_root="$(dirname "$app_root")"
+    mapfile -d '' -t database_candidates < <(find "$recovery_root" -maxdepth 3 -type f -name cardbreak.db -size +0c -print0)
+    mapfile -d '' -t environment_candidates < <(find "$recovery_root" -maxdepth 3 -type f -name .env.local -size +0c -print0)
+    if [[ ! -f "$app_root/data/cardbreak.db" && "${#database_candidates[@]}" -eq 1 ]]; then
+      mkdir -p "$app_root/data"
+      cp "${database_candidates[0]}" "$app_root/data/cardbreak.db"
+    fi
+    if [[ ! -f "$app_root/.env.local" && "${#environment_candidates[@]}" -eq 1 ]]; then
+      cp "${environment_candidates[0]}" "$app_root/.env.local"
+    fi
+  fi
+
   # 후보 복사 중 중단된 경우에도 원본 데이터와 환경파일만 남아 있으면 새
   # 릴리스를 다시 만들 수 있습니다. DB 파일 자체는 절대 새로 만들지 않습니다.
   data_target="$(readlink -f "$app_root/data")"
