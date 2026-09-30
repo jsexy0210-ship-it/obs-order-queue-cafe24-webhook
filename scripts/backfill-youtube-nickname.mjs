@@ -150,6 +150,7 @@ try {
   });
   const sourceHasNickname = [];
   const queueInserts = [];
+  const paidCandidates = [];
   const missingInCafe24 = [];
   const orderStatuses = [];
   for (const listedOrder of candidates) {
@@ -161,6 +162,10 @@ try {
     const order = detail.order;
     const nickname = parseNickname(order?.additional_order_info_list)
       || parseNickname(listedOrder.additional_order_info_list);
+    const paid = order?.paid === "T" || order?.paid === true;
+    if (order && order.canceled !== "T") {
+      paidCandidates.push({ orderId: listedOrder.order_id, paid });
+    }
     if (!nickname) {
       missingInCafe24.push(listedOrder.order_id);
       const fieldShape = describeAdditionalInfo(order?.additional_order_info_list ?? listedOrder.additional_order_info_list);
@@ -187,7 +192,6 @@ try {
       const paymentMethod = Array.isArray(order.payment_method)
         ? order.payment_method.join(",")
         : order.payment_method ?? null;
-      const paid = order.paid === "T" || order.paid === true;
       const parsedPaymentDate = order.payment_date ? Date.parse(order.payment_date) : NaN;
       queueInserts.push({
         externalOrderId: listedOrder.order_id,
@@ -246,6 +250,27 @@ try {
   if (importedCount !== queueInserts.length) throw new Error("Queue import verification failed.");
   console.log(`nickname_backfill=complete cafe24_orders_after_cutoff=${candidates.length} cafe24_values_missing=${missingInCafe24.length} db_nickname_updates=${savedCount} queue_orders_imported=${importedCount}`);
   for (const status of orderStatuses) console.log(`order=${status}`);
+
+  const webhookToken = readEnvValue("CAFE24_WEBHOOK_TOKEN");
+  for (const candidate of paidCandidates) {
+    if (!candidate.paid) {
+      console.log(`reward=${candidate.orderId}:deferred_unpaid`);
+      continue;
+    }
+    const endpoint = new URL("http://127.0.0.1:3001/api/webhooks/cafe24");
+    endpoint.searchParams.set("token", webhookToken);
+    endpoint.searchParams.set("event", "paid");
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resource: { order_id: candidate.orderId, paid: "T" } }),
+    });
+    if (!response.ok) throw new Error(`Reward webhook failed with HTTP ${response.status}.`);
+    const ledger = db.prepare(
+      "SELECT status, amount FROM reward_ledger WHERE external_order_id = ? AND action = 'issue'"
+    ).get(candidate.orderId);
+    console.log(`reward=${candidate.orderId}:${ledger?.status ?? "not_issued"}${ledger ? `,amount=${ledger.amount}` : ""}`);
+  }
 } finally {
   db.close();
 }
