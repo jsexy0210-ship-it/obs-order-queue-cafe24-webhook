@@ -75,22 +75,28 @@ else
     paired_database=""
     paired_environment=""
     paired_candidates=0
+    newest_pair_modified=0
     for database_candidate in "${database_candidates[@]}"; do
       application_candidate="$(dirname "$(dirname "$database_candidate")")"
       environment_candidate="$application_candidate/.env.local"
       [[ -f "$environment_candidate" ]] || continue
-      paired_database="$database_candidate"
-      paired_environment="$environment_candidate"
       paired_candidates=$((paired_candidates + 1))
+      candidate_modified="$(stat -c '%Y' "$database_candidate")"
+      if [[ "$candidate_modified" -gt "$newest_pair_modified" ]]; then
+        paired_database="$database_candidate"
+        paired_environment="$environment_candidate"
+        newest_pair_modified="$candidate_modified"
+      fi
     done
     echo "Recovery database candidates: ${#database_candidates[@]}"
     echo "Recovery environment candidates: ${#environment_candidates[@]}"
     echo "Recovery paired candidates: $paired_candidates"
-    if [[ ! -f "$app_root/data/cardbreak.db" && "$paired_candidates" -eq 1 ]]; then
+    recovery_age=$(( $(date +%s) - newest_pair_modified ))
+    if [[ ! -f "$app_root/data/cardbreak.db" && "$paired_candidates" -gt 0 && "$recovery_age" -le 86400 ]]; then
       mkdir -p "$app_root/data"
       cp "$paired_database" "$app_root/data/cardbreak.db"
     fi
-    if [[ ! -f "$app_root/.env.local" && "$paired_candidates" -eq 1 ]]; then
+    if [[ ! -f "$app_root/.env.local" && "$paired_candidates" -gt 0 && "$recovery_age" -le 86400 ]]; then
       cp "$paired_environment" "$app_root/.env.local"
     fi
   fi
