@@ -26,10 +26,6 @@ current="$(pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, "", 
 }
 
 release="$app_root/mangotcg-release-${commit:0:7}-live"
-[[ ! -e "$release" ]] || {
-  echo "Release target already exists." >&2
-  exit 1
-}
 
 # 운영 중인 릴리스와 원본 data 링크만 보존하고, 전환에 쓰이지 않는 이전 코드
 # 릴리스는 새 후보를 만들기 전에 정리합니다. data는 각 릴리스 안의 심볼릭 링크라
@@ -41,6 +37,11 @@ for old_release in "$app_root"/mangotcg-release-*; do
   rm -rf --one-file-system -- "$old_release"
 done
 shopt -u nullglob
+
+[[ ! -e "$release" ]] || {
+  echo "Release target already exists." >&2
+  exit 1
+}
 
 data_target="$(readlink -f "$current/data")"
 db_before="$(stat -c '%i:%s:%Y' "$data_target/cardbreak.db")"
