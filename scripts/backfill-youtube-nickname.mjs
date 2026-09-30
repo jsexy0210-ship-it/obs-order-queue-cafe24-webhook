@@ -262,14 +262,19 @@ try {
     endpoint.searchParams.set("event", "paid");
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-MangoTCG-Reward-Result": "true",
+      },
       body: JSON.stringify({ resource: { order_id: candidate.orderId, paid: "T" } }),
     });
     if (!response.ok) throw new Error(`Reward webhook failed with HTTP ${response.status}.`);
+    const webhookResult = await response.json();
     const ledger = db.prepare(
       "SELECT status, amount FROM reward_ledger WHERE external_order_id = ? AND action = 'issue'"
     ).get(candidate.orderId);
-    console.log(`reward=${candidate.orderId}:${ledger?.status ?? "not_issued"}${ledger ? `,amount=${ledger.amount}` : ""}`);
+    const outcome = webhookResult.reward?.outcome ?? "unknown";
+    console.log(`reward=${candidate.orderId}:${outcome},ledger=${ledger?.status ?? "none"}${ledger ? `,amount=${ledger.amount}` : ""}`);
   }
 } finally {
   db.close();

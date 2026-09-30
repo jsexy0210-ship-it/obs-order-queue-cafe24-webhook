@@ -97,10 +97,12 @@ export async function POST(req: NextRequest) {
       console.warn(`[cafe24 webhook][paid] 큐에 없거나 이미 입금완료 처리된 주문(${orderId}) - 무시`);
     }
 
+    let rewardResult: unknown = { outcome: "not_triggered" };
     if (getRewardSettings().issueTrigger === "paid") {
       try {
-        await issueRewardForOrder(orderId, "paid");
+        rewardResult = await issueRewardForOrder(orderId, "paid");
       } catch (error) {
+        rewardResult = { outcome: "failed" };
         console.error("[cafe24 reward] issue failed", {
           orderId,
           message: error instanceof Error ? error.message : "unknown",
@@ -108,7 +110,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, matched });
+    const includeRewardResult = req.headers.get("x-mangotcg-reward-result") === "true";
+    return NextResponse.json({
+      ok: true,
+      matched,
+      ...(includeRewardResult ? { reward: rewardResult } : {}),
+    });
   }
 
   if (event === "delivered") {
