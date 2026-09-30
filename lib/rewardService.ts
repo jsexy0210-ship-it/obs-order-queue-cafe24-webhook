@@ -227,7 +227,9 @@ function netProductAmount(order: Cafe24RewardOrder) {
     const amount = Number(item.payment_amount);
     const quantity = Number(item.quantity ?? 1);
     if (!Number.isFinite(amount) || amount < 0 || !Number.isFinite(quantity) || quantity <= 0) return null;
-    total += amount * quantity;
+    // Cafe24 `items[].payment_amount` is the settled amount for the product line.
+    // `quantity` is metadata for that line and must not be multiplied again.
+    total += amount;
   }
   return Math.floor(total);
 }
@@ -348,9 +350,6 @@ export async function recoverRewardForOrder(orderId: string, mode: "automatic" |
   if (!canExecuteCafe24RewardChanges()) return { outcome: "blocked" as const };
   const issue = getLedger(orderId, "issue");
   if (!issue || issue.status !== "succeeded") return { outcome: "skipped" as const };
-  // 회수도 실패/처리 중 원장을 자동 재시도하지 않습니다. 외부 잔액이 이미 변경된
-  // 불확실한 상태에서 재호출해 과회수하는 일을 막습니다.
-  if (getLedger(orderId, "recover")) return { outcome: "duplicate" as const };
 
   if (mode === "automatic") {
     const grade = getRewardSettings().grades.find((item) => item.id === issue.grade_id);
@@ -359,11 +358,71 @@ export async function recoverRewardForOrder(orderId: string, mode: "automatic" |
     if (!isFullyCancelled(order)) return { outcome: "manual_required" as const };
   }
 
+  const existingRecovery = getLedger(orderId, "recover");
+  let amountToRecover = issue.amount;
+  let ledgerId: number;
+  if (existingRecovery) {
+    // A prior overpayment correction may have recovered only the excess. If the order
+    // is later cancelled, recover the remaining net payout and keep one cumulative row.
+    if (existingRecovery.status !== "succeeded" || existingRecovery.amount >= issue.amount) {
+      return { outcome: "duplicate" as const };
+    }
+    amountToRecover = issue.amount - existingRecovery.amount;
+    const reservation = db.prepare(
+      `UPDATE reward_ledger
+          SET amount = ?, processing_mode = ?, status = 'pending', error_message = NULL, processed_at = NULL
+        WHERE id = ? AND status = 'succeeded' AND amount = ?`
+    ).run(issue.amount, mode, existingRecovery.id, existingRecovery.amount);
+    if (reservation.changes !== 1) return { outcome: "duplicate" as const };
+    ledgerId = existingRecovery.id;
+  } else {
+    const reservation = db.prepare(
+      `INSERT OR IGNORE INTO reward_ledger (
+        external_order_id, member_id, grade_id, action, amount, card_rate, bank_rate, applied_rate, processing_mode, status
+      ) VALUES (?, ?, ?, 'recover', ?, ?, ?, ?, ?, 'pending')`
+    ).run(orderId, issue.member_id, issue.grade_id, issue.amount, issue.card_rate, issue.bank_rate, issue.applied_rate, mode);
+    if (reservation.changes !== 1) return { outcome: "duplicate" as const };
+    ledgerId = Number(reservation.lastInsertRowid);
+  }
+
+  try {
+    await changeCafe24Points({
+      memberId: issue.member_id,
+      orderId,
+      amount: amountToRecover,
+      type: "decrease",
+      reason: "망고TCG 취소·환불 적립금 회수",
+    });
+    markLedger(ledgerId, "succeeded");
+    await refreshCafe24PointBalanceSnapshot(issue.member_id);
+    return { outcome: "recovered" as const, amount: amountToRecover };
+  } catch (error) {
+    markLedger(ledgerId, "failed", error);
+    throw error;
+  }
+}
+
+/** 주문 품목의 실제 결제금액으로 과지급분만 회수해 정상 지급액을 잔액에 남깁니다. */
+export async function correctOverIssuedReward(orderId: string) {
+  if (!canExecuteCafe24RewardChanges()) return { outcome: "blocked" as const };
+  const issue = getLedger(orderId, "issue");
+  if (!issue || issue.status !== "succeeded") return { outcome: "skipped" as const };
+  if (getLedger(orderId, "recover")) return { outcome: "duplicate" as const };
+
+  const order = await getCafe24OrderForReward(orderId, { includeBuyerGroup: true });
+  if (!isPaymentConfirmed(order) || isFullyCancelled(order)) return { outcome: "skipped" as const };
+  if (order.member_id && order.member_id !== issue.member_id) return { outcome: "member_mismatch" as const };
+  const baseAmount = netProductAmount(order);
+  if (baseAmount === null) return { outcome: "amount_unavailable" as const };
+
+  const correctAmount = Math.floor(baseAmount * issue.applied_rate / 100);
+  if (correctAmount >= issue.amount) return { outcome: "not_overpaid" as const };
+  const excessAmount = issue.amount - correctAmount;
   const reservation = db.prepare(
     `INSERT OR IGNORE INTO reward_ledger (
       external_order_id, member_id, grade_id, action, amount, card_rate, bank_rate, applied_rate, processing_mode, status
-    ) VALUES (?, ?, ?, 'recover', ?, ?, ?, ?, ?, 'pending')`
-  ).run(orderId, issue.member_id, issue.grade_id, issue.amount, issue.card_rate, issue.bank_rate, issue.applied_rate, mode);
+    ) VALUES (?, ?, ?, 'recover', ?, ?, ?, ?, 'manual', 'pending')`
+  ).run(orderId, issue.member_id, issue.grade_id, excessAmount, issue.card_rate, issue.bank_rate, issue.applied_rate);
   if (reservation.changes !== 1) return { outcome: "duplicate" as const };
   const ledgerId = Number(reservation.lastInsertRowid);
 
@@ -371,13 +430,13 @@ export async function recoverRewardForOrder(orderId: string, mode: "automatic" |
     await changeCafe24Points({
       memberId: issue.member_id,
       orderId,
-      amount: issue.amount,
+      amount: excessAmount,
       type: "decrease",
-      reason: "망고TCG 취소·환불 적립금 회수",
+      reason: "망고TCG 적립금 과다 지급 정정 회수",
     });
     markLedger(ledgerId, "succeeded");
-    await refreshCafe24PointBalanceSnapshot(issue.member_id);
-    return { outcome: "recovered" as const, amount: issue.amount };
+    await refreshCafe24PointBalanceSnapshot(issue.member_id, order.billing_name);
+    return { outcome: "corrected" as const, recoveredAmount: excessAmount, remainingAmount: correctAmount };
   } catch (error) {
     markLedger(ledgerId, "failed", error);
     throw error;
