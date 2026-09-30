@@ -2266,11 +2266,12 @@
 }
 
 .rewardLedgerTable {
-  min-width: 1760px;
+  min-width: 1480px;
 }
 
 .rewardLedgerTable th,
 .rewardLedgerTable td {
+  text-align: center;
   white-space: nowrap;
 }
 

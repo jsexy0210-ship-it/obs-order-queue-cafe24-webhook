@@ -913,7 +913,7 @@ export default function AdminPage() {
         <div className={styles.modalOverlay} onClick={() => setShowRewardLedger(false)}>
           <div className={`${styles.modalCard} ${styles.rewardLedgerModal}`} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalTopBarWithTitle}>
-              <h2 className={styles.modalTitle}>적립금 처리 원장</h2>
+              <h2 className={styles.modalTitle}>적립금 처리내역</h2>
               <button className={styles.modalCloseBtn} onClick={() => setShowRewardLedger(false)}>
                 닫기 ✕
               </button>
