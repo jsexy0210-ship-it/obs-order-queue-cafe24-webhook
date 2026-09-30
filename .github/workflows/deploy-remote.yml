@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      recovery_restore:
+        description: 'Restore runtime DB from deleted open files and rebuild production'
+        required: false
+        type: boolean
+        default: false
   push:
     branches: [main]
 
@@ -35,6 +40,21 @@ jobs:
       - name: Deploy to the existing production Windows host
         env:
           MANGO_RECOVERY_DIAGNOSE: ${{ inputs.recovery_diagnose && 'true' || 'false' }}
+          MANGO_RECOVERY_RESTORE: ${{ inputs.recovery_restore && 'true' || 'false' }}
+          MANGO_RECOVERY_ADMIN_PRIMARY_ID: ${{ secrets.ADMIN_PRIMARY_ID }}
+          MANGO_RECOVERY_ADMIN_PRIMARY_PASSWORD: ${{ secrets.ADMIN_PRIMARY_PASSWORD }}
+          MANGO_RECOVERY_ADMIN_SECONDARY_ID: ${{ secrets.ADMIN_SECONDARY_ID }}
+          MANGO_RECOVERY_ADMIN_SECONDARY_PASSWORD: ${{ secrets.ADMIN_SECONDARY_PASSWORD }}
+          MANGO_RECOVERY_CAFE24_MALL_ID: ${{ secrets.CAFE24_MALL_ID }}
+          MANGO_RECOVERY_CAFE24_CLIENT_ID: ${{ secrets.CAFE24_CLIENT_ID }}
+          MANGO_RECOVERY_CAFE24_CLIENT_SECRET: ${{ secrets.CAFE24_CLIENT_SECRET }}
+          MANGO_RECOVERY_CAFE24_REDIRECT_URI: ${{ secrets.CAFE24_REDIRECT_URI }}
+          MANGO_RECOVERY_CAFE24_TOKEN_ENCRYPTION_KEY: ${{ secrets.CAFE24_TOKEN_ENCRYPTION_KEY }}
+          MANGO_RECOVERY_CAFE24_WEBHOOK_TOKEN: ${{ secrets.CAFE24_WEBHOOK_TOKEN }}
+          MANGO_RECOVERY_CAFE24_OAUTH_SCOPES: ${{ secrets.CAFE24_OAUTH_SCOPES }}
+          MANGO_RECOVERY_CAFE24_REWARD_LIVE_ENABLED: ${{ secrets.CAFE24_REWARD_LIVE_ENABLED }}
+          MANGO_RECOVERY_CAFE24_NATIVE_REWARDS_DISABLED: ${{ secrets.CAFE24_NATIVE_REWARDS_DISABLED }}
+          MANGO_RECOVERY_CAFE24_REWARD_START_AT: ${{ secrets.CAFE24_REWARD_START_AT }}
           MANGO_DEPLOY_HOST: ${{ secrets.MANGO_DEPLOY_HOST }}
           MANGO_DEPLOY_PORT: ${{ secrets.MANGO_DEPLOY_PORT }}
           MANGO_DEPLOY_USER: ${{ secrets.MANGO_DEPLOY_USER }}

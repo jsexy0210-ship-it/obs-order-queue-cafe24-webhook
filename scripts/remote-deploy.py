@@ -74,6 +74,44 @@ def main():
                 f"{incoming}/recovery-diagnose-linux.py", config["APP_PATH"],
             ], check=True)
             return
+        if os.environ.get("MANGO_RECOVERY_RESTORE") == "true":
+            if config["PLATFORM"] != "linux":
+                raise ValueError("Runtime recovery is available only for Linux production hosts")
+            required = (
+                "ADMIN_PRIMARY_ID", "ADMIN_PRIMARY_PASSWORD", "ADMIN_SECONDARY_ID", "ADMIN_SECONDARY_PASSWORD",
+                "CAFE24_MALL_ID", "CAFE24_CLIENT_ID", "CAFE24_CLIENT_SECRET", "CAFE24_REDIRECT_URI",
+                "CAFE24_TOKEN_ENCRYPTION_KEY", "CAFE24_WEBHOOK_TOKEN",
+            )
+            missing = [name for name in required if not os.environ.get("MANGO_RECOVERY_" + name)]
+            if missing:
+                raise ValueError("Missing production runtime recovery secrets")
+            environment = root / "runtime.env"
+            optional = ("CAFE24_OAUTH_SCOPES", "CAFE24_REWARD_LIVE_ENABLED", "CAFE24_NATIVE_REWARDS_DISABLED", "CAFE24_REWARD_START_AT")
+            lines = ["NODE_ENV=production"]
+            for name in required + optional:
+                value = os.environ.get("MANGO_RECOVERY_" + name)
+                if value:
+                    lines.append(name + "=" + value)
+            environment.write_text("\n".join(lines) + "\n")
+            incoming = "/root/.mangotcg-incoming/recovery-" + sha
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
+            archive = root / "release.zip"
+            subprocess.run(["git", "archive", "--format=zip", f"--output={archive}", sha], check=True)
+            subprocess.run([
+                "scp", "-F", str(ssh_config), str(archive), str(environment),
+                "scripts/recover-linux-runtime.py", "scripts/deploy-linux-recovery.sh",
+                f"production:{incoming}/",
+            ], check=True)
+            subprocess.run([
+                "ssh", "-F", str(ssh_config), "production", "python3",
+                f"{incoming}/recover-linux-runtime.py", config["APP_PATH"], f"{incoming}/runtime.env",
+            ], check=True)
+            subprocess.run([
+                "ssh", "-F", str(ssh_config), "production", "bash",
+                f"{incoming}/deploy-linux-recovery.sh", "--app-root", config["APP_PATH"],
+                "--archive", f"{incoming}/release.zip", "--commit", sha,
+            ], check=True)
+            return
         archive = root / "release.zip"
         subprocess.run(["git", "archive", "--format=zip", f"--output={archive}", sha], check=True)
         if config["PLATFORM"] == "windows":
