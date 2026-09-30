@@ -450,7 +450,7 @@
 .queueRow {
   min-width: 0;
   display: grid;
-  grid-template-columns: auto auto auto minmax(0,1fr) auto auto;
+  grid-template-columns: auto minmax(0,1fr) auto;
   align-items: center;
   gap: 6px;
   padding: 0 0 6px;
@@ -467,14 +467,6 @@
 
 .queueIndex {
   display: none;
-}
-
-.gradeMini {
-  color: #75e8ff;
-  font-size: 9px;
-  line-height: 1;
-  font-weight: 900;
-  white-space: nowrap;
 }
 
 .queueRow strong {

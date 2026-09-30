@@ -704,9 +704,6 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
                   key={order.id}
                   style={cancelled ? { opacity: 0.45 } : undefined}
                 >
-                  <span className={styles.gradeMini}>
-                    {cancelled ? cancelLabel(order.cancel_reason) : order.tier || "-"}
-                  </span>
                   <strong>{formatYoutubeNickname(order.youtube_nickname)}</strong>
                   <span className={styles.product}>{order.product}</span>
                   <b>x{order.quantity}</b>
