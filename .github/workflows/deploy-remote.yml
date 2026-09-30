@@ -13,6 +13,15 @@ on:
         required: false
         type: boolean
         default: false
+      youtube_nickname_backfill:
+        description: 'Backfill one missing order nickname from Cafe24 into the production DB'
+        required: false
+        type: boolean
+        default: false
+      nickname_backfill_cutoff_kst:
+        description: 'Only inspect orders from this KST minute onward, YYYY-MM-DD HH:MM'
+        required: false
+        type: string
   push:
     branches: [main]
 
@@ -41,6 +50,8 @@ jobs:
         env:
           MANGO_RECOVERY_DIAGNOSE: ${{ inputs.recovery_diagnose && 'true' || 'false' }}
           MANGO_RECOVERY_RESTORE: ${{ inputs.recovery_restore && 'true' || 'false' }}
+          MANGO_YOUTUBE_NICKNAME_BACKFILL: ${{ inputs.youtube_nickname_backfill && 'true' || 'false' }}
+          MANGO_BACKFILL_CUTOFF_KST: ${{ inputs.nickname_backfill_cutoff_kst }}
           MANGO_RECOVERY_ADMIN_PRIMARY_ID: ${{ secrets.ADMIN_PRIMARY_ID }}
           MANGO_RECOVERY_ADMIN_PRIMARY_PASSWORD: ${{ secrets.ADMIN_PRIMARY_PASSWORD }}
           MANGO_RECOVERY_ADMIN_SECONDARY_ID: ${{ secrets.ADMIN_SECONDARY_ID }}

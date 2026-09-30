@@ -3,6 +3,7 @@ import base64
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import tempfile
 
@@ -60,6 +61,22 @@ def main():
             "  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n  BatchMode yes\n  ConnectTimeout 15\n"
         )
         ssh_config.chmod(0o600)
+        if os.environ.get("MANGO_YOUTUBE_NICKNAME_BACKFILL") == "true":
+            if config["PLATFORM"] != "linux":
+                raise ValueError("Nickname backfill is available only for Linux production hosts")
+            cutoff = os.environ.get("MANGO_BACKFILL_CUTOFF_KST", "")
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}", cutoff):
+                raise ValueError("Invalid cutoff time for nickname backfill")
+            incoming = "/root/.mangotcg-incoming/nickname-backfill-" + sha
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
+            subprocess.run([
+                "scp", "-F", str(ssh_config), "scripts/backfill-youtube-nickname.mjs",
+                "scripts/backfill-youtube-nickname-linux.sh", f"production:{incoming}/",
+            ], check=True)
+            args = [config["APP_PATH"], incoming, cutoff]
+            remote = "bash " + shlex.quote(incoming + "/backfill-youtube-nickname-linux.sh") + " " + " ".join(shlex.quote(value) for value in args)
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", remote], check=True)
+            return
         if os.environ.get("MANGO_RECOVERY_DIAGNOSE") == "true":
             if config["PLATFORM"] != "linux":
                 raise ValueError("Recovery diagnosis is available only for Linux production hosts")
