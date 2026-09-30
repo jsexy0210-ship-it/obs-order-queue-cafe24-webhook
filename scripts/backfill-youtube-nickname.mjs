@@ -162,18 +162,34 @@ try {
     const detailQuery = new URLSearchParams({ shop_no: String(tokens.shopNo || "1"), embed: "items" });
     const detail = await cafe24(`/orders/${encodeURIComponent(listedOrder.order_id)}?${detailQuery}`);
     const order = detail.order;
+    let cafe24PaymentAmounts = null;
+    const itemCodes = (order?.items ?? []).map((item) => item.order_item_code).filter(Boolean);
+    if (itemCodes.length) {
+      const paymentAmountQuery = new URLSearchParams({
+        shop_no: String(tokens.shopNo || "1"),
+        order_item_code: itemCodes.join(","),
+      });
+      try {
+        cafe24PaymentAmounts = await cafe24(`/orders/paymentamount?${paymentAmountQuery}`);
+      } catch {
+        cafe24PaymentAmounts = { unavailable: true };
+      }
+    }
     const amountAudit = {
       cafe24_payment_amount: order?.payment_amount ?? null,
-      cafe24_order_price_amount: order?.actual_order_amount?.order_price_amount ?? null,
-      cafe24_initial_payment_amount: order?.initial_order_amount?.payment_amount ?? null,
+      cafe24_actual_order_amount: order?.actual_order_amount ?? null,
+      cafe24_initial_order_amount: order?.initial_order_amount ?? null,
       cafe24_items: (order?.items ?? []).map((item) => ({
+        order_item_code: item.order_item_code ?? null,
         product: item.product_name ?? null,
         quantity: item.quantity ?? null,
         paid_amount: item.payment_amount ?? null,
         status: item.status_code ?? item.order_status ?? null,
       })),
+      cafe24_paymentamount_detail: cafe24PaymentAmounts,
       local_actual_amount: local?.actual_amount ?? null,
       local_unit_price_times_quantity: local ? local.unit_price * local.quantity : null,
+      local_row_found: Boolean(local),
     };
     console.log(`cafe24_order_audit=${listedOrder.order_id}:${JSON.stringify(amountAudit)}`);
     const nickname = parseNickname(order?.additional_order_info_list)
@@ -387,6 +403,16 @@ try {
       : "";
     console.log(`reward=${candidate.orderId}:${outcome},ledger=${ledger?.status ?? "none"}${audit}`);
   }
+
+  const liveResponse = await fetch("http://127.0.0.1:3001/api/orders");
+  if (!liveResponse.ok) throw new Error(`Live overlay verification failed with HTTP ${liveResponse.status}.`);
+  const liveState = await liveResponse.json();
+  const liveOrders = [...(liveState.opening ? [liveState.opening] : []), ...(liveState.waiting ?? [])];
+  const buyerFieldLeaks = liveOrders.filter((order) => Boolean(order.user_id?.trim())).length;
+  const gradeFieldLeaks = liveOrders.filter((order) => Boolean(order.tier?.trim())).length;
+  const visibleNameSuffixes = liveOrders.filter((order) => /\([^()]+\)\s*$/.test(order.youtube_nickname ?? "")).length;
+  const visibleGradePrefixes = liveOrders.filter((order) => /^(?:starter|trainer|collector|elite collector|master collector|champion|legend(?: vip)?)\s+/i.test(order.youtube_nickname ?? "")).length;
+  console.log(`overlay_privacy=verified live_orders=${liveOrders.length} buyer_fields=${buyerFieldLeaks} grade_fields=${gradeFieldLeaks} buyer_suffixes=${visibleNameSuffixes} grade_prefixes=${visibleGradePrefixes}`);
 } finally {
   db.close();
 }
