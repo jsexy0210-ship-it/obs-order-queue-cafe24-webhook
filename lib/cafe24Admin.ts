@@ -162,7 +162,7 @@ export type Cafe24RewardOrder = {
   cancel_date?: string | null;
   actual_order_amount?: { order_price_amount?: string | number };
   initial_order_amount?: { payment_amount?: string | number };
-  additional_order_info_list?: string | null;
+  additional_order_info_list?: unknown;
   member_id?: string;
   member_group_no?: string | number;
   group_no?: string | number;

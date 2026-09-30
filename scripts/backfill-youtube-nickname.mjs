@@ -24,15 +24,71 @@ function sqliteUtc(value) {
 }
 
 function parseNickname(raw) {
-  if (typeof raw !== "string") return null;
-  for (const line of raw.split(/\r?\n/)) {
-    const separator = line.indexOf("=");
-    if (separator < 0) continue;
-    const label = line.slice(0, separator).trim();
-    const value = line.slice(separator + 1).trim();
-    if ((label.includes("유튜브") || label.toLowerCase().includes("youtube")) && value) return value;
+  const isYoutubeLabel = (value) => typeof value === "string"
+    && (value.includes("유튜브") || value.toLowerCase().includes("youtube"));
+  if (typeof raw === "string") {
+    for (const line of raw.split(/\r?\n/)) {
+      const separator = line.indexOf("=");
+      if (separator < 0) continue;
+      const label = line.slice(0, separator).trim();
+      const value = line.slice(separator + 1).trim();
+      if (isYoutubeLabel(label) && value) return value;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed !== raw) return parseNickname(parsed);
+    } catch {
+      return null;
+    }
+    return null;
+  }
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const found = parseNickname(item);
+      if (found) return found;
+    }
+  } else if (raw && typeof raw === "object") {
+    const entries = Object.entries(raw);
+    const label = entries.find(([key]) => /(?:label|name|title|field|key)/i.test(key))?.[1];
+    const value = entries.find(([key]) => /(?:value|answer|content|text)/i.test(key))?.[1];
+    if (isYoutubeLabel(label) && (typeof value === "string" || typeof value === "number")) {
+      return String(value).trim() || null;
+    }
+    for (const [key, nested] of entries) {
+      if (isYoutubeLabel(key) && (typeof nested === "string" || typeof nested === "number")) {
+        return String(nested).trim() || null;
+      }
+      const found = parseNickname(nested);
+      if (found) return found;
+    }
   }
   return null;
+}
+
+function describeAdditionalInfo(raw) {
+  const labels = new Set();
+  const visit = (value) => {
+    if (typeof value === "string") {
+      for (const line of value.split(/\r?\n/)) {
+        const separator = line.indexOf("=");
+        if (separator > 0) labels.add(line.slice(0, separator).trim());
+      }
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed !== value) visit(parsed);
+      } catch {}
+    } else if (Array.isArray(value)) {
+      value.forEach(visit);
+    } else if (value && typeof value === "object") {
+      for (const [key, nested] of Object.entries(value)) {
+        if (/(?:^|_)(?:label|name|title|field|key)$/i.test(key) && typeof nested === "string") labels.add(nested);
+        if (/(?:유튜브|youtube)/i.test(key)) labels.add(key);
+        visit(nested);
+      }
+    }
+  };
+  visit(raw);
+  return `${raw == null ? "missing" : Array.isArray(raw) ? "array" : typeof raw}[${[...labels].join("|")}]`;
 }
 
 const require = createRequire(path.join(releaseRoot, "package.json"));
@@ -106,7 +162,8 @@ try {
       || parseNickname(listedOrder.additional_order_info_list);
     if (!nickname) {
       missingInCafe24.push(listedOrder.order_id);
-      orderStatuses.push(`${listedOrder.order_id}:cafe24_value_missing,local_row=${local ? "present" : "absent"}`);
+      const fieldShape = describeAdditionalInfo(order?.additional_order_info_list ?? listedOrder.additional_order_info_list);
+      orderStatuses.push(`${listedOrder.order_id}:cafe24_value_missing,local_row=${local ? "present" : "absent"},additional_info=${fieldShape}`);
       continue;
     }
     if (!local) {

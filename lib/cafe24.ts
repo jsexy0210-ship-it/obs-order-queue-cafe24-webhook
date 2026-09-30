@@ -33,32 +33,52 @@ function pick(obj: any, keys: string[]): unknown {
  * "필드명  = 값" 형태의 문자열로 옵니다. 여러 항목이면 줄바꿈으로 구분됩니다.
  * 예: "유튜브 닉네임  = 재호"
  */
-function parseAdditionalOrderInfo(raw: unknown): Record<string, string> {
-  if (typeof raw !== "string" || raw.length === 0) return {};
-
-  const result: Record<string, string> = {};
-  const lines = raw.split(/\r?\n/);
-
-  for (const line of lines) {
-    const idx = line.indexOf("=");
-    if (idx === -1) continue;
-    const label = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
-    if (label) result[label] = value;
-  }
-
-  return result;
-}
-
 /**
  * additional_order_info_list 안에서 "유튜브 닉네임" 항목의 값을 찾습니다.
  * 라벨은 쇼핑몰 설정에 따라 문구가 조금 달라질 수 있어 "유튜브"/"youtube"가 들어간 라벨을 폭넓게 찾습니다.
  */
 export function extractCafe24YoutubeNickname(raw: unknown): string | null {
-  const info = parseAdditionalOrderInfo(raw);
-  for (const [label, value] of Object.entries(info)) {
-    if (label.includes("유튜브") || label.toLowerCase().includes("youtube")) {
-      return value || null;
+  const isYoutubeLabel = (value: unknown) => typeof value === "string"
+    && (value.includes("유튜브") || value.toLowerCase().includes("youtube"));
+
+  if (typeof raw === "string") {
+    for (const line of raw.split(/\r?\n/)) {
+      const separator = line.indexOf("=");
+      if (separator < 0) continue;
+      const label = line.slice(0, separator).trim();
+      const value = line.slice(separator + 1).trim();
+      if (isYoutubeLabel(label)) return value || null;
+    }
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (parsed !== raw) return extractCafe24YoutubeNickname(parsed);
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const found = extractCafe24YoutubeNickname(item);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  if (raw && typeof raw === "object") {
+    const entries = Object.entries(raw as Record<string, unknown>);
+    const label = entries.find(([key]) => /(?:label|name|title|field|key)/i.test(key))?.[1];
+    const value = entries.find(([key]) => /(?:value|answer|content|text)/i.test(key))?.[1];
+    if (isYoutubeLabel(label) && (typeof value === "string" || typeof value === "number")) {
+      return String(value).trim() || null;
+    }
+    for (const [key, nested] of entries) {
+      if (isYoutubeLabel(key) && (typeof nested === "string" || typeof nested === "number")) {
+        return String(nested).trim() || null;
+      }
+      const found = extractCafe24YoutubeNickname(nested);
+      if (found) return found;
     }
   }
   return null;
