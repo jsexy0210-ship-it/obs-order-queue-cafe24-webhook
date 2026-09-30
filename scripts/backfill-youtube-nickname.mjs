@@ -149,6 +149,7 @@ try {
     return order.order_id && Number.isFinite(orderTime) && orderTime >= targetKstMs;
   });
   const sourceHasNickname = [];
+  const queueInserts = [];
   const missingInCafe24 = [];
   const orderStatuses = [];
   for (const listedOrder of candidates) {
@@ -167,7 +168,44 @@ try {
       continue;
     }
     if (!local) {
-      orderStatuses.push(`${listedOrder.order_id}:cafe24_value_present,local_row=absent`);
+      if (!order || order.canceled === "T") {
+        orderStatuses.push(`${listedOrder.order_id}:cafe24_value_present,queue_import=skipped_cancelled`);
+        continue;
+      }
+      const items = Array.isArray(order.items) ? order.items : [];
+      const productNames = items.map((item) => String(item.product_name || "").trim()).filter(Boolean);
+      const quantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      const amountRaw = order.paid === "T" || order.paid === true
+        ? order.payment_amount
+        : order.actual_order_amount?.order_price_amount ?? order.initial_order_amount?.payment_amount;
+      const actualAmount = Number(amountRaw);
+      const createdAt = Date.parse(order.order_date ?? "");
+      if (!productNames.length || !Number.isInteger(quantity) || quantity <= 0
+        || !Number.isFinite(actualAmount) || actualAmount < 0 || !Number.isFinite(createdAt)) {
+        throw new Error(`Cafe24 order ${listedOrder.order_id} is missing required live-order fields; no database change was made.`);
+      }
+      const paymentMethod = Array.isArray(order.payment_method)
+        ? order.payment_method.join(",")
+        : order.payment_method ?? null;
+      const paid = order.paid === "T" || order.paid === true;
+      const parsedPaymentDate = order.payment_date ? Date.parse(order.payment_date) : NaN;
+      queueInserts.push({
+        externalOrderId: listedOrder.order_id,
+        userId: order.member_id || order.billing_name || "구매자 확인 불가",
+        product: productNames.join(" · "),
+        quantity,
+        unitPrice: Math.round(actualAmount / quantity),
+        actualAmount: Math.round(actualAmount),
+        youtubeNickname: nickname,
+        paymentMethod,
+        paymentGatewayName: order.payment_gateway_name ?? null,
+        easypayName: order.easypay_name ?? null,
+        paidAt: paid && Number.isFinite(parsedPaymentDate)
+          ? sqliteUtc(new Date(parsedPaymentDate))
+          : null,
+        createdAt: sqliteUtc(new Date(createdAt)),
+      });
+      orderStatuses.push(`${listedOrder.order_id}:cafe24_value_present,local_row=absent,queue_import=pending`);
       continue;
     }
     if (local.youtube_nickname?.trim()) {
@@ -187,14 +225,26 @@ try {
       const result = statement.run(row.nickname, row.id, row.externalOrderId);
       if (result.changes !== 1) throw new Error("A candidate order changed before update; transaction was rolled back.");
     }
+    const insert = db.prepare(`
+      INSERT OR IGNORE INTO orders (
+        source, external_order_id, user_id, product, quantity, unit_price, actual_amount,
+        youtube_nickname, payment_method, payment_gateway_name, easypay_name, paid_at, status, created_at
+      ) VALUES ('cafe24', @externalOrderId, @userId, @product, @quantity, @unitPrice, @actualAmount,
+        @youtubeNickname, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting', @createdAt)
+    `);
+    for (const order of queueInserts) insert.run(order);
   });
-  if (sourceHasNickname.length) update.immediate();
+  if (sourceHasNickname.length || queueInserts.length) update.immediate();
   const savedCount = sourceHasNickname.filter((row) => {
     const saved = db.prepare("SELECT youtube_nickname FROM orders WHERE id = ?").get(row.id);
     return saved?.youtube_nickname === row.nickname;
   }).length;
   if (savedCount !== sourceHasNickname.length) throw new Error("Nickname update verification failed.");
-  console.log(`nickname_backfill=complete cafe24_orders_after_cutoff=${candidates.length} cafe24_values_missing=${missingInCafe24.length} db_updates=${savedCount}`);
+  const importedCount = queueInserts.filter((order) => db.prepare(
+    "SELECT 1 AS found FROM orders WHERE external_order_id = ? AND source = 'cafe24' AND youtube_nickname = ? AND status = 'waiting'"
+  ).get(order.externalOrderId, order.youtubeNickname)).length;
+  if (importedCount !== queueInserts.length) throw new Error("Queue import verification failed.");
+  console.log(`nickname_backfill=complete cafe24_orders_after_cutoff=${candidates.length} cafe24_values_missing=${missingInCafe24.length} db_nickname_updates=${savedCount} queue_orders_imported=${importedCount}`);
   for (const status of orderStatuses) console.log(`order=${status}`);
 } finally {
   db.close();
