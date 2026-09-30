@@ -37,6 +37,7 @@ export type LiveHitCard = {
 };
 
 export type LiveState = {
+  loading: boolean;
   opening: LiveOrder | null;
   waiting: LiveOrder[];
   hitCards: LiveHitCard[];
@@ -44,6 +45,7 @@ export type LiveState = {
 };
 
 const EMPTY_STATE: LiveState = {
+  loading: true,
   opening: null,
   waiting: [],
   hitCards: [],
@@ -67,11 +69,11 @@ export function useLiveCardBreak(): LiveState {
     const refetch = () => {
       fetch("/api/orders")
         .then((res) => res.json())
-        .then((data: LiveState) => {
-          if (!cancelled) setState(data);
+        .then((data: Omit<LiveState, "loading">) => {
+          if (!cancelled) setState({ ...data, loading: false });
         })
         .catch(() => {
-          // 실패해도 다음 폴링이나 SSE가 이어서 채워주므로 무시
+          if (!cancelled) setState((current) => ({ ...current, loading: false }));
         });
     };
 
@@ -81,7 +83,7 @@ export function useLiveCardBreak(): LiveState {
 
     source.onmessage = (event) => {
       try {
-        setState(JSON.parse(event.data));
+        setState({ ...(JSON.parse(event.data) as Omit<LiveState, "loading">), loading: false });
       } catch {
         // ping 등 JSON이 아닌 메시지는 무시
       }

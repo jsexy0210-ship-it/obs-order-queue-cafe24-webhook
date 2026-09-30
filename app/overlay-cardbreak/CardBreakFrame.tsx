@@ -10,6 +10,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import styles from "./cardbreak.module.css";
+import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import { useLiveCardBreak } from "@/app/useLiveCardBreak";
 import type { OverlaySettings } from "@/lib/overlaySettings";
 
@@ -205,7 +206,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
   { showScaleControls = false, onSaved, onEditorStateChange },
   ref
 ) {
-  const { opening, waiting, hitCards, overlaySettings } = useLiveCardBreak();
+  const { opening, waiting, hitCards, overlaySettings, loading } = useLiveCardBreak();
   const remaining = useCountdown(opening?.started_at ?? null, opening?.timer_seconds ?? null);
   const [scales, setScales] = useState<PanelScales>({ order: DEFAULT_SCALE, hit: DEFAULT_SCALE, right: DEFAULT_SCALE });
   const scalesRef = useRef<PanelScales>({ order: DEFAULT_SCALE, hit: DEFAULT_SCALE, right: DEFAULT_SCALE });
@@ -508,6 +509,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
 
   return (
     <div className={styles.stage} style={stageStyle}>
+      {loading && <GlobalLoadingOverlay />}
       {showScaleControls && (
         <div className={styles.scaleControls} aria-label="카드덱 크기 조절">
           <button

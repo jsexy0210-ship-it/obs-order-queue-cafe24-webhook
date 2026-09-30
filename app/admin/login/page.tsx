@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import styles from "../admin.module.css";
 
 export default function AdminLoginPage() {
@@ -35,6 +36,7 @@ export default function AdminLoginPage() {
 
   return (
     <main className={`${styles.page} ${styles.loginPage}`}>
+      {loading && <GlobalLoadingOverlay />}
       <div className={styles.loginBox}>
         <div className={styles.loginBrandMark} aria-hidden="true">M</div>
         <div className={styles.loginEyebrow}>MANGO TCG · LIVE OPERATIONS</div>

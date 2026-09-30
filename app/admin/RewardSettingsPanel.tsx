@@ -6,6 +6,7 @@ import {
   type RewardGradeSetting,
   type RewardSettings,
 } from "@/lib/rewardSettings";
+import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import styles from "./admin.module.css";
 
 type ApiResponse = {
@@ -139,7 +140,7 @@ export default function RewardSettingsPanel() {
   }
 
   if (loading) {
-    return <section className={styles.rewardPanel}>적립금 설정을 불러오는 중입니다.</section>;
+    return <GlobalLoadingOverlay />;
   }
 
   return (

@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
+import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import CardBreakFrame, { type CardBreakFrameHandle } from "@/app/overlay-cardbreak/CardBreakFrame";
 import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "@/lib/overlaySettings";
@@ -28,7 +29,7 @@ type Toast = { id: number; userId: string; product: string };
 
 export default function AdminPage() {
   const router = useRouter();
-  const { opening, waiting, hitCards, overlaySettings } = useLiveCardBreak();
+  const { opening, waiting, hitCards, overlaySettings, loading: liveLoading } = useLiveCardBreak();
 
   const [form, setForm] = useState({
     userId: "",
@@ -445,6 +446,7 @@ export default function AdminPage() {
 
   return (
     <main className={styles.page} data-theme={theme}>
+      {liveLoading && <GlobalLoadingOverlay />}
       <div className={`${styles.headerRow} ${showHistory || showRanking || showOverlayPreview ? styles.historyHeader : ""}`}>
         <button
           className={styles.headerBrand}

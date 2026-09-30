@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import styles from "./admin.module.css";
 
 type RankingRow = {
@@ -107,12 +108,7 @@ export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
 
       {notice && <p className={styles.rankingNotice}>{notice}</p>}
 
-      {loading ? (
-        <div className={styles.pageLoading} role="status" aria-live="polite">
-          <i className={styles.pageLoadingSpinner} aria-hidden="true" />
-          <p>데이터를 불러오는 중입니다</p>
-        </div>
-      ) : ranking.length === 0 ? (
+      {loading ? <GlobalLoadingOverlay /> : ranking.length === 0 ? (
         <div className={styles.rankingEmpty}>랭킹을 만들 주문 이력이 없습니다.</div>
       ) : (
         <div className={styles.rankingList}>

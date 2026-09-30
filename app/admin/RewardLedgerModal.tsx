@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import styles from "./admin.module.css";
 
 const LEDGER_PAGE_SIZE = 10;
@@ -87,15 +88,14 @@ export default function RewardLedgerModal() {
 
   return (
     <section className={styles.rewardLedgerModalContent} aria-labelledby="reward-ledger-title">
+      {loading && <GlobalLoadingOverlay />}
       <div className={styles.rewardLedgerHeader}>
         <p id="reward-ledger-title">최근 적립금 지급·회수 내역입니다.</p>
         <button type="button" onClick={() => void loadLedger()} disabled={loading}>
           {loading ? "불러오는 중..." : "원장 새로고침"}
         </button>
       </div>
-      {error ? <p className={styles.rewardError}>{error}</p> : loading ? (
-        <p className={styles.ledgerEmpty}>적립금 처리 원장을 불러오는 중입니다.</p>
-      ) : ledger.length === 0 ? (
+      {error ? <p className={styles.rewardError}>{error}</p> : loading ? null : ledger.length === 0 ? (
         <p className={styles.ledgerEmpty}>표시할 적립금 처리 내역이 없습니다.</p>
       ) : (
         <>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import styles from "./order-history.module.css";
 
 type OrderRow = {
@@ -164,7 +165,8 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
     router.replace("/admin/login");
   }
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const params = new URLSearchParams({
         year: String(selectedYear),
@@ -177,7 +179,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
       setAvailableYears(data.availableYears ?? []);
       setSyncError(Boolean(data.syncError));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [selectedMonth, selectedYear]);
 
@@ -200,7 +202,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   }
 
   useEffect(() => {
-    void load();
+    void load(true);
     const interval = setInterval(() => void load(), 10000); // 10초마다 자동 새로고침
     return () => clearInterval(interval);
   }, [load]);
@@ -218,6 +220,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
 
   return (
     <>
+      {loading && <GlobalLoadingOverlay />}
       <div className={styles.headerRow}>
         <div className={styles.titleWithTooltip}>
           {onBack
@@ -287,9 +290,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
       </div>
       {syncError && <p className={styles.syncWarning}>카페24 최신 주문 조회에 실패했습니다. 현재 저장된 주문 기준으로 표시합니다.</p>}
       <div className={styles.tableWrap}>
-        {loading ? (
-          <div className={styles.empty}>불러오는 중...</div>
-        ) : orders.length === 0 ? (
+        {loading ? null : orders.length === 0 ? (
           <div className={styles.empty}>주문 이력이 없습니다.</div>
         ) : (
           <div className={styles.tableScroller}>
@@ -401,11 +402,10 @@ export function HitCardHistoryContent() {
 
   return (
     <>
+      {loading && <GlobalLoadingOverlay />}
       <h2 className={styles.sectionTitle}>히트카드 등록 이력 ({hitCards.length})</h2>
       <div className={styles.tableWrap}>
-        {loading ? (
-          <div className={styles.empty}>불러오는 중...</div>
-        ) : hitCards.length === 0 ? (
+        {loading ? null : hitCards.length === 0 ? (
           <div className={styles.empty}>등록된 히트카드가 없습니다.</div>
         ) : (
           <div className={styles.scrollArea}>
