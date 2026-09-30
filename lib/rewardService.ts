@@ -105,7 +105,9 @@ export async function listDetailedRewardLedger(limit = 30): Promise<DetailedRewa
   const localByOrderId = new Map(localOrders.map((order) => [order.external_order_id, order]));
   const remoteByOrderId = new Map<string, Cafe24RewardOrder>();
 
-  const cafe24OrderIds = orderIds.filter((orderId) => localByOrderId.get(orderId)?.source === "cafe24");
+  // 로컬 주문 이력이 정리된 과거 원장도 카페24 원본에서 다시 채운다.
+  // 수동 주문 번호는 상세 조회에 실패해도 아래의 저장값 fallback으로 안전하게 표시된다.
+  const cafe24OrderIds = orderIds;
   for (let index = 0; index < cafe24OrderIds.length; index += 5) {
     const results = await Promise.all(cafe24OrderIds.slice(index, index + 5).map(async (orderId) => {
       try {
