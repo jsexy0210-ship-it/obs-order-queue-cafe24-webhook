@@ -72,14 +72,26 @@ else
     recovery_root="$HOME"
     mapfile -d '' -t database_candidates < <(find "$recovery_root" -maxdepth 5 -type f -name cardbreak.db -size +0c -print0)
     mapfile -d '' -t environment_candidates < <(find "$recovery_root" -maxdepth 5 -type f -name .env.local -size +0c -print0)
+    paired_database=""
+    paired_environment=""
+    paired_candidates=0
+    for database_candidate in "${database_candidates[@]}"; do
+      application_candidate="$(dirname "$(dirname "$database_candidate")")"
+      environment_candidate="$application_candidate/.env.local"
+      [[ -f "$environment_candidate" ]] || continue
+      paired_database="$database_candidate"
+      paired_environment="$environment_candidate"
+      paired_candidates=$((paired_candidates + 1))
+    done
     echo "Recovery database candidates: ${#database_candidates[@]}"
     echo "Recovery environment candidates: ${#environment_candidates[@]}"
-    if [[ ! -f "$app_root/data/cardbreak.db" && "${#database_candidates[@]}" -eq 1 ]]; then
+    echo "Recovery paired candidates: $paired_candidates"
+    if [[ ! -f "$app_root/data/cardbreak.db" && "$paired_candidates" -eq 1 ]]; then
       mkdir -p "$app_root/data"
-      cp "${database_candidates[0]}" "$app_root/data/cardbreak.db"
+      cp "$paired_database" "$app_root/data/cardbreak.db"
     fi
-    if [[ ! -f "$app_root/.env.local" && "${#environment_candidates[@]}" -eq 1 ]]; then
-      cp "${environment_candidates[0]}" "$app_root/.env.local"
+    if [[ ! -f "$app_root/.env.local" && "$paired_candidates" -eq 1 ]]; then
+      cp "$paired_environment" "$app_root/.env.local"
     fi
   fi
 
