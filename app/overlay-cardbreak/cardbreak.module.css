@@ -321,7 +321,11 @@
   grid-template-columns: 12px auto minmax(0, 1fr);
   align-items: center;
   column-gap: 6px;
-  font-size: 11px;
+  padding: 4px 5px;
+  border: 1px solid rgba(255, 205, 82, 0.42);
+  border-radius: 6px;
+  background: rgba(4, 8, 14, 0.76);
+  font-size: 12px;
   line-height: 1.35;
   font-weight: 700;
 }
@@ -336,6 +340,7 @@
   min-width: 0;
   color: var(--hit-buyer-text);
   font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -347,6 +352,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--hit-card-text);
+  font-weight: 850;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
 }
 
 .heroCard {
@@ -377,10 +384,14 @@
 
 .currentUser {
   min-width: 0;
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.66);
   color: var(--live-buyer-text);
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.15;
   font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
   overflow-wrap: anywhere;
   white-space: normal;
 }
@@ -394,14 +405,18 @@
 
 .nowProduct {
   margin-top: 8px;
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.66);
   display: flex;
   align-items: baseline;
   gap: 4px;
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
   font-weight: 900;
   color: var(--live-product-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
 }
 
 .nowProductText {

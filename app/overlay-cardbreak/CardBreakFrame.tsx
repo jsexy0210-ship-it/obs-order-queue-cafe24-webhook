@@ -49,11 +49,20 @@ function cancelLabel(reason: string | null) {
   return reason === "refunded" ? "환불됨" : "취소됨";
 }
 
-/**
- * 유튜브 닉네임이 있으면 "닉네임(구매자명)" 형식으로, 없으면 구매자명만 보여줍니다.
- */
+function maskBuyerName(value: string) {
+  const name = value.trim();
+  if (!name || name === "구매자 확인 불가" || name.includes("*")) return name;
+
+  const characters = Array.from(name);
+  if (characters.length === 1) return "*";
+  if (characters.length === 2) return `${characters[0]}*`;
+  return `${characters[0]}${"*".repeat(characters.length - 2)}${characters.at(-1)}`;
+}
+
+/** 오버레이에서만 유튜브 닉네임과 마스킹된 구매자명을 함께 표시합니다. */
 function formatBuyer(userId: string, youtubeNickname: string | null | undefined) {
-  return youtubeNickname ? `${youtubeNickname}(${userId})` : userId;
+  const buyerName = maskBuyerName(userId);
+  return youtubeNickname ? `${youtubeNickname}(${buyerName})` : buyerName;
 }
 
 const cancelledBadgeStyle: CSSProperties = {
