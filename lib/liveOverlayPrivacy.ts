@@ -9,9 +9,8 @@ function displayNickname(value: string | null, tier: string) {
     nickname = nickname.slice(normalizedTier.length).replace(/^[\s:|·-]+/, "");
   }
 
-  if (/\s*\([^()]*\)\s*$/.test(nickname)) {
-    nickname = nickname.slice(0, nickname.lastIndexOf("(")).trim();
-  }
+  while (/\([^()]*\)/.test(nickname)) nickname = nickname.replace(/\([^()]*\)/g, " ");
+  nickname = nickname.replace(/[()]/g, "").replace(/\s+/g, " ").trim();
   return nickname || "-";
 }
 

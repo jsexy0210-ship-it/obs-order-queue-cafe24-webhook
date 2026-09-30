@@ -26,6 +26,7 @@ export type LiveOrder = {
   payment_gateway_name: string | null;
   easypay_name: string | null;
   created_at: string;
+  is_first_order?: boolean;
 };
 
 export type LiveHitCard = {

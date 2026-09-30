@@ -367,10 +367,29 @@
 }
 
 .heroMeta {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
   align-items: center;
   gap: 7px;
+}
+
+.openBadge,
+.firstOrderBadge {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.openBadge {
+  background: #086f9a;
+}
+
+.firstOrderBadge {
+  background: #d52f47;
 }
 
 .currentUser {
@@ -473,6 +492,19 @@
   color: var(--queue-buyer-text);
   font-weight: 900;
   white-space: nowrap;
+}
+
+.queueIdentity {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.queueIdentity .firstOrderBadge {
+  padding: 2px 4px;
+  font-size: 8px;
 }
 
 .product {

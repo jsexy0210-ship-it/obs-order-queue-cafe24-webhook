@@ -299,6 +299,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
               <thead>
                 <tr>
                   <th>주문일시</th>
+                  <th>주문번호</th>
                   <th>상품명</th>
                   <th>실결제액</th>
                   <th>수량</th>
@@ -319,6 +320,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   return (
                     <tr key={order.id}>
                       <td data-label="주문일시">{formatDate(order.created_at)}</td>
+                      <td data-label="주문번호" className={styles.orderNumber}>{order.external_order_id ?? "-"}</td>
                       <td data-label="상품명" className={styles.product}>{order.product}</td>
                       <td data-label="실결제액">{formatPrice(order.actual_amount)}</td>
                       <td data-label="수량">{order.quantity}</td>

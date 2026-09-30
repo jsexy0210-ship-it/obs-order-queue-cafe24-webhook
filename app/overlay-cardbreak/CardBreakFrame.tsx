@@ -50,9 +50,11 @@ function cancelLabel(reason: string | null) {
   return reason === "refunded" ? "환불됨" : "취소됨";
 }
 
-/** 오버레이는 유튜브 닉네임만 표시해 구매자 실명을 노출하지 않습니다. */
+/** 오버레이에는 유튜브 닉네임만 표시하고 괄호 정보도 제거합니다. */
 function formatYoutubeNickname(youtubeNickname: string | null | undefined) {
-  const nickname = youtubeNickname?.trim().replace(/\s*\([^)]*\)\s*$/, "").trim();
+  let nickname = youtubeNickname?.trim() ?? "";
+  while (/\([^()]*\)/.test(nickname)) nickname = nickname.replace(/\([^()]*\)/g, " ");
+  nickname = nickname.replace(/[()]/g, "").replace(/\s+/g, " ").trim();
   return nickname || "-";
 }
 
@@ -679,6 +681,11 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
                 <span style={cancelledBadgeStyle}>{cancelLabel(opening.cancel_reason)}</span>
               )}
               <div className={styles.heroMeta}>
+                {opening.status !== "cancelled" && (
+                  <span className={opening.is_first_order ? styles.firstOrderBadge : styles.openBadge}>
+                    {opening.is_first_order ? "첫주문" : "오픈"}
+                  </span>
+                )}
                 <div className={styles.currentUser}>{formatYoutubeNickname(opening.youtube_nickname)}</div>
               </div>
 
@@ -705,7 +712,10 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
                   key={order.id}
                   style={cancelled ? { opacity: 0.45 } : undefined}
                 >
-                  <strong>{formatYoutubeNickname(order.youtube_nickname)}</strong>
+                  <div className={styles.queueIdentity}>
+                    {order.is_first_order && !cancelled && <span className={styles.firstOrderBadge}>첫주문</span>}
+                    <strong>{formatYoutubeNickname(order.youtube_nickname)}</strong>
+                  </div>
                   <span className={styles.product}>{order.product}</span>
                   <b>x{order.quantity}</b>
                 </div>

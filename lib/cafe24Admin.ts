@@ -157,6 +157,7 @@ export type Cafe24OrderItem = {
 
 export type Cafe24RewardOrder = {
   order_id?: string;
+  first_order?: "T" | "F";
   billing_name?: string;
   canceled?: string;
   cancel_date?: string | null;

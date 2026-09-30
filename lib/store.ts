@@ -27,6 +27,7 @@ export type OrderRow = {
   youtube_nickname: string | null;
   timer_seconds: number | null;
   created_at: string;
+  is_first_order?: boolean;
 };
 
 export type HitCardRow = {

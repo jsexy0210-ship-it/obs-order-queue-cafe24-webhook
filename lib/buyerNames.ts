@@ -2,11 +2,14 @@ import {
   getCafe24CurrentCustomerGroupNo,
   getCafe24CustomerGroups,
   getCafe24OrderBuyerInfo,
+  getCafe24OrderForReward,
 } from "./cafe24Admin";
 import type { LiveState, OrderRow } from "./store";
 
 type BuyerInfo = { name: string | null; memberId: string | null };
 const buyers = new Map<string, BuyerInfo>();
+const firstOrders = new Map<string, boolean>();
+const firstOrderChecks = new Map<string, Promise<boolean>>();
 const customerGroups = new Map<string, { groupNo: string | null; expiresAt: number }>();
 
 export async function getBuyerInfo(orderId: string): Promise<BuyerInfo | null> {
@@ -19,6 +22,23 @@ export async function getBuyerInfo(orderId: string): Promise<BuyerInfo | null> {
   } catch {
     return null;
   }
+}
+
+async function isCafe24FirstOrder(orderId: string) {
+  const cached = firstOrders.get(orderId);
+  if (cached !== undefined) return cached;
+  const pending = firstOrderChecks.get(orderId);
+  if (pending) return pending;
+  const check = getCafe24OrderForReward(orderId)
+    .then((order) => {
+      const isFirstOrder = order.first_order === "T";
+      firstOrders.set(orderId, isFirstOrder);
+      return isFirstOrder;
+    })
+    .catch(() => false)
+    .finally(() => firstOrderChecks.delete(orderId));
+  firstOrderChecks.set(orderId, check);
+  return check;
 }
 
 export async function getCurrentCustomerGroupNo(memberId: string): Promise<string | null> {
@@ -68,9 +88,18 @@ export async function resolveLiveBuyerNames(state: LiveState): Promise<LiveState
     ...(state.opening ? [state.opening] : []),
     ...state.waiting,
   ]);
+  const firstOrderFlags = await Promise.all(orders.map((order) =>
+    order.source === "cafe24" && order.external_order_id
+      ? isCafe24FirstOrder(order.external_order_id)
+      : Promise.resolve(false)
+  ));
+  const ordersWithFirstOrder = orders.map((order, index) => ({
+    ...order,
+    is_first_order: firstOrderFlags[index],
+  }));
   return {
     ...state,
-    opening: state.opening ? orders[0] : null,
-    waiting: state.opening ? orders.slice(1) : orders,
+    opening: state.opening ? ordersWithFirstOrder[0] : null,
+    waiting: state.opening ? ordersWithFirstOrder.slice(1) : ordersWithFirstOrder,
   };
 }
