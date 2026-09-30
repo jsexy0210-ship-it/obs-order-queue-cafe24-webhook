@@ -7,6 +7,7 @@ import {
   normalizeCafe24Order,
   redactPiiForLogging,
 } from "@/lib/cafe24";
+import { getCafe24OrderForReward } from "@/lib/cafe24Admin";
 import { issueRewardForOrder, recoverRewardForOrder } from "@/lib/rewardService";
 import { getRewardSettings } from "@/lib/rewardStore";
 
@@ -92,9 +93,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, warning: "payment_not_confirmed" });
     }
 
-    const matched = markOrderPaid(orderId, payment);
+    let matched = markOrderPaid(orderId, payment);
     if (!matched) {
-      console.warn(`[cafe24 webhook][paid] 큐에 없거나 이미 입금완료 처리된 주문(${orderId}) - 무시`);
+      try {
+        // 주문접수 웹훅이 누락되어도 결제완료 웹훅에서 Cafe24 원본을 확인해 큐 행을 복구합니다.
+        const cafe24Order = await getCafe24OrderForReward(orderId);
+        const verifiedPayment = extractCafe24PaymentInfo({ order: cafe24Order });
+        if (cafe24Order.order_id !== orderId || !verifiedPayment.paid || cafe24Order.canceled === "T") {
+          return NextResponse.json({ ok: true, matched: false, warning: "order_not_paid_or_cancelled" });
+        }
+
+        const normalized = normalizeCafe24Order({ order: cafe24Order });
+        if (!normalized || normalized.externalOrderId !== orderId) {
+          throw new Error("Cafe24 원본 주문의 필수 정보가 부족합니다.");
+        }
+        const amount = Number(cafe24Order.payment_amount);
+        insertOrder({
+          source: "cafe24",
+          externalOrderId: normalized.externalOrderId,
+          userId: normalized.userId,
+          product: normalized.product,
+          quantity: normalized.quantity,
+          unitPrice: normalized.unitPrice,
+          actualAmount: Number.isFinite(amount) && amount > 0 ? amount : null,
+          youtubeNickname: normalized.youtubeNickname,
+          paymentMethod: normalized.paymentMethod,
+          paymentGatewayName: normalized.paymentGatewayName,
+          easypayName: normalized.easypayName,
+        });
+        matched = markOrderPaid(orderId, {
+          paymentMethod: verifiedPayment.paymentMethod ?? payment.paymentMethod,
+          paymentGatewayName: verifiedPayment.paymentGatewayName ?? payment.paymentGatewayName,
+          easypayName: verifiedPayment.easypayName ?? payment.easypayName,
+          paymentDate: verifiedPayment.paymentDate ?? payment.paymentDate,
+        });
+        if (!matched) throw new Error("복구한 주문을 결제완료 상태로 저장하지 못했습니다.");
+        console.warn(`[cafe24 webhook][paid] 주문접수 누락 주문을 Cafe24 원본으로 복구했습니다 (${orderId})`);
+      } catch (error) {
+        console.error("[cafe24 webhook][paid] 누락 주문 복구 실패", {
+          orderId,
+          message: error instanceof Error ? error.message : "unknown",
+        });
+        return NextResponse.json({ error: "paid_order_sync_failed" }, { status: 503 });
+      }
     }
 
     let rewardResult: unknown = { outcome: "not_triggered" };
