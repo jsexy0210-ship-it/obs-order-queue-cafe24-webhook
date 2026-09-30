@@ -729,6 +729,18 @@
   max-width: min(980px, calc(100vw - 40px));
 }
 
+.rewardLedgerModal {
+  max-width: min(1720px, calc(100vw - 40px));
+}
+
+.rewardLedgerModalContent {
+  min-width: 0;
+}
+
+.rewardLedgerModalContent .rewardLedgerHeader {
+  margin-bottom: 14px;
+}
+
 .modalTopBar {
   display: flex;
   justify-content: flex-end;

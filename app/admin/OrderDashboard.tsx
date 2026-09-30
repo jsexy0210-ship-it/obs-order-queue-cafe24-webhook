@@ -96,14 +96,10 @@ function RangePicker({ value, onChange, title }: {
 export default function OrderDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [rewardEntries, setRewardEntries] = useState<RewardEntry[]>([]);
-  const [cumulativeRewardBalance, setCumulativeRewardBalance] = useState(0);
-  const [cumulativeRewardSource, setCumulativeRewardSource] = useState<"cafe24" | "ledger">("ledger");
-  const [legacyRewardBalanceByGrade, setLegacyRewardBalanceByGrade] = useState<Record<string, number>>({});
-  const [legacyRewardBalanceUnassignedMemberCount, setLegacyRewardBalanceUnassignedMemberCount] = useState(0);
   const [grades, setGrades] = useState<Grade[]>([]);
-  const [amountRange, setAmountRange] = useState<DashboardRange>("month");
-  const [paymentRange, setPaymentRange] = useState<DashboardRange>("month");
-  const [rewardRange, setRewardRange] = useState<DashboardRange>("month");
+  const [amountRange, setAmountRange] = useState<DashboardRange>("day");
+  const [paymentRange, setPaymentRange] = useState<DashboardRange>("day");
+  const [rewardRange, setRewardRange] = useState<DashboardRange>("day");
   const [now, setNow] = useState(0);
   const [syncError, setSyncError] = useState(false);
 
@@ -118,20 +114,12 @@ export default function OrderDashboard() {
         const history = await historyResponse.json() as {
           orders?: Order[];
           rewardEntries?: RewardEntry[];
-          cumulativeRewardBalance?: number;
-          cumulativeRewardSource?: "cafe24" | "ledger";
-          legacyRewardBalanceByGrade?: Record<string, number>;
-          legacyRewardBalanceUnassignedMemberCount?: number;
           syncError?: boolean;
         };
         const settings = await settingsResponse.json() as { settings?: { grades?: Grade[] } };
         if (!active || !historyResponse.ok || !settingsResponse.ok) return;
         setOrders(history.orders ?? []);
         setRewardEntries(history.rewardEntries ?? []);
-        setCumulativeRewardBalance(Number(history.cumulativeRewardBalance ?? 0));
-        setCumulativeRewardSource(history.cumulativeRewardSource === "cafe24" ? "cafe24" : "ledger");
-        setLegacyRewardBalanceByGrade(history.legacyRewardBalanceByGrade ?? {});
-        setLegacyRewardBalanceUnassignedMemberCount(Number(history.legacyRewardBalanceUnassignedMemberCount ?? 0));
         setGrades(settings.settings?.grades ?? []);
         setSyncError(Boolean(history.syncError));
         setNow(Date.now());
@@ -180,7 +168,10 @@ export default function OrderDashboard() {
         .reduce((total, entry) => total + entry.amount, 0),
       bankAmount: entries
         .filter((entry) => entry.payment_kind === "bank")
-        .reduce((total, entry) => total + entry.amount, 0) + Number(legacyRewardBalanceByGrade[grade.id] ?? 0),
+        .reduce((total, entry) => total + entry.amount, 0),
+      otherAmount: entries
+        .filter((entry) => entry.payment_kind === "unknown")
+        .reduce((total, entry) => total + entry.amount, 0),
     };
   });
   const amountSeries = makeSeries(amountOrders, amountRange, now);
@@ -260,8 +251,8 @@ export default function OrderDashboard() {
           <span>적립금 정보</span>
           <RangePicker title="기간별 적립금" value={rewardRange} onChange={setRewardRange} />
         </div>
-        <strong>{cumulativeRewardBalance.toLocaleString("ko-KR")}원</strong>
-        <small>누적 적립금 · {cumulativeRewardSource === "cafe24" ? "카페24 현재 잔액" : "지급 완료 원장"} 기준 · {RANGE_OPTIONS.find((option) => option.value === rewardRange)?.description} 순지급 {rewardTotal.toLocaleString("ko-KR")}원</small>
+        <strong>{rewardTotal.toLocaleString("ko-KR")}원</strong>
+        <small>누적 적립금 · 지급 완료 원장 기준 · {RANGE_OPTIONS.find((option) => option.value === rewardRange)?.description} 순지급</small>
         <div className={styles.rewardBreakdown} aria-label="등급별 카드결제와 무통장 적립금 순지급">
           {rewardByGrade.map((grade) => (
             <div className={styles.rewardGradeTotal} key={grade.id}>
@@ -269,13 +260,11 @@ export default function OrderDashboard() {
               <div className={styles.rewardPaymentTotals}>
                 <strong>카드 {grade.cardAmount.toLocaleString("ko-KR")}원</strong>
                 <strong>무통 {grade.bankAmount.toLocaleString("ko-KR")}원</strong>
+                {grade.otherAmount > 0 && <strong>기타 {grade.otherAmount.toLocaleString("ko-KR")}원</strong>}
               </div>
             </div>
           ))}
         </div>
-        {legacyRewardBalanceUnassignedMemberCount > 0 && (
-          <small>{legacyRewardBalanceUnassignedMemberCount}명의 기존 잔액은 카페24 등급 매핑이 없어 합계에서 제외됐습니다.</small>
-        )}
       </div>
     </section>
   );

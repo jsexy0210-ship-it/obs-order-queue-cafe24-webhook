@@ -7,6 +7,7 @@ import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/
 import CardBreakFrame, { type CardBreakFrameHandle } from "@/app/overlay-cardbreak/CardBreakFrame";
 import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "@/lib/overlaySettings";
 import RewardSettingsPanel from "./RewardSettingsPanel";
+import RewardLedgerModal from "./RewardLedgerModal";
 import OrderDashboard from "./OrderDashboard";
 import OrderRankingPanel from "./OrderRankingPanel";
 import styles from "./admin.module.css";
@@ -42,6 +43,7 @@ export default function AdminPage() {
   const [showRanking, setShowRanking] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showHitHistory, setShowHitHistory] = useState(false);
+  const [showRewardLedger, setShowRewardLedger] = useState(false);
   const [showOverlayPreview, setShowOverlayPreview] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -300,13 +302,13 @@ export default function AdminPage() {
     }
   }, [waiting, orderAlertsEnabled, playOrderChime]);
 
-  // 히트카드 이력 모달이 열려 있는 동안에는 뒤쪽 화면이 같이 스크롤되지 않도록 막습니다.
+  // 이력 모달이 열려 있는 동안에는 뒤쪽 화면이 같이 스크롤되지 않도록 막습니다.
   useEffect(() => {
-    document.body.style.overflow = showHitHistory ? "hidden" : "";
+    document.body.style.overflow = showHitHistory || showRewardLedger ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showHitHistory]);
+  }, [showHitHistory, showRewardLedger]);
 
   useEffect(() => {
     setWaitingPage((page) => Math.min(page, waitingPageCount));
@@ -328,6 +330,7 @@ export default function AdminPage() {
     setShowHistory(false);
     setShowRanking(false);
     setShowHitHistory(false);
+    setShowRewardLedger(false);
     closeOverlayPreview();
     router.replace("/admin");
     router.refresh();
@@ -534,6 +537,7 @@ export default function AdminPage() {
                 setShowHistory(false);
                 setShowRanking(false);
                 setShowHitHistory(false);
+                setShowRewardLedger(false);
                 return;
               }
               setShowSettings(true);
@@ -542,6 +546,14 @@ export default function AdminPage() {
           >
             {showSettings || showHistory || showRanking || showOverlayPreview ? "← 관리자 홈" : "⚙️ 설정"}
           </button>
+          {showHistory && (
+            <button className={styles.historyButton} onClick={() => {
+              setMobileMenuOpen(false);
+              setShowRewardLedger(true);
+            }}>
+              💰 적립금 원장
+            </button>
+          )}
           {showHistory && (
             <button className={styles.historyButton} onClick={() => {
               setMobileMenuOpen(false);
@@ -894,6 +906,19 @@ export default function AdminPage() {
               </button>
             </div>
             <HitCardHistoryContent />
+          </div>
+        </div>
+      )}
+      {showRewardLedger && (
+        <div className={styles.modalOverlay} onClick={() => setShowRewardLedger(false)}>
+          <div className={`${styles.modalCard} ${styles.rewardLedgerModal}`} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalTopBarWithTitle}>
+              <h2 className={styles.modalTitle}>적립금 처리 원장</h2>
+              <button className={styles.modalCloseBtn} onClick={() => setShowRewardLedger(false)}>
+                닫기 ✕
+              </button>
+            </div>
+            <RewardLedgerModal />
           </div>
         </div>
       )}
