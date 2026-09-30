@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { createRequire } from "node:module";
 
 const appRoot = process.argv[2];
@@ -31,10 +32,67 @@ const databasePath = path.join(appRoot, "data", "cardbreak.db");
 const db = new Database(databasePath, { fileMustExist: true });
 db.pragma("busy_timeout = 5000");
 
+function getCafe24Tokens() {
+  const key = Buffer.from(readEnvValue("CAFE24_TOKEN_ENCRYPTION_KEY"), "base64");
+  if (key.length !== 32) throw new Error("Invalid Cafe24 token encryption key.");
+  const row = db.prepare("SELECT encrypted_value FROM cafe24_oauth_tokens WHERE id = 1").get();
+  if (!row?.encrypted_value) throw new Error("Cafe24 OAuth connection is unavailable.");
+  const encrypted = JSON.parse(row.encrypted_value);
+  if (encrypted.version !== 1) throw new Error("Unsupported Cafe24 token format.");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(encrypted.iv, "base64"));
+  decipher.setAuthTag(Buffer.from(encrypted.tag, "base64"));
+  const tokens = JSON.parse(Buffer.concat([
+    decipher.update(Buffer.from(encrypted.ciphertext, "base64")), decipher.final(),
+  ]).toString("utf8"));
+  if (Date.parse(tokens.accessTokenExpiresAt) <= Date.now() + 60_000) {
+    throw new Error("Cafe24 access token is expiring; no database change was made.");
+  }
+  return tokens;
+}
+
+async function getCafe24Order(tokens, orderId) {
+  const query = new URLSearchParams({ shop_no: String(tokens.shopNo || "1"), embed: "items" });
+  const response = await fetch(
+    `https://${tokens.mallId}.cafe24api.com/api/v2/admin/orders/${encodeURIComponent(orderId)}?${query}`,
+    {
+      headers: {
+        Authorization: `Bearer ${tokens.accessToken}`,
+        "Content-Type": "application/json",
+        "X-Cafe24-Api-Version": "2026-09-01",
+      },
+    }
+  );
+  if (!response.ok) throw new Error(`Cafe24 order verification failed (HTTP ${response.status}).`);
+  const payload = await response.json();
+  if (!payload.order) throw new Error("Cafe24 order verification returned no order.");
+  return payload.order;
+}
+
+function paidOrderFacts(orderId, order, expectedAmount, expectedDate, expectedMethod) {
+  const amount = Number(order.payment_amount);
+  const paymentDate = order.payment_date ? new Date(order.payment_date) : null;
+  const methods = Array.isArray(order.payment_method) ? order.payment_method : [order.payment_method];
+  if (order.order_id !== orderId || order.paid !== "T" || order.canceled === "T"
+    || amount !== expectedAmount || !paymentDate || paymentDate.getTime() !== Date.parse(expectedDate)
+    || methods.filter(Boolean).map(String).join(",") !== expectedMethod) {
+    throw new Error(`Cafe24 live order data for ${orderId} no longer matches the audited values.`);
+  }
+  return paymentDate.toISOString().slice(0, 19).replace("T", " ");
+}
+
 const targetIds = ["20260930-0000169", "20260930-0000152"];
 const token = readEnvValue("CAFE24_WEBHOOK_TOKEN");
 const port = Number(readOptionalEnvValue("PORT") || "3000");
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Invalid application port.");
+const cafe24Tokens = getCafe24Tokens();
+const facts169 = paidOrderFacts(
+  targetIds[0], await getCafe24Order(cafe24Tokens, targetIds[0]), 71500,
+  "2026-09-30T13:58:45Z", "card"
+);
+const facts152 = paidOrderFacts(
+  targetIds[1], await getCafe24Order(cafe24Tokens, targetIds[1]), 535256,
+  "2026-09-30T15:02:39Z", "cash,point"
+);
 const selected = db.prepare(
   `SELECT external_order_id, source, status, actual_amount, paid_at, payment_method
      FROM orders WHERE external_order_id IN (?, ?)`
@@ -51,13 +109,13 @@ const order169 = byId.get(targetIds[0]);
 const order152 = byId.get(targetIds[1]);
 const alreadySynchronized = !hiddenIds.size
   && order152.actual_amount === 535256
-  && order152.paid_at === "2026-09-30 15:02:39";
+  && order152.paid_at === facts152;
 if (!alreadySynchronized) {
   if (!hiddenIds.has(targetIds[0]) || !hiddenIds.has(targetIds[1])) {
     throw new Error("The hidden-order state changed; no changes were made.");
   }
   if (order169.status !== "done" || order169.actual_amount !== 71500
-    || order169.paid_at !== "2026-09-30 13:58:45") {
+    || order169.paid_at !== facts169) {
     throw new Error("Order 20260930-0000169 no longer matches the audited state; no changes were made.");
   }
   if (order152.status !== "done" || order152.actual_amount !== 855000 || order152.paid_at !== null
@@ -71,7 +129,7 @@ if (!alreadySynchronized) {
     db.prepare(
       `UPDATE orders SET actual_amount = ?, paid_at = ?
        WHERE external_order_id = ? AND source = 'cafe24' AND actual_amount = ? AND paid_at IS NULL`
-    ).run(535256, "2026-09-30 15:02:39", targetIds[1], 855000);
+    ).run(535256, facts152, targetIds[1], 855000);
     db.prepare("DELETE FROM hidden_order_history WHERE external_order_id IN (?, ?)").run(...targetIds);
   })();
   console.log("order_sync_backup_created=true");
