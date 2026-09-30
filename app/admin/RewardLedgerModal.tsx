@@ -101,10 +101,11 @@ export default function RewardLedgerModal() {
         <>
           <div className={styles.rewardTableWrap}>
             <table className={`${styles.rewardTable} ${styles.rewardLedgerTable}`}>
-              <thead><tr><th>주문일시</th><th>처리시각</th><th>상품명</th><th>실결제액</th><th>수량</th><th>유튜브 닉네임</th><th>구매자</th><th>회원등급</th><th>결제방식</th><th>적용률</th><th>적립금</th><th>조치</th></tr></thead>
+              <thead><tr><th>주문일시</th><th>처리시각</th><th>주문번호</th><th>상품명</th><th>실결제액</th><th>수량</th><th>유튜브 닉네임</th><th>구매자</th><th>회원등급</th><th>결제방식</th><th>적용률</th><th>적립금</th><th>조치</th></tr></thead>
               <tbody>{visibleLedger.map((row) => (
                 <tr key={row.id}>
                   <td>{formatDateTime(row.order.created_at)}</td><td>{formatDateTime(row.processed_at)}</td>
+                  <td className={styles.rewardLedgerOrderNumber} title={row.external_order_id}>{row.external_order_id}</td>
                   <td className={styles.rewardLedgerProduct} title={row.order.product ?? ""}>{row.order.product ?? "-"}</td><td>{row.order.actual_amount === null ? "-" : `${row.order.actual_amount.toLocaleString("ko-KR")}원`}</td><td>{row.order.quantity ?? "-"}</td>
                   <td>{row.order.youtube_nickname || "-"}</td><td>{row.order.buyer_name ?? "-"}</td><td>{row.grade_name}</td>
                   <td>{row.order.payment_method ?? "-"}</td><td>{row.applied_rate}%</td>
