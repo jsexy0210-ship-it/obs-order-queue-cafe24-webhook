@@ -172,12 +172,20 @@ export function getRewardSummaries(orderIds: string[]): Record<string, RewardOrd
     amount: number;
     status: LedgerStatus;
   }>;
-  return rows.reduce<Record<string, RewardOrderSummary>>((result, row) => {
+  const summaries = rows.reduce<Record<string, RewardOrderSummary>>((result, row) => {
     const summary = result[row.external_order_id] ?? {};
     summary[row.action] = { amount: row.amount, status: row.status, grade_id: row.grade_id };
     result[row.external_order_id] = summary;
     return result;
   }, {});
+  for (const summary of Object.values(summaries)) {
+    if (summary.issue?.status === "succeeded" && summary.recover?.status === "succeeded" &&
+      summary.recover.amount > 0 && summary.recover.amount < summary.issue.amount) {
+      summary.issue.amount -= summary.recover.amount;
+      delete summary.recover;
+    }
+  }
+  return summaries;
 }
 
 function getLedger(orderId: string, action: LedgerAction) {
