@@ -106,11 +106,12 @@ export async function currentOrderView(
     if (!remote || order.source !== "cafe24") {
       return { ...order, actual_amount: order.status === "cancelled" ? 0 : localActualAmount(order) };
     }
-    const items = details.get(remote.order_id!)?.items;
+    const remoteDetail = details.get(remote.order_id!) ?? remote;
+    const items = remoteDetail.items;
     const productNames = items?.map((item) => item.product_name).filter((name): name is string => Boolean(name));
     return {
       ...order,
-      youtube_nickname: order.youtube_nickname || extractCafe24YoutubeNickname(remote.additional_order_info_list),
+      youtube_nickname: order.youtube_nickname || extractCafe24YoutubeNickname(remoteDetail.additional_order_info_list),
       user_id: remote.billing_name || order.user_id,
       product: productNames?.length ? productNames.join(" · ") : order.product,
       quantity: items?.length ? items.reduce((total, item) => total + Number(item.quantity || 0), 0) : order.quantity,
@@ -127,7 +128,8 @@ export async function currentOrderView(
 
   for (const remote of cafe24Orders) {
     if (!remote.order_id || hiddenOrderIds.has(remote.order_id) || localById.has(remote.order_id)) continue;
-    const items = details.get(remote.order_id)?.items ?? [];
+    const remoteDetail = details.get(remote.order_id) ?? remote;
+    const items = remoteDetail.items ?? [];
     current.push({
       id: -current.length - 1,
       source: "cafe24",
@@ -147,7 +149,7 @@ export async function currentOrderView(
       payment_method: paymentMethod(remote, null),
       payment_gateway_name: null,
       easypay_name: null,
-      youtube_nickname: extractCafe24YoutubeNickname(remote.additional_order_info_list),
+      youtube_nickname: extractCafe24YoutubeNickname(remoteDetail.additional_order_info_list),
       timer_seconds: null,
       created_at: sqliteUtc(remote.order_date, new Date().toISOString().slice(0, 19).replace("T", " "))!,
       actual_amount: actualAmount(remote, 0),
