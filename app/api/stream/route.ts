@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { cardbreakEvents } from "@/lib/events";
 import { getLiveState } from "@/lib/store";
 import { resolveLiveBuyerNames } from "@/lib/buyerNames";
+import { sanitizeLiveOverlayState } from "@/lib/liveOverlayPrivacy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
         const sequence = ++latestSend;
         void resolveLiveBuyerNames(getLiveState()).then((state) => {
           if (req.signal.aborted || sequence !== latestSend) return;
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(state)}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sanitizeLiveOverlayState(state))}\n\n`));
         });
       };
 

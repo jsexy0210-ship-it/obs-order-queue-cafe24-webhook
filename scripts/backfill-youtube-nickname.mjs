@@ -156,11 +156,26 @@ try {
   const orderStatuses = [];
   for (const listedOrder of candidates) {
     const local = db.prepare(`
-      SELECT id, youtube_nickname FROM orders WHERE external_order_id = ? AND source = 'cafe24'
+      SELECT id, youtube_nickname, actual_amount, unit_price, quantity, paid_at
+        FROM orders WHERE external_order_id = ? AND source = 'cafe24'
     `).get(listedOrder.order_id);
     const detailQuery = new URLSearchParams({ shop_no: String(tokens.shopNo || "1"), embed: "items" });
     const detail = await cafe24(`/orders/${encodeURIComponent(listedOrder.order_id)}?${detailQuery}`);
     const order = detail.order;
+    const amountAudit = {
+      cafe24_payment_amount: order?.payment_amount ?? null,
+      cafe24_order_price_amount: order?.actual_order_amount?.order_price_amount ?? null,
+      cafe24_initial_payment_amount: order?.initial_order_amount?.payment_amount ?? null,
+      cafe24_items: (order?.items ?? []).map((item) => ({
+        product: item.product_name ?? null,
+        quantity: item.quantity ?? null,
+        paid_amount: item.payment_amount ?? null,
+        status: item.status_code ?? item.order_status ?? null,
+      })),
+      local_actual_amount: local?.actual_amount ?? null,
+      local_unit_price_times_quantity: local ? local.unit_price * local.quantity : null,
+    };
+    console.log(`cafe24_order_audit=${listedOrder.order_id}:${JSON.stringify(amountAudit)}`);
     const nickname = parseNickname(order?.additional_order_info_list)
       || parseNickname(listedOrder.additional_order_info_list);
     const paid = order?.paid === "T" || order?.paid === true;
