@@ -19,11 +19,25 @@ done
   exit 2
 }
 
+app_root="${app_root%/}"
 current="$(pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, "", $3); print $3; exit}')"
-[[ "$current" == "$app_root"/mangotcg-release-* && -f "$current/data/cardbreak.db" && -f "$current/.env.local" ]] || {
-  echo "Current MangoTCG runtime files are unavailable." >&2
-  exit 1
-}
+current="${current%/}"
+current_ready=false
+if [[ "$current" == "$app_root"/mangotcg-release-* && -f "$current/data/cardbreak.db" && -f "$current/.env.local" && -d "$current/node_modules" ]]; then
+  current_ready=true
+  data_target="$(readlink -f "$current/data")"
+  environment_source="$current/.env.local"
+else
+  # 후보 복사 중 중단된 경우에도 원본 데이터와 환경파일만 남아 있으면 새
+  # 릴리스를 다시 만들 수 있습니다. DB 파일 자체는 절대 새로 만들지 않습니다.
+  data_target="$(readlink -f "$app_root/data")"
+  environment_source="$app_root/.env.local"
+  [[ -f "$data_target/cardbreak.db" && -f "$environment_source" ]] || {
+    echo "Current MangoTCG runtime and recovery files are unavailable." >&2
+    exit 1
+  }
+  echo "Current release is unavailable; rebuilding from the original runtime data."
+fi
 
 release="$app_root/mangotcg-release-${commit:0:7}-live"
 
@@ -32,7 +46,7 @@ release="$app_root/mangotcg-release-${commit:0:7}-live"
 # 삭제 대상 폴더를 지워도 원본 DB에는 영향을 주지 않습니다.
 shopt -s nullglob
 for old_release in "$app_root"/mangotcg-release-*; do
-  [[ "$old_release" == "$current" ]] && continue
+  [[ "${old_release%/}" == "$current" ]] && continue
   [[ -d "$old_release" && ! -L "$old_release" ]] || continue
   rm -rf --one-file-system -- "$old_release"
 done
@@ -43,12 +57,18 @@ shopt -u nullglob
   exit 1
 }
 
-data_target="$(readlink -f "$current/data")"
 db_before="$(stat -c '%i:%s:%Y' "$data_target/cardbreak.db")"
 mkdir -p "$release"
 unzip -q "$archive" -d "$release"
-cp -al "$current/node_modules" "$release/node_modules"
-cp "$current/.env.local" "$release/.env.local"
+if [[ "$current_ready" == true ]]; then
+  cp -al "$current/node_modules" "$release/node_modules"
+else
+  (
+    cd "$release"
+    npm ci
+  )
+fi
+cp "$environment_source" "$release/.env.local"
 [[ ! -e "$release/data" ]] || {
   echo "Candidate release unexpectedly contains runtime data." >&2
   exit 1
@@ -94,8 +114,12 @@ for _ in {1..6}; do
 done
 if [[ "$live_code" != "200" ]]; then
   pm2 delete obs-overlay || true
-  pm2 start npm --name obs-overlay --cwd "$current" -- start -- -H 127.0.0.1 -p 3001
-  echo "Live health check failed; restored the previous release." >&2
+  if [[ "$current_ready" == true ]]; then
+    pm2 start npm --name obs-overlay --cwd "$current" -- start -- -H 127.0.0.1 -p 3001
+    echo "Live health check failed; restored the previous release." >&2
+  else
+    echo "Live health check failed; the previous release was unavailable." >&2
+  fi
   exit 1
 fi
 pm2 save
