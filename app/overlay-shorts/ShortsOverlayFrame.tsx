@@ -99,10 +99,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const [newOrderEffect, setNewOrderEffect] = useState<NewOrderEffect | null>(null);
   const [previewOrder, setPreviewOrder] = useState<EffectOrder | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuides>({});
-  const [hitLoopRange, setHitLoopRange] = useState({ start: 0, end: 0 });
   const stageRef = useRef<HTMLDivElement>(null);
-  const hitRowsViewportRef = useRef<HTMLDivElement>(null);
-  const hitRowsTrackRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<Interaction | null>(null);
   const seenOrderIds = useRef<Set<number> | null>(null);
   const settings = settingsOverride ?? live.overlaySettings;
@@ -123,23 +120,6 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
     card: latestHit?.card ?? "등록된 히트카드 없음",
     count: actualActiveOrder?.id ?? 1,
   };
-
-  useEffect(() => {
-    if (!shouldScrollHitCards) return;
-    const viewport = hitRowsViewportRef.current;
-    const track = hitRowsTrackRef.current;
-    if (!viewport || !track) return;
-    const updateRange = () => {
-      const start = -Math.ceil(track.scrollHeight + 12);
-      const end = Math.ceil(viewport.getBoundingClientRect().height + 12);
-      setHitLoopRange((current) => current.start === start && current.end === end ? current : { start, end });
-    };
-    updateRange();
-    const observer = new ResizeObserver(updateRange);
-    observer.observe(viewport);
-    observer.observe(track);
-    return () => observer.disconnect();
-  }, [shouldScrollHitCards, renderedHitCards.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -420,20 +400,17 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
               ) : (
                 <div className={styles.zoneBody}>
                   {id === "hit" ? (
-                    <div ref={shouldScrollHitCards ? hitRowsViewportRef : undefined} className={shouldScrollHitCards ? styles.hitRowsViewport : undefined}>
-                      <div
-                        ref={shouldScrollHitCards ? hitRowsTrackRef : undefined}
-                        className={`${styles.hitRows} ${shouldScrollHitCards ? styles.hitRowsScrolling : ""}`}
-                        style={shouldScrollHitCards ? {
-                          "--hit-loop-start": `${hitLoopRange.start}px`,
-                          "--hit-loop-end": `${hitLoopRange.end}px`,
-                        } as CSSProperties : undefined}
-                      >
-                        {renderedHitCards.map((hit) => {
-                          const hitNickname = nickname(hit.youtube_nickname);
-                          const label = `◆ ${hitNickname} · ${hit.card}`;
-                          return <p key={hit.id}><span style={textFit(label, 24)}>{label}</span></p>;
-                        })}
+                    <div className={shouldScrollHitCards ? styles.hitRowsViewport : undefined}>
+                      <div className={`${styles.hitRows} ${shouldScrollHitCards ? styles.hitRowsScrolling : ""}`}>
+                        {(shouldScrollHitCards ? [false, true] : [false]).map((copy) => (
+                          <div className={styles.hitRowsGroup} key={copy ? "next-cycle" : "current-cycle"} aria-hidden={copy || undefined}>
+                            {renderedHitCards.map((hit) => {
+                              const hitNickname = nickname(hit.youtube_nickname);
+                              const label = `◆ ${hitNickname} · ${hit.card}`;
+                              return <p key={`${hit.id}-${copy ? "next" : "current"}`}><span style={textFit(label, 24)}>{label}</span></p>;
+                            })}
+                          </div>
+                        ))}
                         {displayedHitCards.length === 0 && <p className={styles.emptyState}>등록된 히트카드 없음</p>}
                       </div>
                     </div>

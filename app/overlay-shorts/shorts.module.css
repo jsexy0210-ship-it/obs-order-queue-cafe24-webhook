@@ -69,8 +69,9 @@
 .hitRowsViewport { position: relative; height: 100%; overflow: hidden; }
 .hitRows p { display: block; min-width: 0; padding: clamp(4px, 1.1cqw, 9px); border: 1px solid color-mix(in srgb, var(--zone-border-color, #ff9214) 78%, transparent); border-radius: 0; background: rgba(0,0,0,.22); }
 .hitRows span { display: block; min-width: 0; overflow: visible; white-space: nowrap; color: var(--zone-text-color, #fff); font-size: clamp(11px, calc(3.8cqw * var(--text-fit, 1)), 28px); line-height: 1.25; font-weight: 900; }
-.hitRowsScrolling { width: 100%; animation: hitRowLoop var(--hit-ticker-duration, 20s) linear infinite; will-change: transform; }
-@keyframes hitRowLoop { from { transform: translate3d(0, var(--hit-loop-start, 0), 0); } to { transform: translate3d(0, var(--hit-loop-end, 0), 0); } }
+.hitRowsScrolling { width: 100%; animation: hitRowLoop var(--hit-ticker-duration, 20s) linear infinite reverse; will-change: transform; }
+.hitRowsGroup { display: grid; gap: 6px; padding-bottom: 6px; }
+@keyframes hitRowLoop { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
 .currentOrderColumns { display: grid; gap: clamp(6px, 1.6cqw, 12px); }
 .zoneCurrent .zoneBody { margin-top: clamp(3px, .7cqw, 6px); padding-top: clamp(3px, .7cqw, 6px); }
 .currentOrderColumn { display: grid; gap: clamp(4px, 1cqw, 8px); min-width: 0; }
