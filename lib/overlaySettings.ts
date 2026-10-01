@@ -40,6 +40,8 @@ export type ShortsZoneSettings = {
   backgroundColor: string;
   /** VIP 랭킹 정보가 한 바퀴 흐르는 시간(초). 작을수록 빠릅니다. */
   tickerDurationSeconds: number;
+  /** 등장 모션이 끝나는 시간(초). 작을수록 빠릅니다. */
+  motionDurationSeconds: number;
   motion: "none" | "fade" | "slide-up" | "left-to-right" | "card-turn";
 };
 
@@ -126,6 +128,7 @@ const DEFAULT_NEW_ORDER_ZONE: ShortsZoneSettings = {
   backgroundOpacity: 90,
   backgroundColor: "#05090f",
   tickerDurationSeconds: 20,
+  motionDurationSeconds: 0.7,
   motion: "slide-up",
 };
 
@@ -188,6 +191,7 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
         backgroundOpacity: 88,
         backgroundColor: "#05090f",
         tickerDurationSeconds: 20,
+        motionDurationSeconds: 0.7,
         motion: "none",
       },
       ranking: {
@@ -222,6 +226,7 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
         backgroundOpacity: 94,
         backgroundColor: "#041d12",
         tickerDurationSeconds: 20,
+        motionDurationSeconds: 0.7,
         motion: "none",
       },
       current: {
@@ -256,6 +261,7 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
         backgroundOpacity: 88,
         backgroundColor: "#05090f",
         tickerDurationSeconds: 20,
+        motionDurationSeconds: 0.7,
         motion: "none",
       },
       announcement: {

@@ -55,6 +55,7 @@ export async function PUT(req: NextRequest) {
     backgroundOpacity: clamp(source?.backgroundOpacity ?? fallback.backgroundOpacity, 0, 100),
     backgroundColor: color(source?.backgroundColor, fallback.backgroundColor),
     tickerDurationSeconds: clamp(source?.tickerDurationSeconds ?? fallback.tickerDurationSeconds, 5, 60),
+    motionDurationSeconds: clamp(source?.motionDurationSeconds ?? fallback.motionDurationSeconds, 0.2, 3),
     motion: motion(source?.motion, fallback.motion),
   });
 

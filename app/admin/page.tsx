@@ -1140,8 +1140,9 @@ export default function AdminPage() {
                       </div>
                       <div className={styles.newOrderCopyForm}>
                         <label>표시 시간(초)<input type="number" min="1" max="20" value={selectedNewOrderSettings.durationSeconds} onChange={(event) => updateNewOrderEffect("durationSeconds", Number(event.target.value))} /></label>
+                        <label>모션 속도(초)<input type="number" min="0.2" max="3" step="0.1" value={selectedShortsZoneSettings.motionDurationSeconds} onChange={(event) => updateShortsZone(selectedShortsZoneId, "motionDurationSeconds", Number(event.target.value))} /><small>작을수록 빠르게 나타납니다.</small></label>
                       </div>
-                      <p className={styles.templateHint}>N 표시, 닉네임, 주문상품과 건수가 하단 중앙 토스트로 표시됩니다. 크기는 한 번 조절하면 첫주문·신규 주문·VIP 주문에 모두 적용되고, 색상·모션은 각각 설정할 수 있습니다.</p>
+                      <p className={styles.templateHint}>N 표시, 닉네임, 주문상품과 건수가 하단 중앙 토스트로 표시됩니다. 크기는 한 번 조절하면 첫주문·신규 주문·VIP 주문에 모두 적용되고, 색상·모션 속도는 각각 설정할 수 있습니다.</p>
                     </div>
                   )}
                   <div className={styles.zoneFormGrid}>
@@ -1149,7 +1150,7 @@ export default function AdminPage() {
                     {selectedShortsZoneId === "current" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>제목 색상은 진행현황·오픈·대기·건수에 함께 적용됩니다. 닉네임과 상품명은 각각 공통 색상으로 설정합니다.</p>}
                     {selectedShortsZoneId === "ranking" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>순위, 유튜브 닉네임, 총 주문 건수가 자동으로 표시됩니다.</p>}
                     {selectedShortsZoneId === "announcement" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>첫주문, 신규 주문, VIP 주문의 노출 시간·위치·크기·색상·모션을 각각 설정할 수 있습니다.</p>}
-                    {selectedShortsZoneId === "ranking" && <label className={styles.wideFormField}>흐름 속도(초)<input type="number" min="5" max="60" value={selectedShortsZoneSettings.tickerDurationSeconds} onChange={(event) => updateShortsZone(selectedShortsZoneId, "tickerDurationSeconds", Number(event.target.value))} /><small>작을수록 빠르게 흐릅니다.</small></label>}
+                    {(selectedShortsZoneId === "ranking" || selectedShortsZoneId === "hit") && <label className={styles.wideFormField}>{selectedShortsZoneId === "hit" ? "HIT 흐름 속도(초)" : "VIP 흐름 속도(초)"}<input type="number" min="5" max="60" value={selectedShortsZoneSettings.tickerDurationSeconds} onChange={(event) => updateShortsZone(selectedShortsZoneId, "tickerDurationSeconds", Number(event.target.value))} /><small>작을수록 빠르게 흐릅니다.</small></label>}
                     <label className={`${styles.opacityControl} ${styles.wideFormField}`}>{overlayPreviewMode === "animation" ? "토스트 배경 불투명도" : "카드 배경 불투명도"}
                       <span><input type="range" min="0" max="100" value={selectedShortsZoneSettings.backgroundOpacity} onChange={(event) => updateShortsZone(selectedShortsZoneId, "backgroundOpacity", Number(event.target.value))} /><output>{selectedShortsZoneSettings.backgroundOpacity}%</output></span>
                     </label>

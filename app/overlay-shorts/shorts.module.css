@@ -66,11 +66,12 @@
 .zoneAnnouncement { align-content: center; text-align: center; }
 .zoneAnnouncement p { font-size: clamp(9px, 9cqw, 17px); }
 .hitRows { display: grid; gap: clamp(4px, 1cqw, 8px); }
-.hitRowsViewport { height: 100%; overflow: hidden; }
+.hitRowsViewport { position: relative; height: 100%; overflow: hidden; }
 .hitRows p { display: block; min-width: 0; padding: clamp(4px, 1.1cqw, 9px); border: 1px solid color-mix(in srgb, var(--zone-border-color, #ff9214) 78%, transparent); border-radius: 0; background: rgba(0,0,0,.22); }
 .hitRows span { display: block; min-width: 0; overflow: visible; white-space: nowrap; color: var(--zone-text-color, #fff); font-size: clamp(11px, calc(3.8cqw * var(--text-fit, 1)), 28px); line-height: 1.25; font-weight: 900; }
-.hitRowsScrolling { animation: hitRowsDown .36s ease-out both; }
-@keyframes hitRowsDown { from { opacity: .55; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
+.hitRowsScrolling { position: relative; display: block; height: 100%; }
+.hitRowsScrolling p { position: absolute; right: 0; left: 0; margin: 0; animation: hitRowsDown var(--hit-ticker-duration, 20s) linear infinite; animation-delay: var(--hit-delay, 0s); }
+@keyframes hitRowsDown { from { top: -24%; opacity: 0; } 7% { opacity: 1; } 93% { opacity: 1; } to { top: 100%; opacity: 0; } }
 .currentOrderColumns { display: grid; gap: clamp(6px, 1.6cqw, 12px); }
 .zoneCurrent .zoneBody { margin-top: clamp(3px, .7cqw, 6px); padding-top: clamp(3px, .7cqw, 6px); }
 .currentOrderColumn { display: grid; gap: clamp(4px, 1cqw, 8px); min-width: 0; }
@@ -113,7 +114,7 @@
 .newOrderNickname, .newOrderProduct { min-width: 0; overflow: visible; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
 .newOrderNickname { color: var(--zone-nickname-color, #fff); font-size: clamp(14px, 3.5cqw, 27px); font-weight: 950; }
 .newOrderProduct { color: var(--zone-text-color, #fff); font-size: clamp(13px, 3.2cqw, 25px); font-weight: 850; }
-.rankOneEffect { animation: rankOneBurst .82s cubic-bezier(.2,.9,.2,1) both; }
+.rankOneEffect { animation: rankOneBurst calc(var(--motion-duration, .7s) * 1.17) cubic-bezier(.2,.9,.2,1) both; }
 @keyframes rankOneBurst { 0% { opacity: 0; transform: scale(.68) rotate(-8deg); } 65% { opacity: 1; transform: scale(1.06) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
 .zoneRanking { display: grid; grid-template-columns: max-content minmax(0, 1fr); grid-template-rows: 1fr; align-items: center; align-content: center; gap: clamp(8px, 1.6cqw, 14px); padding: 0 clamp(8px, 1.8cqw, 16px); border-radius: 0; }
 .zoneRanking > strong { position: static; z-index: auto; justify-self: start; align-self: center; padding: 0; border-bottom: 0; transform: none; color: var(--zone-title-color, var(--zone-accent)); background: transparent; white-space: nowrap; }
@@ -130,10 +131,10 @@
 .resizeHandle { position: absolute; z-index: 20; width: 10px; height: 10px; border: 1px solid #fff; border-radius: 50%; background: var(--zone-accent); box-shadow: 0 1px 4px rgba(0,0,0,.7); touch-action: none; }
 .handleN { top: -6px; left: 50%; cursor: ns-resize; transform: translateX(-50%); }.handleE { top: 50%; right: -6px; cursor: ew-resize; transform: translateY(-50%); }.handleS { bottom: -6px; left: 50%; cursor: ns-resize; transform: translateX(-50%); }.handleW { top: 50%; left: -6px; cursor: ew-resize; transform: translateY(-50%); }
 .handleNe { top: -6px; right: -6px; cursor: nesw-resize; }.handleNw { top: -6px; left: -6px; cursor: nwse-resize; }.handleSe { right: -6px; bottom: -6px; cursor: nwse-resize; }.handleSw { bottom: -6px; left: -6px; cursor: nesw-resize; }
-.motionFade { animation: fade .9s ease-out both; }
-.motionSlideUp { animation: slideUp .7s cubic-bezier(.2,.8,.2,1) both; }
-.motionLeftToRight { animation: leftToRight .7s cubic-bezier(.2,.8,.2,1) both; }
-.motionCardTurn { animation: cardTurn 1s ease-out both; }
+.motionFade { animation: fade var(--motion-duration, .7s) ease-out both; }
+.motionSlideUp { animation: slideUp var(--motion-duration, .7s) cubic-bezier(.2,.8,.2,1) both; }
+.motionLeftToRight { animation: leftToRight var(--motion-duration, .7s) cubic-bezier(.2,.8,.2,1) both; }
+.motionCardTurn { animation: cardTurn calc(var(--motion-duration, .7s) * 1.43) ease-out both; }
 @keyframes fade { from { opacity: .1; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: .1; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes leftToRight { from { opacity: .1; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
