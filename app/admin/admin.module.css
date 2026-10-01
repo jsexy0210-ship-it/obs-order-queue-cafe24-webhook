@@ -361,7 +361,9 @@
 
 .dashboardCard {
   min-width: 0;
+  height: 220px;
   padding: 7px 19px;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
@@ -521,7 +523,9 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
+  max-height: 116px;
   margin-top: 7px;
+  overflow-y: auto;
 }
 
 .rewardGradeTotal {
@@ -870,7 +874,7 @@
 
 .row .danger {
   margin-left: 6px;
-  background: #d94359;
+  background: var(--delete-button-color);
   color: #fff;
 }
 
@@ -1012,7 +1016,7 @@
   padding: 3px 8px;
   border: none;
   border-radius: 6px;
-  background: #d94359;
+  background: var(--delete-button-color);
   color: #fff;
   font-size: 11px;
   cursor: pointer;
@@ -2501,7 +2505,9 @@
 
 .statusCard {
   min-width: 0;
+  height: 112px;
   padding: 18px 20px;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 15px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025));
@@ -2560,27 +2566,36 @@
 
 .operationsGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-areas: "opening waiting pending" ". . tools";
+  grid-template-areas: "opening waiting pending" "tools tools tools";
 }
 .operationsGrid > .primaryBlock { grid-area: opening; min-width: 0; }
 .operationsGrid > .waitingOrdersBlock { grid-area: waiting; min-width: 0; }
 .operationsGrid > .pendingPaymentsBlock { grid-area: pending; min-width: 0; }
 
-.dashboardThirdColumn {
+.operationsSecondaryRow {
   grid-area: tools;
   min-width: 0;
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
   align-content: start;
 }
 
-.dashboardThirdColumn > .block { min-width: 0; min-height: 0; padding: 12px; }
-.dashboardThirdColumn > .block h2 { margin-bottom: 8px; }
-.dashboardThirdColumn .form { gap: 8px; }
-.dashboardThirdColumn .form input { min-height: 38px; }
-.dashboardThirdColumn .form > button { min-height: 38px; margin-top: 0; }
-.dashboardThirdColumn .hitList { min-height: 0; max-height: 112px; overflow-y: auto; }
-.dashboardThirdColumn .hitItem { min-height: 30px; padding-block: 4px; }
+.operationsSecondaryRow > .block { min-width: 0; min-height: 0; padding: 12px; }
+.operationsSecondaryRow > .block h2 { margin-bottom: 8px; }
+.operationsGrid > .block,
+.operationsSecondaryRow > .block {
+  height: 460px;
+  min-height: 460px;
+  overflow: hidden;
+}
+.operationsSecondaryRow > .block { display: flex; flex-direction: column; }
+.operationsSecondaryRow .form { gap: 8px; }
+.operationsSecondaryRow .form input { min-height: 38px; }
+.operationsSecondaryRow .form > button { min-height: 38px; margin-top: 0; }
+.operationsSecondaryRow .hitList { min-height: 0; max-height: none; flex: 1 1 auto; overflow-y: auto; }
+.operationsSecondaryRow .hitItem { min-height: 30px; padding-block: 4px; }
+.operationsSecondaryRow .pagination { margin-top: auto; }
 
 .toolsGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2611,16 +2626,17 @@
 }
 
 .sectionCount { margin-left: 6px; padding: 3px 8px; border: 1px solid rgba(196,181,253,.3); border-radius: 999px; background: rgba(124,92,255,.16); color: #d9ccff; font-size: 11px; font-weight: 850; vertical-align: middle; }
-.openingHero { display: grid; grid-template-columns: minmax(170px, .9fr) minmax(0, 2fr) auto; align-items: center; gap: 18px; min-height: 96px; padding: 16px 18px; border: 1px solid rgba(167,139,250,.25); border-radius: 14px; background: rgba(8,12,21,.52); }
+.openingHero { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 12px; min-height: 96px; padding: 16px 18px; border: 1px solid rgba(167,139,250,.25); border-radius: 14px; background: rgba(8,12,21,.52); }
 .openingIdentity { display: grid; gap: 8px; min-width: 0; }
 .openingBuyerLine,.orderIdentityMain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
 .openingBuyerLine strong,.orderIdentityMain strong { min-width: 0; overflow: hidden; color: #fff; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 .memberGradeBadge { display: inline-flex; align-items: center; max-width: 100%; padding: 3px 8px; border: 1px solid rgba(167,139,250,.34); border-radius: 999px; background: rgba(124,92,255,.16); color: #ded3ff; font-size: 10px; font-weight: 850; line-height: 1.25; white-space: nowrap; }
-.openingProduct { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; color: #fff; font-size: 18px; font-weight: 900; }
-.openingProduct span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.openingProduct { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; min-width: 0; color: #fff; font-size: 16px; font-weight: 900; }
+.openingProductName { min-width: 0; color: #fff; line-height: 1.45; overflow-wrap: anywhere; }
+.openingProductName strong { white-space: nowrap; }
 .openingProduct b { flex: 0 0 auto; color: #e8ff42; font-size: 13px; }
 .openingProduct .orderAmount { color: #8cf0b1; font-size: 12px; }
-.openingActions { display: flex; align-items: center; gap: 10px; }
+.openingActions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; min-width: 0; }
 .openingEmpty { display: grid; min-height: 74px; place-items: center; border: 1px dashed rgba(167,139,250,.25); border-radius: 12px; background: rgba(8,12,21,.3); color: #aab4c4; font-size: 13px; font-weight: 700; }
 
 .pendingPaymentsBlock { border-color: rgba(245, 158, 11, .36); background: linear-gradient(145deg, rgba(245, 158, 11, .1), rgba(18, 22, 30, .92)); }
@@ -2653,7 +2669,7 @@
 .waitingOrdersBlock .orderRowFooter .rowActions button { width: auto; min-width: 62px; }
 .orderRowFooter .cancelledOrderId { flex: 1 1 auto !important; }
 .queueBlock { display: flex; flex-direction: column; }
-.queueBlock .pagedList { flex: 1 1 auto; min-height: 0; }
+.queueBlock .pagedList { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .queueBlock .pagination { flex: 0 0 32px; margin-top: auto; }
 .toolsGrid > .block { display: flex; flex-direction: column; }
 .toolsGrid .hitList,
@@ -2670,7 +2686,7 @@
 }
 
 .operationsGrid > .block:not(.primaryBlock),
-.dashboardThirdColumn > .block,
+.operationsSecondaryRow > .block,
 .toolsGrid > .block:not(:first-child) {
   background: rgba(18, 22, 30, 0.9);
 }
@@ -2678,14 +2694,14 @@
 
 .orderDashboard .dashboardCard,
 .operationsGrid > .block,
-.dashboardThirdColumn > .block,
+.operationsSecondaryRow > .block,
 .toolsGrid > .block {
   border-color: rgba(255, 255, 255, 0.09);
 }
 
 .page[data-theme="light"] .orderDashboard .dashboardCard,
 .page[data-theme="light"] .operationsGrid > .block:not(.primaryBlock),
-.page[data-theme="light"] .dashboardThirdColumn > .block,
+.page[data-theme="light"] .operationsSecondaryRow > .block,
 .page[data-theme="light"] .toolsGrid > .block:not(:first-child) {
   background: #fff;
 }
@@ -2695,11 +2711,11 @@
   background: linear-gradient(135deg, #f3efff, #fff 68%);
 }
 .page[data-theme="light"] .operationsGrid > .block.cancelledOrdersBlock,
-.page[data-theme="light"] .dashboardThirdColumn > .cancelledOrdersBlock { background: linear-gradient(135deg, #fff0f0, #fff 68%); }
+.page[data-theme="light"] .operationsSecondaryRow > .cancelledOrdersBlock { background: linear-gradient(135deg, #fff0f0, #fff 68%); }
 
 .page[data-theme="light"] .orderDashboard .dashboardCard,
 .page[data-theme="light"] .operationsGrid > .block,
-.page[data-theme="light"] .dashboardThirdColumn > .block,
+.page[data-theme="light"] .operationsSecondaryRow > .block,
 .page[data-theme="light"] .toolsGrid > .block {
   border-color: rgba(30, 45, 70, 0.15);
 }
@@ -2949,14 +2965,11 @@
     overflow: visible;
   }
 
-  .operationsGrid .block,
   .toolsGrid .block {
     min-height: 300px;
     height: auto;
     overflow: visible;
   }
-
-  .operationsGrid .dashboardThirdColumn > .block { min-height: 0; }
 
   .hitList {
     min-height: 48px;
@@ -3156,8 +3169,11 @@
 
   .rewardBreakdown {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 220px;
     gap: 6px;
   }
+
+  .rewardDashboardCard { height: 340px; }
 
   .rewardGradeTotal {
     min-height: 48px;
@@ -3195,7 +3211,7 @@
 @media (min-width: 561px) and (max-width: 900px) {
   .operationsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "opening waiting" "pending tools";
+    grid-template-areas: "opening waiting" "pending pending" "tools tools";
     gap: 12px;
   }
 
@@ -3203,7 +3219,7 @@
   .operationsGrid > .primaryBlock { grid-area: opening; }
   .operationsGrid > .waitingOrdersBlock { grid-area: waiting; }
   .operationsGrid > .pendingPaymentsBlock { grid-area: pending; }
-  .dashboardThirdColumn { grid-area: tools; }
+  .operationsSecondaryRow { grid-area: tools; }
 
   .operationsGrid > .block {
     min-width: 0;
@@ -3211,12 +3227,11 @@
   }
 
   .openingHero {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
 
   .openingActions {
-    grid-column: 1 / -1;
     justify-content: flex-end;
   }
 }
@@ -3243,9 +3258,10 @@
     margin-bottom: 16px;
   }
 
-  .dashboardThirdColumn {
+  .operationsSecondaryRow {
     grid-column: 1;
     grid-row: auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .operationsGrid > .block {
@@ -3261,10 +3277,6 @@
   .openingHero {
     gap: 10px;
     padding: 13px;
-  }
-
-  .openingProduct {
-    font-size: 16px;
   }
 
   .orderProductLine {

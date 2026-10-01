@@ -945,7 +945,9 @@ export default function AdminPage() {
               {opening.youtube_nickname && <span className={styles.ytBadge}>YT: {opening.youtube_nickname}</span>}
             </div>
             <div className={styles.openingProduct}>
-              <span>{opening.product} × {opening.quantity}</span>
+              <span className={styles.openingProductName}>
+                {opening.product} <strong>× {opening.quantity}</strong>
+              </span>
               <b className={styles.orderAmount}>{formatOrderAmount(opening)}</b>
             </div>
             <div className={styles.openingActions}>
@@ -986,7 +988,7 @@ export default function AdminPage() {
           <button disabled={pendingPaymentPage === pendingPaymentPageCount} onClick={() => setPendingPaymentPage((page) => page + 1)}>다음</button>
         </div>
       </section>
-      <div className={styles.dashboardThirdColumn}>
+      <div className={styles.operationsSecondaryRow}>
       <section className={`${styles.block} ${styles.cancelledOrdersBlock} ${styles.queueBlock}`}>
         <h2>취소 · 환불 ({cancelledOrders.length})</h2>
         {cancelledOrders.length === 0 && <p className={styles.empty}>취소 · 환불 주문 없음</p>}
