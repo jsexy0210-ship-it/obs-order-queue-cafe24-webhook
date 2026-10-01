@@ -39,6 +39,8 @@ const zoneLabels: Record<ShortsZoneId, string> = {
   announcement: "신규 주문 연출",
 };
 
+const INITIAL_NEW_ORDER_CATCHUP_MS = 10_000;
+
 function nickname(value: string | null | undefined) {
   return (value ?? "-").replace(/\([^)]*\)/g, "").trim() || "-";
 }
@@ -177,6 +179,16 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
     const known = seenOrderIds.current;
     if (!known) {
       seenOrderIds.current = new Set(visibleOrders.map((order) => order.id));
+      // OBS가 새로고침되거나 SSE가 재연결된 직후에도, 방금 들어온 주문은 한 번 알립니다.
+      // 오래된 대기 주문은 기존처럼 다시 재생하지 않습니다.
+      const newestOrder = visibleOrders.reduce<LiveOrder | null>(
+        (latest, order) => !latest || order.id > latest.id ? order : latest,
+        null,
+      );
+      const createdAt = newestOrder ? Date.parse(`${newestOrder.created_at.replace(" ", "T")}Z`) : NaN;
+      if (newestOrder && Number.isFinite(createdAt) && Date.now() - createdAt >= 0 && Date.now() - createdAt <= INITIAL_NEW_ORDER_CATCHUP_MS) {
+        setNewOrderEffect({ order: newestOrder, kind: orderEffectKind(newestOrder) });
+      }
       return;
     }
     const incoming = visibleOrders

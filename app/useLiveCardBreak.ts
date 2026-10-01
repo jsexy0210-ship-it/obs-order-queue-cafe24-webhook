@@ -68,7 +68,9 @@ const EMPTY_STATE: LiveState = {
  */
 // SSE 연결이 (드물게) 끊긴 채로 재연결이 안 되는 경우를 대비한 안전장치.
 // OBS 브라우저 소스는 몇 시간~며칠씩 켜져 있으므로, 이 주기로 강제 새로고침합니다.
-const FALLBACK_POLL_MS = 30000;
+// 운영 인스턴스가 분리돼 SSE 이벤트가 즉시 전달되지 않는 경우에도 신규 주문 토스트가
+// 늦지 않게 나오도록 짧은 주기로 최신 상태를 대조합니다.
+const FALLBACK_POLL_MS = 3000;
 
 export function useLiveCardBreak(): LiveState {
   const [state, setState] = useState<LiveState>(EMPTY_STATE);
