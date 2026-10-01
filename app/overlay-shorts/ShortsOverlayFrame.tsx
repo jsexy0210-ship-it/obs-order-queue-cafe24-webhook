@@ -303,10 +303,10 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   }
 
   return (
-    <div className={styles.shortsShell} aria-label="YouTube Shorts 실제 비율 미리보기">
-      <div className={styles.youtubeTop} aria-label="YouTube 상단 앱 UI 잠금 영역">
+    <div className={`${styles.shortsShell} ${editing ? styles.editorShell : styles.liveShell}`} aria-label={editing ? "YouTube Shorts 실제 비율 미리보기" : "망고TCG 라이브 오버레이"}>
+      {editing && <div className={styles.youtubeTop} aria-label="YouTube 상단 앱 UI 잠금 영역">
         <span>←</span><b>@MangoTCG</b><span className={styles.subscribe}>구독</span><span>•••</span>
-      </div>
+      </div>}
       <div className={styles.videoStage} ref={stageRef}>
         {zoneIds.map((id) => {
           const orderEffectSettings = displayedOrderEffect
@@ -394,7 +394,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                         <b className={styles.currentOrderHeading}>오픈</b>
                         {openingOrder ? (
                           <p className={`${styles.completedOrderRow} ${nickname(openingOrder.youtube_nickname) === "-" ? styles.orderWithoutNickname : ""}`}>{nickname(openingOrder.youtube_nickname) !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(openingOrder)}<i style={textFit(nickname(openingOrder.youtube_nickname), 14)}>{nickname(openingOrder.youtube_nickname)}</i></span>}<CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} /></p>
-                        ) : <p className={styles.emptyState}>오픈 주문 없음</p>}
+                        ) : <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>오픈 주문 없음</p>}
                       </section>
                       <section className={styles.currentOrderColumn}>
                         <b className={styles.currentOrderHeading}>대기 <em>{waitingOrders.length}건</em></b>
@@ -403,7 +403,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                             const orderNickname = nickname(order.youtube_nickname);
                             return <p key={order.id} className={orderNickname === "-" ? styles.orderWithoutNickname : ""}>{orderNickname !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(order)}<i style={textFit(orderNickname, 13)}>{orderNickname}</i></span>}<CurrentOrderProduct product={order.product} quantity={order.quantity} /></p>;
                           })}
-                          {waitingOrders.length === 0 && <p className={styles.emptyState}>대기 중인 주문 없음</p>}
+                          {waitingOrders.length === 0 && <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>대기 중인 주문 없음</p>}
                         </div>
                       </section>
                     </div>
@@ -433,18 +433,18 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
         })}
         {editing && alignmentGuides.vertical != null && <span aria-hidden className={`${styles.alignmentGuide} ${styles.alignmentGuideVertical}`} style={{ left: `${alignmentGuides.vertical}%` }} />}
         {editing && alignmentGuides.horizontal != null && <span aria-hidden className={`${styles.alignmentGuide} ${styles.alignmentGuideHorizontal}`} style={{ top: `${alignmentGuides.horizontal}%` }} />}
-        <section className={styles.commentsZone} aria-label="YouTube 댓글 영역 잠금">
+        {editing && <section className={styles.commentsZone} aria-label="YouTube 댓글 영역 잠금">
           <b>🔒 YouTube 댓글 영역</b>
           <span>방귀쟁이-nu9e · 안견치는 뮤 가보자</span>
           <span>꾸르밤티 · 와우 보고싶다</span>
           <span>방귀쟁이-nu9e · 네</span>
-        </section>
-        <div className={styles.bottomSafeZone}>🔒 영상 하단 안내 영역 · 잠금</div>
+        </section>}
+        {editing && <div className={styles.bottomSafeZone}>🔒 영상 하단 안내 영역 · 잠금</div>}
       </div>
-      <div className={styles.youtubeFixed} aria-label="YouTube 고정 UI 잠금 영역">
+      {editing && <div className={styles.youtubeFixed} aria-label="YouTube 고정 UI 잠금 영역">
         <div>채팅… <span>☺</span></div>
         <nav><b>⌂<small>홈</small></b><b>◁<small>Shorts</small></b><b>＋</b><b>▣<small>구독</small></b><b>◉<small>내 페이지</small></b></nav>
-      </div>
+      </div>}
     </div>
   );
 }

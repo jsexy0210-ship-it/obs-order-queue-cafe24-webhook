@@ -11,6 +11,27 @@
   box-shadow: 0 20px 48px rgba(0, 0, 0, .32);
 }
 
+/* 실제 OBS 소스는 유튜브 앱 모형 없이 카드덱과 토스트만 투명하게 출력합니다. */
+.liveShell {
+  --phone-width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.liveShell .videoStage {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  background: transparent;
+  background-image: none;
+}
+
 .youtubeTop {
   height: calc(var(--phone-width) * .243);
   min-height: 58px;
@@ -82,6 +103,7 @@
 .waitingOrderRows em.currentOrderProduct { display: block; min-width: 0; overflow: hidden; font-size: clamp(2px, calc(7cqw * var(--text-fit, 1)), 13px); }
 .currentOrderProduct > span { display: inline-block; white-space: nowrap; }
 .emptyState { display: block !important; padding: clamp(5px, 5cqw, 10px); color: var(--zone-text-color, rgba(255,255,255,.78)) !important; text-align: center; }
+.emptyOrderState { border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 72%, transparent); }
 .zoneToast { display: block; align-content: unset; text-align: left; border: 0; border-radius: 999px; background: transparent; box-shadow: none; }
 .zoneToast .zoneBody { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; margin: 0; padding: clamp(3px, 3cqw, 7px); box-sizing: border-box; border-radius: 999px; background: color-mix(in srgb, var(--zone-text-background-color, #04080e) calc(var(--zone-background-opacity, .9) * 100%), transparent); }
 .orderEffectBody { display: grid; grid-template-columns: auto minmax(0, .72fr) minmax(0, 1.8fr); align-items: center; justify-content: start; justify-items: start; gap: clamp(3px, 3cqw, 7px); width: 100%; height: 100%; min-width: 0; text-align: left; }
