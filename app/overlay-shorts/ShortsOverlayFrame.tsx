@@ -108,7 +108,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const openingOrder = live.opening;
   const waitingOrders = live.waiting;
   const displayedHitCards = live.hitCards;
-  const visibleHitCards = displayedHitCards.slice(0, 5);
+  const visibleHitCards = displayedHitCards;
   const shouldScrollHitCards = visibleHitCards.length >= 4;
   const renderedHitCards = visibleHitCards;
   const latestHit = displayedHitCards[0] ?? null;
