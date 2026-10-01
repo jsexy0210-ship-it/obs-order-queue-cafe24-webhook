@@ -2589,6 +2589,11 @@
   min-height: 460px;
   overflow: hidden;
 }
+.operationsGrid > .waitingOrdersBlock,
+.operationsGrid > .pendingPaymentsBlock {
+  height: 276px;
+  min-height: 276px;
+}
 .operationsSecondaryRow > .block { display: flex; flex-direction: column; }
 .operationsSecondaryRow .form { gap: 8px; }
 .operationsSecondaryRow .form input { min-height: 38px; }
@@ -2659,6 +2664,7 @@
 .cancelStatusBadge[data-refunded="true"] { border-color: rgba(196, 181, 253, .42); background: rgba(124, 92, 255, .18); color: #ded3ff; }
 .cancelledOrderId { flex: 0 1 126px !important; overflow: hidden; color: #8f9aaa; font-size: 10px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .row.queueOrderRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-height: 0; padding: 12px 4px; overflow: visible; border-bottom-color: rgba(255,255,255,.09); }
+.openingOrderRow { padding: 16px 4px !important; }
 .orderIdentity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; min-width: 0; }
 .orderIdentityMain { flex: 1 1 auto; }
 .orderProductLine { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }

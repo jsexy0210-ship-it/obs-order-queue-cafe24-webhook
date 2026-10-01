@@ -936,23 +936,23 @@ export default function AdminPage() {
       <section className={`${styles.block} ${styles.primaryBlock}`}>
         <h2>지금 오픈 중 <span className={styles.sectionCount}>{opening ? "1건" : "0건"}</span></h2>
         {opening ? (
-          <div className={styles.openingHero}>
-            <div className={styles.openingIdentity}>
-              <div className={styles.openingBuyerLine}>
+          <div className={`${styles.row} ${styles.queueOrderRow} ${styles.openingOrderRow}`}>
+            <div className={styles.orderIdentity}>
+              <div className={styles.orderIdentityMain}>
                 <strong>{opening.user_id || "구매자 미확인"}</strong>
                 <span className={styles.memberGradeBadge}>{opening.tier || "등급 미확인"}</span>
               </div>
               {opening.youtube_nickname && <span className={styles.ytBadge}>YT: {opening.youtube_nickname}</span>}
             </div>
-            <div className={styles.openingProduct}>
-              <span className={styles.openingProductName}>
-                {opening.product} <strong>× {opening.quantity}</strong>
-              </span>
-              <b className={styles.orderAmount}>{formatOrderAmount(opening)}</b>
+            <div className={styles.orderProductLine}>
+              <span className={styles.orderDescription}>{opening.product} × {opening.quantity}</span>
+              <span className={styles.orderAmount}>{formatOrderAmount(opening)}</span>
             </div>
-            <div className={styles.openingActions}>
+            <div className={styles.orderRowFooter}>
               {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
-              <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료</button>
+              <div className={styles.rowActions}>
+                <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료</button>
+              </div>
             </div>
           </div>
         ) : (
