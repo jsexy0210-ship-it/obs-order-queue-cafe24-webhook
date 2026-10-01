@@ -602,7 +602,6 @@ export default function AdminPage() {
         </span>
         <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
         {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
-        <span className={styles.badge}>{order.source === "cafe24" ? "사이트" : "수동"}</span>
         <div className={styles.rowActions}>
           <button onClick={() => startOpening(order.id)}>오픈시작</button>
           <button className={styles.danger} onClick={() => removeOrder(order.id)}>
