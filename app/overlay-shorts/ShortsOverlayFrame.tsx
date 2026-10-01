@@ -97,6 +97,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const [newOrderEffect, setNewOrderEffect] = useState<NewOrderEffect | null>(null);
   const [previewOrder, setPreviewOrder] = useState<EffectOrder | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuides>({});
+  const [hitScrollOffset, setHitScrollOffset] = useState(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<Interaction | null>(null);
   const seenOrderIds = useRef<Set<number> | null>(null);
@@ -108,7 +109,10 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const displayedHitCards = live.hitCards;
   const visibleHitCards = displayedHitCards.slice(0, 5);
   const shouldScrollHitCards = visibleHitCards.length >= 4;
-  const renderedHitCards = shouldScrollHitCards ? [...visibleHitCards, ...visibleHitCards] : visibleHitCards;
+  const normalizedHitScrollOffset = visibleHitCards.length ? hitScrollOffset % visibleHitCards.length : 0;
+  const renderedHitCards = shouldScrollHitCards
+    ? [...visibleHitCards.slice(normalizedHitScrollOffset), ...visibleHitCards.slice(0, normalizedHitScrollOffset)]
+    : visibleHitCards;
   const latestHit = displayedHitCards[0] ?? null;
   const displayedRanking = ranking;
   const commonValues = {
@@ -118,6 +122,14 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
     card: latestHit?.card ?? "등록된 히트카드 없음",
     count: actualActiveOrder?.id ?? 1,
   };
+
+  useEffect(() => {
+    if (!shouldScrollHitCards) return;
+    const timer = window.setInterval(() => {
+      setHitScrollOffset((current) => (current + visibleHitCards.length - 1) % visibleHitCards.length);
+    }, 2800);
+    return () => window.clearInterval(timer);
+  }, [shouldScrollHitCards, visibleHitCards.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -387,11 +399,11 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                 <div className={styles.zoneBody}>
                   {id === "hit" ? (
                     <div className={shouldScrollHitCards ? styles.hitRowsViewport : undefined}>
-                      <div className={`${styles.hitRows} ${shouldScrollHitCards ? styles.hitRowsScrolling : ""}`}>
-                        {renderedHitCards.map((hit, index) => {
+                      <div key={shouldScrollHitCards ? normalizedHitScrollOffset : "static"} className={`${styles.hitRows} ${shouldScrollHitCards ? styles.hitRowsScrolling : ""}`}>
+                        {renderedHitCards.map((hit) => {
                           const hitNickname = nickname(hit.youtube_nickname);
                           const label = `◆ ${hitNickname} · ${hit.card}`;
-                          return <p key={`${hit.id}-${index}`} aria-hidden={shouldScrollHitCards && index >= visibleHitCards.length || undefined}><span style={textFit(label, 24)}>{label}</span></p>;
+                          return <p key={hit.id}><span style={textFit(label, 24)}>{label}</span></p>;
                         })}
                         {displayedHitCards.length === 0 && <p className={styles.emptyState}>등록된 히트카드 없음</p>}
                       </div>
