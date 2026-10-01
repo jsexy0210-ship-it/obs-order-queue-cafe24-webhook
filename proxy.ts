@@ -13,6 +13,7 @@ const PUBLIC_PATHS = new Set([
   "/api/cafe24/oauth/callback",
   "/api/overlay-live",
   "/api/overlay-stream",
+  "/overlay-cardbreak",
 ]);
 
 export async function proxy(req: NextRequest) {

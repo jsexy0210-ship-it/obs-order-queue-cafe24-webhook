@@ -42,7 +42,7 @@ const zoneLabels: Record<ShortsZoneId, string> = {
 const INITIAL_NEW_ORDER_CATCHUP_MS = 10_000;
 
 function nickname(value: string | null | undefined) {
-  return (value ?? "-").replace(/\([^)]*\)/g, "").trim() || "-";
+  return (value ?? "-").replace(/\([^)]*\)/g, "").replaceAll("빙귀쟁이", "방귀쟁이").trim() || "-";
 }
 
 function newOrderBadge(kind: NewOrderEffectKind) {
@@ -66,7 +66,7 @@ function textFit(value: string, targetCharacters: number) {
 }
 
 function rankingIcon(rank: number) {
-  return rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
+  return rank === 1 ? "1" : rank === 2 ? "2" : "3";
 }
 
 function CurrentOrderProduct({ product, quantity }: Pick<LiveOrder, "product" | "quantity">) {
@@ -370,6 +370,8 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
             "--zone-background-color": zone.backgroundColor,
             "--ranking-ticker-duration": `${zone.tickerDurationSeconds}s`,
             "--hit-ticker-duration": `${zone.tickerDurationSeconds}s`,
+            "--hit-item-gap": `${settings.shorts.hitItemGap}px`,
+            "--hit-item-height": settings.shorts.hitItemHeight > 0 ? `${settings.shorts.hitItemHeight}px` : "auto",
             "--motion-duration": `${zone.motionDurationSeconds}s`,
           } as CSSProperties;
           const value = id === "current"
@@ -391,7 +393,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                   <div className={styles.rankingTickerTrack}>
                     {[...displayedRanking, ...displayedRanking].map((row, index) => (
                       <span className={styles.rankingTickerItem} key={`${row.rank}-${index}`}>
-                        <b aria-label={`${row.rank}위`}>{rankingIcon(row.rank)}</b><em>{nickname(row.youtubeNickname)}</em>
+                        <b aria-label={`${row.rank}위`} data-rank={row.rank}>🏆<i>{rankingIcon(row.rank)}</i></b><em>{nickname(row.youtubeNickname)}</em>
                       </span>
                     ))}
                     {displayedRanking.length === 0 && <span className={styles.rankingTickerItem}>주문 랭킹을 불러오는 중입니다</span>}
@@ -429,7 +431,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                             const orderNickname = nickname(order.youtube_nickname);
                             return <p key={order.id} className={orderNickname === "-" ? styles.orderWithoutNickname : ""}>{orderNickname !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(order)}<i style={textFit(orderNickname, 13)}>{orderNickname}</i></span>}<CurrentOrderProduct product={order.product} quantity={order.quantity} /></p>;
                           })}
-                          {waitingOrders.length === 0 && <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>대기 중인 주문 없음</p>}
+                          {waitingOrders.length === 0 && <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>-</p>}
                         </div>
                       </section>
                     </div>
