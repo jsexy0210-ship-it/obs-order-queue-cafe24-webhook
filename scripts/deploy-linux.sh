@@ -24,6 +24,19 @@ current="$(pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, "", 
   echo "Current MangoTCG runtime files are unavailable." >&2
   exit 1
 }
+node_modules_target="$(readlink -f "$current/node_modules")"
+[[ -d "$node_modules_target" ]] || {
+  echo "Current runtime dependencies are unavailable." >&2
+  exit 1
+}
+
+# Failed copies/builds can leave an inactive directory on a full disk. Remove
+# only unbuilt release directories that are neither active nor linked to data.
+for stale in "$app_root"/mangotcg-release-*-live; do
+  [[ -d "$stale" && ! -L "$stale" && "$stale" != "$current" ]] || continue
+  [[ ! -e "$stale/.next/BUILD_ID" && ! -e "$stale/data" ]] || continue
+  rm -rf -- "$stale"
+done
 
 release="$app_root/mangotcg-release-${commit:0:7}-live"
 [[ ! -e "$release" ]] || {
@@ -35,7 +48,7 @@ data_target="$(readlink -f "$current/data")"
 db_before="$(stat -c '%i:%s:%Y' "$data_target/cardbreak.db")"
 mkdir -p "$release"
 unzip -q "$archive" -d "$release"
-cp -a "$current/node_modules" "$release/node_modules"
+ln -s "$node_modules_target" "$release/node_modules"
 cp "$current/.env.local" "$release/.env.local"
 [[ ! -e "$release/data" ]] || {
   echo "Candidate release unexpectedly contains runtime data." >&2
