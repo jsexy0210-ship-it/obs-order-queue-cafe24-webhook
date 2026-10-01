@@ -14,6 +14,8 @@ const PUBLIC_PATHS = new Set([
   "/api/overlay-live",
   "/api/overlay-stream",
   "/overlay-cardbreak",
+  "/overlay-shorts",
+  "/overlay-vertical",
 ]);
 
 export async function proxy(req: NextRequest) {
