@@ -63,9 +63,14 @@ export function getOverlaySettings(): OverlaySettings {
     const saved = JSON.parse(row.value) as Partial<OverlaySettings>;
     // 이전 기본 문구는 새 표기법으로 읽어 화면과 편집값을 함께 맞춥니다.
     const savedRankingZone = saved.shorts?.zones?.ranking;
-    const rankingZone = ["랭킹 TOP5", "Top 5"].includes(savedRankingZone?.title ?? "")
+    const normalizedRankingZone = ["랭킹 TOP5", "Top 5"].includes(savedRankingZone?.title ?? "")
       ? { ...savedRankingZone!, title: "VIP" }
       : savedRankingZone;
+    // 이전 편집기의 최소 높이 6%로 저장된 VIP는 요청한 축소 규격 3.6%로 읽습니다.
+    // 관리 화면에서 다음 저장 시에도 3.6%가 그대로 유지됩니다.
+    const rankingZone = Number(normalizedRankingZone?.height) === 6
+      ? { ...normalizedRankingZone, height: 3.6 }
+      : normalizedRankingZone;
     const savedHitZone = saved.shorts?.zones?.hit;
     const hitZone = savedHitZone?.accent === "#ff9214" && savedHitZone.titleColor === "#ffcf63"
       ? {
@@ -241,22 +246,14 @@ export function getLiveState(): LiveState {
     )
     .all() as OrderRow[];
 
-  // 대시보드에서 '오픈 완료'를 누른 최신 주문을 오버레이에 별도 표시합니다.
-  const completed = db
-    .prepare(
-      `SELECT * FROM orders
-       WHERE status = 'done'
-       ORDER BY completed_at DESC, id DESC LIMIT 1`
-    )
-    .get() as OrderRow | undefined;
-
   const hitCards = db
     .prepare("SELECT * FROM hit_cards ORDER BY id DESC LIMIT 20")
     .all() as HitCardRow[];
 
   return {
     opening: opening ?? null,
-    completed: completed ?? null,
+    // 완료 이력은 오버레이의 현재 주문으로 노출하지 않습니다.
+    completed: null,
     waiting,
     pendingPayments,
     cancelledOrders,

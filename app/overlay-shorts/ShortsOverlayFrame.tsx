@@ -101,7 +101,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const settings = settingsOverride ?? live.overlaySettings;
   const actualActiveOrder = live.opening ?? live.waiting[0] ?? null;
   const activeOrder = actualActiveOrder;
-  const completedOrder = live.completed;
+  const openingOrder = live.opening;
   const waitingOrders = live.waiting;
   const displayedHitCards = live.hitCards;
   const latestHit = displayedHitCards[0] ?? null;
@@ -225,7 +225,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
     if (direction !== "move" && direction.includes("w")) { x += dx; width -= dx; }
     if (direction !== "move" && direction.includes("n")) { y += dy; height -= dy; }
     width = clamp(width, 8, 100);
-    height = clamp(height, 6, 70);
+    height = clamp(height, 3, 70);
     x = clamp(x, 0, 100 - width);
     y = clamp(y, 0, 94 - height);
 
@@ -267,7 +267,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
     const vertical = findSnap(xCandidates, xTargets);
     const horizontal = findSnap(yCandidates, yTargets);
     width = clamp(width, 8, 100);
-    height = clamp(height, 6, 70);
+    height = clamp(height, 3, 70);
     x = clamp(x, 0, 100 - width);
     y = clamp(y, 0, 94 - height);
     setAlignmentGuides({ vertical, horizontal });
@@ -392,8 +392,8 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                     <div className={styles.currentOrderColumns}>
                       <section className={styles.currentOrderColumn}>
                         <b className={styles.currentOrderHeading}>오픈</b>
-                        {completedOrder ? (
-                          <p className={`${styles.completedOrderRow} ${nickname(completedOrder.youtube_nickname) === "-" ? styles.orderWithoutNickname : ""}`}>{nickname(completedOrder.youtube_nickname) !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(completedOrder)}<i style={textFit(nickname(completedOrder.youtube_nickname), 14)}>{nickname(completedOrder.youtube_nickname)}</i></span>}<CurrentOrderProduct product={completedOrder.product} quantity={completedOrder.quantity} /></p>
+                        {openingOrder ? (
+                          <p className={`${styles.completedOrderRow} ${nickname(openingOrder.youtube_nickname) === "-" ? styles.orderWithoutNickname : ""}`}>{nickname(openingOrder.youtube_nickname) !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(openingOrder)}<i style={textFit(nickname(openingOrder.youtube_nickname), 14)}>{nickname(openingOrder.youtube_nickname)}</i></span>}<CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} /></p>
                         ) : <p className={styles.emptyState}>오픈 주문 없음</p>}
                       </section>
                       <section className={styles.currentOrderColumn}>

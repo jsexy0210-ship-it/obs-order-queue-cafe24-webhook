@@ -197,7 +197,7 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
         x: 3,
         y: 21,
         width: 94,
-        height: 4.2,
+        height: 3.6,
         zIndex: 2,
         accent: "#20c878",
         titleColor: "#54f4a0",
