@@ -148,12 +148,41 @@ export async function updateCafe24CustomerGroupAutoUpdateSettings(input: {
 }
 
 export type Cafe24OrderItem = {
+  product_no?: string | number;
   product_name?: string;
   payment_amount?: string | number;
   quantity?: string | number;
   order_status?: string;
   status_code?: string;
 };
+
+const productThumbnailCache = new Map<string, { url: string | null; expiresAt: number }>();
+
+/** 오버레이용 상품 썸네일입니다. Cafe24 상품 읽기 권한으로 list/tiny 이미지를 읽습니다. */
+export async function getCafe24ProductThumbnail(productNo: string | number | null | undefined) {
+  const normalizedProductNo = String(productNo ?? "").trim();
+  if (!/^\d+$/.test(normalizedProductNo)) return null;
+  const cached = productThumbnailCache.get(normalizedProductNo);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+
+  const token = await getValidCafe24AccessToken();
+  const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
+  const response = await request<{ product?: { list_image?: string; tiny_image?: string; small_image?: string; detail_image?: string } }>(
+    `/products/${encodeURIComponent(normalizedProductNo)}?${query}`
+  );
+  const image = response.product?.tiny_image
+    ?? response.product?.list_image
+    ?? response.product?.small_image
+    ?? response.product?.detail_image
+    ?? null;
+  const url = image && /^https?:\/\//i.test(image)
+    ? image
+    : image
+      ? `https://${token.mallId}${image.startsWith("/") ? image : `/${image}`}`
+      : null;
+  productThumbnailCache.set(normalizedProductNo, { url, expiresAt: Date.now() + 10 * 60_000 });
+  return url;
+}
 
 export type Cafe24RewardOrder = {
   order_id?: string;
@@ -169,12 +198,45 @@ export type Cafe24RewardOrder = {
   group_no?: string | number;
   order_date?: string | null;
   payment_date?: string | null;
+  payment_status?: string | null;
   paid?: string | boolean | number;
   payment_confirmation?: string | boolean | number;
   payment_method?: string | string[];
   payment_amount?: string | number;
   items?: Cafe24OrderItem[];
 };
+
+/** 카페24 주문 원본이 실제로 입금확인 상태인지 판별합니다. */
+export function isCafe24OrderPaid(order: Cafe24RewardOrder) {
+  const values = [order.paid, order.payment_confirmation, order.payment_status];
+  return values.some((value) => {
+    if (value === true || value === 1) return true;
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return normalized === "t" || normalized === "true" || normalized === "1" || normalized === "paid";
+  });
+}
+
+/**
+ * 무통장 주문을 카페24에서 수동 입금확인으로 처리합니다.
+ * 로컬 화면은 이 원격 요청과 후속 검증이 모두 성공한 뒤에만 갱신합니다.
+ */
+export async function confirmCafe24ManualPayment(orderId: string) {
+  const normalizedOrderId = orderId.trim();
+  if (!normalizedOrderId) throw new Error("카페24 주문번호가 없습니다.");
+
+  const token = await getValidCafe24AccessToken();
+  const query = new URLSearchParams({ shop_no: token.shopNo || "1" });
+  await request(`/payments?${query}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      requests: [{
+        order_id: normalizedOrderId,
+        status: "paid",
+        auto_paid: "F",
+      }],
+    }),
+  });
+}
 
 export async function listCafe24Orders(startDate: string, endDate: string): Promise<Cafe24RewardOrder[]> {
   const token = await getValidCafe24AccessToken();

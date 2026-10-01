@@ -3,6 +3,7 @@ type Cafe24Normalized = {
   userId: string;
   memberId: string | null;
   product: string;
+  productNo: string | null;
   quantity: number;
   unitPrice: number;
   youtubeNickname: string | null;
@@ -18,7 +19,6 @@ export type Cafe24PaymentInfo = Pick<
   "paymentMethod" | "paymentGatewayName" | "easypayName" | "paid" | "paymentDate"
 >;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function pick(obj: any, keys: string[]): unknown {
   if (!obj) return undefined;
   for (const key of keys) {
@@ -101,7 +101,6 @@ export function extractCafe24YoutubeNickname(raw: unknown): string | null {
  *
  * 이 함수가 null을 반환하면 주문이 큐에 추가되지 않고 콘솔에 경고만 남습니다.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
   const resource = payload?.resource ?? payload?.order ?? payload;
   if (!resource) return null;
@@ -129,6 +128,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
     pick(firstItem ?? {}, ["product_name", "productName", "item_name"]) ??
     pick(resource, ["ordering_product_name", "product_name", "order_name"]) ??
     "미확인 상품";
+  const productNo = pick(firstItem ?? {}, ["product_no", "productNo"]);
 
   const itemQuantity = Array.isArray(items) && items.length > 0
     ? items.reduce((total, item) => {
@@ -163,6 +163,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
     userId: String(buyerName).trim(),
     memberId: memberId ? String(memberId).trim() : null,
     product: String(productName),
+    productNo: productNo ? String(productNo) : null,
     quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
     unitPrice: Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 15000,
     youtubeNickname,
@@ -176,7 +177,6 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
 
 // 주문생성/입금완료 웹훅 모두에서 결제 정보를 동일한 규칙으로 읽습니다.
 // 카드처럼 주문생성 시 이미 paid=T인 결제도 즉시 결제완료로 기록할 수 있습니다.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function extractCafe24PaymentInfo(payload: any): Cafe24PaymentInfo {
   const resource = payload?.resource ?? payload?.order ?? payload ?? {};
   const paymentMethodRaw = pick(resource, ["payment_method", "first_payment_method", "payment_method_name"]);
@@ -198,7 +198,6 @@ export function extractCafe24PaymentInfo(payload: any): Cafe24PaymentInfo {
  * 취소/환불 웹훅은 주문번호만 정확히 매칭되면 되므로, 생성 웹훅보다 훨씬 단순합니다.
  * 콘솔에 찍힌 실제 payload를 보고 필요하면 pick() 목록에 필드명을 추가하세요.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function extractCafe24OrderId(payload: any): string | null {
   const resource = payload?.resource ?? payload?.order ?? payload;
   const orderId = pick(resource, ["order_id", "order_no", "orderId", "orderNo"]);

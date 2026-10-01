@@ -11,6 +11,7 @@ export type OrderRow = {
   user_id: string;
   member_id: string | null;
   product: string;
+  product_image_url: string | null;
   quantity: number;
   unit_price: number;
   actual_amount: number | null;
@@ -29,6 +30,8 @@ export type OrderRow = {
   timer_seconds: number | null;
   created_at: string;
   is_first_order?: boolean;
+  order_count?: number;
+  ranking_rank?: number | null;
 };
 
 export type HitCardRow = {
@@ -41,7 +44,12 @@ export type HitCardRow = {
 
 export type LiveState = {
   opening: OrderRow | null;
+  completed: OrderRow | null;
   waiting: OrderRow[];
+  /** 카페24 무통장 주문 중 아직 입금완료 웹훅을 받지 않은 주문입니다. */
+  pendingPayments: OrderRow[];
+  /** 카페24에서 실제 취소·환불 처리된 주문입니다. 대기열에는 포함하지 않습니다. */
+  cancelledOrders: OrderRow[];
   hitCards: HitCardRow[];
   overlaySettings: OverlaySettings;
 };
@@ -53,6 +61,108 @@ export function getOverlaySettings(): OverlaySettings {
   if (!row) return DEFAULT_OVERLAY_SETTINGS;
   try {
     const saved = JSON.parse(row.value) as Partial<OverlaySettings>;
+    // 이전 기본 문구는 새 표기법으로 읽어 화면과 편집값을 함께 맞춥니다.
+    const savedRankingZone = saved.shorts?.zones?.ranking;
+    const rankingZone = ["랭킹 TOP5", "Top 5"].includes(savedRankingZone?.title ?? "")
+      ? { ...savedRankingZone!, title: "VIP" }
+      : savedRankingZone;
+    const savedHitZone = saved.shorts?.zones?.hit;
+    const hitZone = savedHitZone?.accent === "#ff9214" && savedHitZone.titleColor === "#ffcf63"
+      ? {
+        ...savedHitZone,
+        accent: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.accent,
+        titleColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.titleColor,
+        textColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.textColor,
+        titleBackgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.titleBackgroundColor,
+        textBackgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.textBackgroundColor,
+        borderColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.borderColor,
+        backgroundOpacity: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.backgroundOpacity,
+        backgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.backgroundColor,
+        tickerDurationSeconds: DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit.tickerDurationSeconds,
+        template: savedHitZone.template === "·" ? "" : savedHitZone.template,
+      }
+      : savedHitZone?.template === "·"
+        ? { ...savedHitZone, template: "" }
+        : savedHitZone;
+    const savedCurrentZone = saved.shorts?.zones?.current;
+    const currentZone = savedCurrentZone?.accent === "#ed8e07" && savedCurrentZone.titleColor === "#ffca72"
+      ? {
+        ...savedCurrentZone,
+        accent: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.accent,
+        titleColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.titleColor,
+        textColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.textColor,
+        titleBackgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.titleBackgroundColor,
+        textBackgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.textBackgroundColor,
+        borderColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.borderColor,
+        backgroundOpacity: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.backgroundOpacity,
+        backgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.backgroundColor,
+        tickerDurationSeconds: DEFAULT_OVERLAY_SETTINGS.shorts.zones.current.tickerDurationSeconds,
+        zIndex: savedCurrentZone.zIndex === 4 ? 3 : savedCurrentZone.zIndex,
+      }
+      : savedCurrentZone?.zIndex === 4
+        ? { ...savedCurrentZone, zIndex: 3 }
+        : savedCurrentZone;
+    const savedAnnouncementZone = saved.shorts?.zones?.announcement;
+    const announcementZone = savedAnnouncementZone?.accent === "#a855f7" && savedAnnouncementZone.titleColor === "#e5beff"
+      ? {
+        ...savedAnnouncementZone,
+        accent: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.accent,
+        titleColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.titleColor,
+        textColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.textColor,
+        titleBackgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.titleBackgroundColor,
+        textBackgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.textBackgroundColor,
+        borderColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.borderColor,
+        backgroundOpacity: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.backgroundOpacity,
+        backgroundColor: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.backgroundColor,
+        tickerDurationSeconds: DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement.tickerDurationSeconds,
+      }
+      : savedAnnouncementZone;
+    // 이전 카드형 신규 주문 설정은 하단 토스트 규격으로 읽어 전환합니다.
+    const savedNewOrder = saved.shorts?.newOrder as Partial<OverlaySettings["shorts"]["newOrder"]> | undefined;
+    const asToastZone = (zone: OverlaySettings["shorts"]["newOrder"]["first"]["zone"] | undefined) => {
+      const isLegacyCard = ["첫 주문", "신규 주문", "VIP 주문"].includes(zone?.title ?? "");
+      return isLegacyCard
+        ? {
+          ...zone,
+          title: "N",
+          template: "",
+          x: 5,
+          y: 64,
+          width: 90,
+          height: 7,
+          motion: "slide-up" as const,
+        }
+        : zone;
+    };
+    const firstNewOrderZone = asToastZone(savedNewOrder?.first?.zone);
+    const repeatNewOrderZone = asToastZone(savedNewOrder?.repeat?.zone);
+    const vipNewOrderZone = asToastZone(savedNewOrder?.vip?.zone);
+    const newOrder = {
+      first: {
+        durationSeconds: savedNewOrder?.first?.durationSeconds ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.first.durationSeconds,
+        zone: {
+          ...DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.first.zone,
+          ...firstNewOrderZone,
+          title: firstNewOrderZone?.title ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.first.zone.title,
+        },
+      },
+      repeat: {
+        durationSeconds: savedNewOrder?.repeat?.durationSeconds ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.repeat.durationSeconds,
+        zone: {
+          ...DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.repeat.zone,
+          ...repeatNewOrderZone,
+          title: repeatNewOrderZone?.title ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.repeat.zone.title,
+        },
+      },
+      vip: {
+        durationSeconds: savedNewOrder?.vip?.durationSeconds ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.vip.durationSeconds,
+        zone: {
+          ...DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.vip.zone,
+          ...vipNewOrderZone,
+          title: vipNewOrderZone?.title ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.vip.zone.title,
+        },
+      },
+    };
     return {
       ...DEFAULT_OVERLAY_SETTINGS,
       ...saved,
@@ -60,6 +170,18 @@ export function getOverlaySettings(): OverlaySettings {
       widths: { ...DEFAULT_OVERLAY_SETTINGS.widths, ...saved.widths },
       position: { ...DEFAULT_OVERLAY_SETTINGS.position, ...saved.position },
       colors: { ...DEFAULT_OVERLAY_SETTINGS.colors, ...saved.colors },
+      shorts: {
+        ...DEFAULT_OVERLAY_SETTINGS.shorts,
+        ...saved.shorts,
+        newOrder,
+        zones: {
+          ...DEFAULT_OVERLAY_SETTINGS.shorts.zones,
+          hit: { ...DEFAULT_OVERLAY_SETTINGS.shorts.zones.hit, ...hitZone },
+          ranking: { ...DEFAULT_OVERLAY_SETTINGS.shorts.zones.ranking, ...rankingZone },
+          current: { ...DEFAULT_OVERLAY_SETTINGS.shorts.zones.current, ...currentZone },
+          announcement: { ...DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement, ...announcementZone },
+        },
+      },
     } as OverlaySettings;
   } catch {
     return DEFAULT_OVERLAY_SETTINGS;
@@ -74,44 +196,73 @@ export function saveOverlaySettings(settings: OverlaySettings) {
   broadcastUpdate();
 }
 
-// 취소/환불된 주문은 라이브 화면에서만 잠깐 보여줍니다.
-// 주문 이력은 카페24가 제공하는 조회 범위까지 계속 누적 보관합니다.
-const CANCEL_DISPLAY_SECONDS = 8;
-
 export function getLiveState(): LiveState {
   const opening = db
     .prepare(
       `SELECT * FROM orders
        WHERE status = 'opening'
-          OR (
-            status = 'cancelled'
-            AND prev_status = 'opening'
-            AND cancelled_at IS NOT NULL
-            AND datetime(cancelled_at, ?) > datetime('now')
-          )
        ORDER BY started_at DESC LIMIT 1`
     )
-    .get(`+${CANCEL_DISPLAY_SECONDS} seconds`) as OrderRow | undefined;
+    .get() as OrderRow | undefined;
 
   const waiting = db
     .prepare(
       `SELECT * FROM orders
-       WHERE (status = 'waiting' AND (source <> 'cafe24' OR paid_at IS NOT NULL))
-          OR (
-            status = 'cancelled'
-            AND prev_status = 'waiting'
-            AND cancelled_at IS NOT NULL
-            AND datetime(cancelled_at, ?) > datetime('now')
-          )
+       WHERE status = 'waiting' AND (source <> 'cafe24' OR paid_at IS NOT NULL)
        ORDER BY id ASC`
     )
-    .all(`+${CANCEL_DISPLAY_SECONDS} seconds`) as OrderRow[];
+    .all() as OrderRow[];
+
+  // 무통장 주문은 입금완료 전에는 오버레이 대기열에 섞지 않습니다.
+  // 카페24 입금완료 웹훅이 paid_at을 채우면 위 waiting 조회에 즉시 포함됩니다.
+  const pendingPayments = db
+    .prepare(
+      `SELECT * FROM orders
+       WHERE status = 'waiting'
+         AND source = 'cafe24'
+         AND paid_at IS NULL
+         AND (
+           lower(COALESCE(payment_method, '')) LIKE '%cash%'
+           OR lower(COALESCE(payment_method, '')) LIKE '%bank%'
+           OR lower(COALESCE(payment_method, '')) LIKE '%deposit%'
+           OR payment_method LIKE '%무통%'
+         )
+       ORDER BY id ASC`
+    )
+    .all() as OrderRow[];
+
+  // 취소·환불 주문은 대기열과 분리해 실제 카페24 주문만 최신 처리순으로 표시합니다.
+  const cancelledOrders = db
+    .prepare(
+      `SELECT * FROM orders
+       WHERE source = 'cafe24' AND status = 'cancelled'
+       ORDER BY cancelled_at DESC, id DESC
+       LIMIT 50`
+    )
+    .all() as OrderRow[];
+
+  // 대시보드에서 '오픈 완료'를 누른 최신 주문을 오버레이에 별도 표시합니다.
+  const completed = db
+    .prepare(
+      `SELECT * FROM orders
+       WHERE status = 'done'
+       ORDER BY completed_at DESC, id DESC LIMIT 1`
+    )
+    .get() as OrderRow | undefined;
 
   const hitCards = db
     .prepare("SELECT * FROM hit_cards ORDER BY id DESC LIMIT 20")
     .all() as HitCardRow[];
 
-  return { opening: opening ?? null, waiting, hitCards, overlaySettings: getOverlaySettings() };
+  return {
+    opening: opening ?? null,
+    completed: completed ?? null,
+    waiting,
+    pendingPayments,
+    cancelledOrders,
+    hitCards,
+    overlaySettings: getOverlaySettings(),
+  };
 }
 
 /**
@@ -183,6 +334,7 @@ export function insertOrder(input: {
   userId: string;
   memberId?: string | null;
   product: string;
+  productImageUrl?: string | null;
   quantity: number;
   unitPrice?: number;
   actualAmount?: number | null;
@@ -196,10 +348,10 @@ export function insertOrder(input: {
 }) {
   const stmt = db.prepare(`
     INSERT INTO orders (
-      source, external_order_id, user_id, member_id, product, quantity, unit_price, tier,
+      source, external_order_id, user_id, member_id, product, product_image_url, quantity, unit_price, tier,
       actual_amount, youtube_nickname, payment_method, payment_gateway_name, easypay_name, paid_at, status
     ) VALUES (
-      @source, @externalOrderId, @userId, @memberId, @product, @quantity, @unitPrice, @tier,
+      @source, @externalOrderId, @userId, @memberId, @product, @productImageUrl, @quantity, @unitPrice, @tier,
       @actualAmount, @youtubeNickname, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting'
     )
   `);
@@ -211,6 +363,7 @@ export function insertOrder(input: {
       userId: input.userId,
       memberId: input.memberId?.trim() || null,
       product: input.product,
+      productImageUrl: input.productImageUrl?.trim() || null,
       quantity: input.quantity,
       unitPrice: input.unitPrice ?? 15000,
       tier: input.tier ?? "",
@@ -237,6 +390,7 @@ export function updateCafe24Order(input: {
   userId: string;
   memberId?: string | null;
   product: string;
+  productImageUrl?: string | null;
   quantity: number;
   unitPrice: number;
   actualAmount?: number | null;
@@ -247,7 +401,7 @@ export function updateCafe24Order(input: {
 }): boolean {
   const result = db.prepare(
     `UPDATE orders SET
-       user_id = ?, member_id = COALESCE(?, member_id), product = ?, quantity = ?, unit_price = ?,
+       user_id = ?, member_id = COALESCE(?, member_id), product = ?, product_image_url = COALESCE(?, product_image_url), quantity = ?, unit_price = ?,
        actual_amount = COALESCE(?, actual_amount),
        youtube_nickname = COALESCE(?, youtube_nickname),
        payment_method = COALESCE(?, payment_method),
@@ -258,6 +412,7 @@ export function updateCafe24Order(input: {
     input.userId,
     input.memberId?.trim() || null,
     input.product,
+    input.productImageUrl?.trim() || null,
     input.quantity,
     input.unitPrice,
     input.actualAmount ?? null,
@@ -380,8 +535,7 @@ export function cancelOrder(
     .prepare("SELECT * FROM orders WHERE external_order_id = ?")
     .get(externalOrderId) as OrderRow | undefined;
 
-  if (!order) return false;
-  if (order.status === "cancelled" || order.status === "done") return false;
+  if (!order || order.status === "cancelled") return false;
 
   db.prepare(
     `UPDATE orders
@@ -390,10 +544,6 @@ export function cancelOrder(
   ).run(order.status, reason, order.id);
 
   broadcastUpdate();
-
-  // 취소/환불 배지는 라이브 화면에서 8초만 유지합니다.
-  // DB 행은 삭제하지 않고 누적 주문 이력으로 보관합니다.
-  setTimeout(() => broadcastUpdate(), CANCEL_DISPLAY_SECONDS * 1000 + 100);
   return true;
 }
 
@@ -432,6 +582,12 @@ export function markOrderPaid(
   return true;
 }
 
+/** 관리자 수동 입금확인 전에 로컬 주문을 안전하게 대조합니다. */
+export function getOrderById(id: number): OrderRow | null {
+  const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(id) as OrderRow | undefined;
+  return order ?? null;
+}
+
 function toSqliteUtc(value?: string | null): string {
   if (value) {
     const date = new Date(value);
@@ -441,10 +597,8 @@ function toSqliteUtc(value?: string | null): string {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __cardbreakCleanupTimer: ReturnType<typeof setInterval> | undefined;
   // 이전 버전의 3개월 보관 정리 타이머를 해제하기 위한 레거시 핸들입니다.
-  // eslint-disable-next-line no-var
   var __orderRetentionCleanupTimer: ReturnType<typeof setInterval> | undefined;
 }
 

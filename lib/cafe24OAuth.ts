@@ -199,16 +199,20 @@ export async function getValidCafe24AccessToken(): Promise<Cafe24OAuthTokens> {
 
 export function getRequestedCafe24Scopes() {
   const configured = process.env.CAFE24_OAUTH_SCOPES;
-  if (configured) {
-    return configured.split(",").map((scope) => scope.trim()).filter(Boolean);
-  }
+  const configuredScopes = configured
+    ? configured.split(",").map((scope) => scope.trim()).filter(Boolean)
+    : [];
 
   // 현재 망고TCG 앱의 개발자센터 권한 설정과 일치하는 기본 Scope입니다.
-  return [
+  const defaultScopes = [
     "mall.read_order",
+    "mall.write_order",
     "mall.read_customer",
     "mall.write_customer",
     "mall.read_mileage",
     "mall.write_mileage",
   ];
+  // 수동 입금완료는 카페24 주문 상태를 실제로 변경하므로, 사용자 지정 Scope가 있더라도
+  // 주문 쓰기 권한을 OAuth 재연결 화면에서 빠뜨리지 않습니다.
+  return Array.from(new Set([...(configuredScopes.length ? configuredScopes : defaultScopes), "mall.write_order"]));
 }

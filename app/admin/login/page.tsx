@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import styles from "../admin.module.css";
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,7 +30,8 @@ export default function AdminLoginPage() {
         return;
       }
 
-      window.location.href = "/admin";
+      router.replace("/admin");
+      router.refresh();
     } finally {
       setLoading(false);
     }

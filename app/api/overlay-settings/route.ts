@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOverlaySettings, saveOverlaySettings } from "@/lib/store";
-import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "@/lib/overlaySettings";
+import { DEFAULT_OVERLAY_SETTINGS, SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 
 export const runtime = "nodejs";
 
@@ -8,6 +8,10 @@ const clamp = (value: unknown, min: number, max: number) =>
   Math.min(max, Math.max(min, Number(value) || 0));
 const color = (value: unknown, fallback: string) =>
   typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+const text = (value: unknown, fallback: string, max = 160) =>
+  typeof value === "string" ? value.slice(0, max) : fallback;
+const motion = (value: unknown, fallback: OverlaySettings["shorts"]["zones"][ShortsZoneId]["motion"]) =>
+  value === "none" || value === "fade" || value === "slide-up" || value === "left-to-right" || value === "card-turn" ? value : fallback;
 
 export async function GET() {
   return NextResponse.json(getOverlaySettings());
@@ -18,6 +22,46 @@ export async function PUT(req: NextRequest) {
   if (!body?.scales || !body?.position) {
     return NextResponse.json({ error: "invalid settings" }, { status: 400 });
   }
+
+  const sanitizeZone = (source: Partial<OverlaySettings["shorts"]["zones"][ShortsZoneId]> | undefined, fallback: OverlaySettings["shorts"]["zones"][ShortsZoneId]) => ({
+    visible: source?.visible !== false,
+    title: text(source?.title, fallback.title, 60),
+    template: text(source?.template, fallback.template),
+    x: clamp(source?.x ?? fallback.x, 0, 100),
+    y: clamp(source?.y ?? fallback.y, 0, 94),
+    width: clamp(source?.width ?? fallback.width, 8, 100),
+    height: clamp(source?.height ?? fallback.height, 3, 70),
+    zIndex: clamp(source?.zIndex ?? fallback.zIndex, 1, 20),
+    accent: color(source?.accent, fallback.accent),
+    titleColor: color(source?.titleColor, fallback.titleColor),
+    nicknameColor: color(source?.nicknameColor, fallback.nicknameColor),
+    textColor: color(source?.textColor, fallback.textColor),
+    openTitleColor: color(source?.openTitleColor, fallback.openTitleColor),
+    openTextColor: color(source?.openTextColor, fallback.openTextColor),
+    openNicknameColor: color(source?.openNicknameColor, fallback.openNicknameColor),
+    openProductColor: color(source?.openProductColor, fallback.openProductColor),
+    openBorderColor: color(source?.openBorderColor, fallback.openBorderColor),
+    waitingTitleColor: color(source?.waitingTitleColor, fallback.waitingTitleColor),
+    waitingTextColor: color(source?.waitingTextColor, fallback.waitingTextColor),
+    waitingCountColor: color(source?.waitingCountColor, fallback.waitingCountColor),
+    waitingIndexColor: color(source?.waitingIndexColor, fallback.waitingIndexColor),
+    waitingNicknameColor: color(source?.waitingNicknameColor, fallback.waitingNicknameColor),
+    waitingProductColor: color(source?.waitingProductColor, fallback.waitingProductColor),
+    waitingBorderColor: color(source?.waitingBorderColor, fallback.waitingBorderColor),
+    titleBackgroundColor: color(source?.titleBackgroundColor, fallback.titleBackgroundColor),
+    textBackgroundColor: color(source?.textBackgroundColor, fallback.textBackgroundColor),
+    titleBackgroundOpacity: clamp(source?.titleBackgroundOpacity ?? fallback.titleBackgroundOpacity, 0, 100),
+    borderColor: color(source?.borderColor, fallback.borderColor),
+    backgroundOpacity: clamp(source?.backgroundOpacity ?? fallback.backgroundOpacity, 0, 100),
+    backgroundColor: color(source?.backgroundColor, fallback.backgroundColor),
+    tickerDurationSeconds: clamp(source?.tickerDurationSeconds ?? fallback.tickerDurationSeconds, 5, 60),
+    motion: motion(source?.motion, fallback.motion),
+  });
+
+  const zones = Object.fromEntries(SHORTS_ZONE_IDS.map((id) => [
+    id,
+    sanitizeZone(body.shorts?.zones?.[id], DEFAULT_OVERLAY_SETTINGS.shorts.zones[id]),
+  ])) as OverlaySettings["shorts"]["zones"];
 
   const settings: OverlaySettings = {
     orderVisible: body.orderVisible !== false,
@@ -58,6 +102,23 @@ export async function PUT(req: NextRequest) {
       queueProductText: color(body.colors?.queueProductText, DEFAULT_OVERLAY_SETTINGS.colors.queueProductText),
       quantityText: color(body.colors?.quantityText, DEFAULT_OVERLAY_SETTINGS.colors.quantityText),
       timerText: color(body.colors?.timerText, DEFAULT_OVERLAY_SETTINGS.colors.timerText),
+    },
+    shorts: {
+      zones,
+      newOrder: {
+        first: {
+          durationSeconds: clamp(body.shorts?.newOrder?.first?.durationSeconds ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.first.durationSeconds, 1, 20),
+          zone: sanitizeZone(body.shorts?.newOrder?.first?.zone, DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.first.zone),
+        },
+        repeat: {
+          durationSeconds: clamp(body.shorts?.newOrder?.repeat?.durationSeconds ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.repeat.durationSeconds, 1, 20),
+          zone: sanitizeZone(body.shorts?.newOrder?.repeat?.zone, DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.repeat.zone),
+        },
+        vip: {
+          durationSeconds: clamp(body.shorts?.newOrder?.vip?.durationSeconds ?? DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.vip.durationSeconds, 1, 20),
+          zone: sanitizeZone(body.shorts?.newOrder?.vip?.zone, DEFAULT_OVERLAY_SETTINGS.shorts.newOrder.vip.zone),
+        },
+      },
     },
   };
 

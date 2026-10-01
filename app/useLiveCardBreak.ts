@@ -11,6 +11,7 @@ export type LiveOrder = {
   external_order_id: string | null;
   user_id: string;
   product: string;
+  product_image_url: string | null;
   quantity: number;
   unit_price: number;
   tier: string;
@@ -27,6 +28,8 @@ export type LiveOrder = {
   easypay_name: string | null;
   created_at: string;
   is_first_order?: boolean;
+  order_count?: number;
+  ranking_rank?: number | null;
 };
 
 export type LiveHitCard = {
@@ -40,7 +43,10 @@ export type LiveHitCard = {
 export type LiveState = {
   loading: boolean;
   opening: LiveOrder | null;
+  completed: LiveOrder | null;
   waiting: LiveOrder[];
+  pendingPayments: LiveOrder[];
+  cancelledOrders: LiveOrder[];
   hitCards: LiveHitCard[];
   overlaySettings: OverlaySettings;
 };
@@ -48,7 +54,10 @@ export type LiveState = {
 const EMPTY_STATE: LiveState = {
   loading: true,
   opening: null,
+  completed: null,
   waiting: [],
+  pendingPayments: [],
+  cancelledOrders: [],
   hitCards: [],
   overlaySettings: DEFAULT_OVERLAY_SETTINGS,
 };

@@ -79,7 +79,7 @@ jobs:
             "CAFE24_CLIENT_ID=$env:CAFE24_CLIENT_ID",
             "CAFE24_CLIENT_SECRET=$env:CAFE24_CLIENT_SECRET",
             "CAFE24_REDIRECT_URI=$env:CAFE24_REDIRECT_URI",
-            "CAFE24_OAUTH_SCOPES=mall.read_order,mall.read_customer,mall.read_mileage,mall.write_mileage",
+            "CAFE24_OAUTH_SCOPES=mall.read_order,mall.write_order,mall.read_customer,mall.read_mileage,mall.write_mileage",
             "CAFE24_REWARD_LIVE_ENABLED=$env:CAFE24_REWARD_LIVE_ENABLED",
             "CAFE24_NATIVE_REWARDS_DISABLED=$env:CAFE24_NATIVE_REWARDS_DISABLED",
             "CAFE24_TOKEN_ENCRYPTION_KEY=$env:CAFE24_TOKEN_ENCRYPTION_KEY",

@@ -13,11 +13,20 @@ import {
   normalizeCafe24Order,
   redactPiiForLogging,
 } from "@/lib/cafe24";
-import { getCafe24OrderBuyerInfo, getCafe24OrderForReward } from "@/lib/cafe24Admin";
+import { getCafe24OrderBuyerInfo, getCafe24OrderForReward, getCafe24ProductThumbnail } from "@/lib/cafe24Admin";
 import { issueRewardForOrder, recoverRewardForOrder } from "@/lib/rewardService";
 import { getRewardSettings } from "@/lib/rewardStore";
 
 export const runtime = "nodejs";
+
+async function resolveProductThumbnail(productNo: string | null) {
+  try {
+    return await getCafe24ProductThumbnail(productNo);
+  } catch {
+    // 썸네일 조회 실패는 주문 수신·적립 흐름을 멈추지 않습니다.
+    return null;
+  }
+}
 
 // 카페24 개발자센터 WebHook 설정에서 이벤트별로 URL을 따로 등록합니다.
 // 예)
@@ -115,12 +124,14 @@ export async function POST(req: NextRequest) {
           throw new Error("Cafe24 원본 주문의 필수 정보가 부족합니다.");
         }
         const amount = Number(cafe24Order.payment_amount);
+        const productImageUrl = await resolveProductThumbnail(normalized.productNo);
         insertOrder({
           source: "cafe24",
           externalOrderId: normalized.externalOrderId,
           userId: normalized.userId,
           memberId: normalized.memberId,
           product: normalized.product,
+          productImageUrl,
           quantity: normalized.quantity,
           unitPrice: normalized.unitPrice,
           actualAmount: Number.isFinite(amount) && amount > 0 ? amount : null,
@@ -186,6 +197,7 @@ export async function POST(req: NextRequest) {
         throw new Error("Cafe24 원본 주문의 필수 정보가 부족합니다.");
       }
       const items = cafe24Order.items ?? [];
+      const productImageUrl = await resolveProductThumbnail(normalized.productNo);
       const quantity = items.reduce((total, item) => {
         const value = Number(item.quantity ?? 0);
         return total + (Number.isFinite(value) && value > 0 ? value : 0);
@@ -210,6 +222,7 @@ export async function POST(req: NextRequest) {
         userId: normalized.userId,
         memberId: normalized.memberId,
         product: normalized.product,
+        productImageUrl,
         quantity,
         unitPrice,
         actualAmount: Number.isFinite(actualAmount) && actualAmount >= 0 ? Math.round(actualAmount) : null,
@@ -281,6 +294,7 @@ export async function POST(req: NextRequest) {
     userId: normalized.userId,
     memberId: normalized.memberId,
     product: normalized.product,
+    productImageUrl: await resolveProductThumbnail(normalized.productNo),
     quantity: normalized.quantity,
     unitPrice: normalized.unitPrice,
     youtubeNickname: normalized.youtubeNickname,

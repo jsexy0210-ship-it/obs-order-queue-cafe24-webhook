@@ -18,6 +18,7 @@ function scrubOrder<T extends OrderRow>(order: T): T {
   return {
     ...order,
     user_id: "",
+    member_id: null,
     tier: "",
     youtube_nickname: displayNickname(order.youtube_nickname, order.tier),
   };
@@ -27,7 +28,10 @@ export function sanitizeLiveOverlayState(state: LiveState): LiveState {
   return {
     ...state,
     opening: state.opening ? scrubOrder(state.opening) : null,
+    completed: state.completed ? scrubOrder(state.completed) : null,
     waiting: state.waiting.map(scrubOrder),
+    pendingPayments: state.pendingPayments.map(scrubOrder),
+    cancelledOrders: state.cancelledOrders.map(scrubOrder),
     hitCards: state.hitCards.map((item) => ({
       ...item,
       user_id: "",

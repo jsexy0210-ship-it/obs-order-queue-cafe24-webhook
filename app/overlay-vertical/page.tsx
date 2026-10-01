@@ -1,73 +1,48 @@
+"use client";
+
+import { useLiveCardBreak } from "@/app/useLiveCardBreak";
 import styles from "./vertical.module.css";
 
-type Order = {
-  id: number;
-  nickname: string;
-  product: string;
-  quantity: number;
-};
-
-const openingOrder: Order = {
-  id: 1,
-  nickname: "jae***",
-  product: "포켓몬 151 BOX",
-  quantity: 1,
-};
-
-const waitingOrders: Order[] = [
-  { id: 2, nickname: "kim***", product: "로켓단 BOX", quantity: 1 },
-  { id: 3, nickname: "park***", product: "랜덤팩", quantity: 5 },
-  { id: 4, nickname: "pik***", product: "테라스탈 페스 ex BOX", quantity: 1 },
-];
+function nickname(value: string | null | undefined) {
+  return (value ?? "-").replace(/\([^)]*\)/g, "").trim() || "-";
+}
 
 export default function VerticalOverlay() {
+  const { opening, waiting, hitCards } = useLiveCardBreak();
+  const activeOrder = opening ?? waiting[0] ?? null;
+
   return (
     <main className={styles.stage}>
-      <section className={styles.topOverlay}>
-        <div className={styles.liveRow}>
-          <div>
-            <span className={styles.kicker}>NOW OPENING</span>
-            <div className={styles.openingLine}>
-              <strong>{openingOrder.nickname}</strong>
-              <span>{openingOrder.product}</span>
-              <b>× {openingOrder.quantity}</b>
-            </div>
-          </div>
-
-          <div className={styles.liveBadge}>
-            <span className={styles.liveDot} />
-            LIVE
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.videoWindow}>
-        <div className={styles.videoSafeGuide}>
-          <span>LIVE VIDEO AREA</span>
-        </div>
-      </section>
-
-      <section className={styles.bottomOverlay}>
-        <div className={styles.queueHeader}>
-          <div>
-            <span className={styles.kicker}>NEXT QUEUE</span>
-            <strong>{waitingOrders.length} WAITING</strong>
-          </div>
-          <span className={styles.brand}>CARD BREAK LIVE</span>
-        </div>
-
-        <ol className={styles.queue}>
-          {waitingOrders.map((order, index) => (
-            <li key={order.id}>
-              <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
-              <div className={styles.info}>
-                <strong>{order.nickname}</strong>
-                <span>{order.product}</span>
-              </div>
-              <b>× {order.quantity}</b>
-            </li>
+      <section className={styles.hitPanel}>
+        <header><span>◆</span><strong>오늘의 히트카드</strong></header>
+        <div className={styles.hitRows}>
+          {hitCards.slice(0, 5).map((hit) => (
+            <p key={hit.id}><b>{nickname(hit.youtube_nickname)}</b><span>{hit.card}</span></p>
           ))}
-        </ol>
+          {hitCards.length === 0 && <p className={styles.empty}>등록된 히트카드 없음</p>}
+        </div>
+      </section>
+
+      <section className={styles.currentPanel}>
+        <header><strong>지금 오픈 중</strong><span className={styles.liveDot}>LIVE</span></header>
+        {activeOrder ? (
+          <div className={styles.currentBody}>
+            <span className={activeOrder.is_first_order ? styles.firstBadge : styles.openBadge}>{activeOrder.is_first_order ? "첫주문" : "오픈"}</span>
+            <b>{nickname(activeOrder.youtube_nickname)}</b>
+            <p>{activeOrder.product}</p>
+            <strong>× {activeOrder.quantity}</strong>
+          </div>
+        ) : <div className={styles.empty}>대기 중인 주문 없음</div>}
+      </section>
+
+      <section className={styles.queuePanel}>
+        <header><strong>대기 주문</strong><span>{waiting.length}건</span></header>
+        <div className={styles.queueRows}>
+          {waiting.slice(0, 4).map((order, index) => (
+            <p key={order.id}><i>{index + 1}</i><b>{nickname(order.youtube_nickname)}</b><span>{order.product}</span><strong>×{order.quantity}</strong></p>
+          ))}
+          {waiting.length === 0 && <p className={styles.empty}>대기 중인 주문 없음</p>}
+        </div>
       </section>
     </main>
   );

@@ -10,7 +10,6 @@ if (!fs.existsSync(dataDir)) {
 const dbPath = path.join(dataDir, "cardbreak.db");
 
 declare global {
-  // eslint-disable-next-line no-var
   var __cardbreakDb: Database.Database | undefined;
 }
 
@@ -41,6 +40,7 @@ db.exec(`
     user_id TEXT NOT NULL,                          -- 화면에 노출되는 ID 형식 (예: ID-24018)
     member_id TEXT,                                 -- 카페24 실제 회원 ID (랭킹 합산 및 추적 기준)
     product TEXT NOT NULL,
+    product_image_url TEXT,
     quantity INTEGER NOT NULL,
     unit_price INTEGER NOT NULL DEFAULT 15000,
     actual_amount INTEGER,
@@ -171,6 +171,9 @@ if (!orderColumns.some((col) => col.name === "actual_amount")) {
 }
 if (!orderColumns.some((col) => col.name === "member_id")) {
   db.exec("ALTER TABLE orders ADD COLUMN member_id TEXT");
+}
+if (!orderColumns.some((col) => col.name === "product_image_url")) {
+  db.exec("ALTER TABLE orders ADD COLUMN product_image_url TEXT");
 }
 db.exec("CREATE INDEX IF NOT EXISTS idx_orders_member_id ON orders(member_id)");
 
