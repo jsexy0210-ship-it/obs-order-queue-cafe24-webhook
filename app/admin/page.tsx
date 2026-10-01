@@ -27,7 +27,7 @@ const SITE_LINKS = [
   { label: "개발자 센터", href: "https://developers.cafe24.com/admin/dashboard/main/front/app" },
 ] as const;
 
-type Toast = { id: number; userId: string; product: string };
+type Toast = { id: number; eventKey: string; title: string; userId: string; product: string };
 type PaymentBadge = { label: "카드" | "무통장" | "카드+적립금" | "무통장+적립금"; kind: "card" | "bank" | "card-point" | "bank-point" };
 
 function getPaymentBadge(order: Pick<LiveOrder, "payment_method" | "payment_gateway_name" | "easypay_name">): PaymentBadge {
@@ -108,7 +108,7 @@ export default function AdminPage() {
     ? selectedNewOrderSettings.zone
     : shortsSettings.shorts.zones[selectedShortsZoneId];
 
-  const seenOrderIds = useRef<Set<number> | null>(null);
+  const seenOrderStates = useRef<Map<number, "pending" | "paid"> | null>(null);
   const alertedOrderStates = useRef<Map<number, "pending" | "paid"> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -290,33 +290,36 @@ export default function AdminPage() {
     };
   }, []);
 
-  // 신규 주문 토스트 알림: 처음 로드될 때 있던 주문은 알리지 않고,
-  // 그 이후 새로 들어온 주문(대기열에 새 id)만 감지해서 알려줍니다.
+  // 최초 데이터 로드 후 무통장 신규 주문과 입금 완료 전환을 토스트로 표시합니다.
   useEffect(() => {
-    const currentIds = new Set(waiting.map((o) => o.id));
-
-    if (seenOrderIds.current === null) {
-      seenOrderIds.current = currentIds;
+    if (liveLoading) return;
+    const activeOrders = [
+      ...pendingPayments.map((order) => ({ order, state: "pending" as const })),
+      ...waiting.map((order) => ({ order, state: "paid" as const })),
+    ];
+    const currentStates = new Map(activeOrders.map(({ order, state }) => [order.id, state]));
+    if (seenOrderStates.current === null) {
+      seenOrderStates.current = currentStates;
       return;
     }
-
-    const newOrders = waiting.filter((o) => !seenOrderIds.current!.has(o.id));
-    seenOrderIds.current = currentIds;
-
-    if (newOrders.length === 0) return;
-
-    setToasts((prev) => [
-      ...prev,
-      ...newOrders.map((o) => ({ id: o.id, userId: o.user_id, product: o.product })),
-    ]);
-
-    newOrders.forEach((o) => {
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== o.id));
-      }, TOAST_DISPLAY_MS);
-    });
-
-  }, [waiting]);
+    const previousStates = seenOrderStates.current;
+    seenOrderStates.current = currentStates;
+    const events = activeOrders.filter(({ order, state }) => {
+      const previous = previousStates.get(order.id);
+      return previous === undefined || (previous === "pending" && state === "paid");
+    }).map(({ order, state }) => ({
+      id: order.id,
+      eventKey: `${order.id}-${state}`,
+      title: state === "pending" ? "무통장 입금 전 신규 주문" : previousStates.get(order.id) === "pending" ? "주문 입금 완료" : "새 주문 접수",
+      userId: order.user_id,
+      product: order.product,
+    }));
+    if (events.length === 0) return;
+    setToasts((current) => [...current, ...events]);
+    events.forEach((event) => window.setTimeout(() => {
+      setToasts((current) => current.filter((toast) => toast.eventKey !== event.eventKey));
+    }, TOAST_DISPLAY_MS));
+  }, [liveLoading, pendingPayments, waiting]);
 
   useEffect(() => {
     if (!orderAlertsEnabled) {
@@ -627,43 +630,52 @@ export default function AdminPage() {
   function renderWaitingRow(order: LiveOrder) {
     const payment = getPaymentBadge(order);
     return (
-      <div className={styles.row} key={order.id}>
-        <span>{order.user_id}</span>
-        {order.youtube_nickname && (
-          <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>
-        )}
+      <div className={`${styles.row} ${styles.queueOrderRow}`} key={order.id}>
+        <div className={styles.orderIdentity}>
+          <div className={styles.orderIdentityMain}>
+            <strong>{order.user_id || "구매자 미확인"}</strong>
+            <span className={styles.memberGradeBadge}>{order.tier || "등급 미확인"}</span>
+          </div>
+          {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
+        </div>
         <span className={styles.orderDescription}>
           {order.product} × {order.quantity}
         </span>
-        <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
-        {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
-        <div className={styles.rowActions}>
-          <button onClick={() => startOpening(order.id)}>오픈시작</button>
-          <button className={styles.danger} onClick={() => removeOrder(order.id)}>
-            삭제
-          </button>
+        <div className={styles.orderRowFooter}>
+          <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
+          {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
+          <div className={styles.rowActions}>
+            <button onClick={() => startOpening(order.id)}>오픈시작</button>
+            <button className={styles.danger} onClick={() => removeOrder(order.id)}>삭제</button>
+          </div>
         </div>
       </div>
     );
   }
 
   function renderPendingPaymentRow(order: LiveOrder) {
-    const payment = getPaymentBadge(order);
     return (
-      <div className={`${styles.row} ${styles.pendingPaymentRow}`} key={order.id}>
-        <span>{order.user_id || "-"}</span>
-        {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
+      <div className={`${styles.row} ${styles.queueOrderRow} ${styles.pendingPaymentRow}`} key={order.id}>
+        <div className={styles.orderIdentity}>
+          <div className={styles.orderIdentityMain}>
+            <strong>{order.user_id || "구매자 미확인"}</strong>
+            <span className={styles.memberGradeBadge}>{order.tier || "등급 미확인"}</span>
+          </div>
+          {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
+        </div>
         <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
-        <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
-        <span className={styles.unpaidBadge}>입금 전</span>
-        <div className={styles.rowActions}>
-          <button
-            className={styles.confirmPaymentButton}
-            disabled={confirmingPaymentId === order.id}
-            onClick={() => confirmPendingPayment(order)}
-          >
-            {confirmingPaymentId === order.id ? "확인 중" : "입금완료"}
-          </button>
+        <div className={styles.orderRowFooter}>
+          <span className={styles.unpaidBadge}>입금 전</span>
+          <div className={styles.rowActions}>
+            <button
+              className={styles.confirmPaymentButton}
+              disabled={confirmingPaymentId === order.id}
+              onClick={() => confirmPendingPayment(order)}
+            >
+              {confirmingPaymentId === order.id ? "확인 중" : "입금완료"}
+            </button>
+            <button className={styles.hitDelete} onClick={() => void hideOrderList([order], "무통장 입금 전 주문")}>삭제</button>
+          </div>
         </div>
       </div>
     );
@@ -672,10 +684,20 @@ export default function AdminPage() {
   function renderCancelledOrderRow(order: LiveOrder) {
     const isRefunded = order.cancel_reason === "refunded";
     return (
-      <div className={`${styles.row} ${styles.cancelledOrderRow}`} key={order.id}>
-        <span className={styles.cancelStatusBadge} data-refunded={isRefunded}>{isRefunded ? "환불" : "취소"}</span>
+      <div className={`${styles.row} ${styles.queueOrderRow} ${styles.cancelledOrderRow}`} key={order.id}>
+        <div className={styles.orderIdentity}>
+          <div className={styles.orderIdentityMain}>
+            <strong>{order.user_id || "구매자 미확인"}</strong>
+            <span className={styles.memberGradeBadge}>{order.tier || "등급 미확인"}</span>
+          </div>
+          {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
+        </div>
         <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
-        <span className={styles.cancelledOrderId}>{order.external_order_id ?? "-"}</span>
+        <div className={styles.orderRowFooter}>
+          <span className={styles.cancelStatusBadge} data-refunded={isRefunded}>{isRefunded ? "환불" : "취소"}</span>
+          <span className={styles.cancelledOrderId}>{order.external_order_id ?? "-"}</span>
+          <button className={styles.hitDelete} onClick={() => void hideOrderList([order], "취소·환불 주문")}>삭제</button>
+        </div>
       </div>
     );
   }
@@ -893,23 +915,27 @@ export default function AdminPage() {
       <h2 className={styles.homeSectionTitle}>오버레이</h2>
       <div className={styles.operationsGrid}>
       <section className={`${styles.block} ${styles.primaryBlock}`}>
-        <h2>지금 오픈 중</h2>
+        <h2>지금 오픈 중 <span className={styles.sectionCount}>{opening ? "1건" : "0건"}</span></h2>
         {opening ? (
-          <div className={styles.row}>
-            <span>{opening.user_id}</span>
-            {opening.youtube_nickname && (
-              <span className={styles.ytBadge}>YT: {opening.youtube_nickname}</span>
-            )}
-            <span className={styles.orderDescription}>
-              {opening.product} × {opening.quantity}
-            </span>
-            {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
-            <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>
-              오픈완료
-            </button>
+          <div className={styles.openingHero}>
+            <div className={styles.openingIdentity}>
+              <div className={styles.openingBuyerLine}>
+                <strong>{opening.user_id || "구매자 미확인"}</strong>
+                <span className={styles.memberGradeBadge}>{opening.tier || "등급 미확인"}</span>
+              </div>
+              {opening.youtube_nickname && <span className={styles.ytBadge}>YT: {opening.youtube_nickname}</span>}
+            </div>
+            <div className={styles.openingProduct}>
+              <span>{opening.product}</span>
+              <b>× {opening.quantity}</b>
+            </div>
+            <div className={styles.openingActions}>
+              {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
+              <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료</button>
+            </div>
           </div>
         ) : (
-          <p className={styles.empty}>없음</p>
+          <p className={styles.openingEmpty}>현재 진행 중인 오픈이 없습니다.</p>
         )}
       </section>
 
@@ -939,6 +965,16 @@ export default function AdminPage() {
           <button disabled={pendingPaymentPage === 1} onClick={() => setPendingPaymentPage((page) => page - 1)}>이전</button>
           <span>{pendingPaymentPage} / {pendingPaymentPageCount}</span>
           <button disabled={pendingPaymentPage === pendingPaymentPageCount} onClick={() => setPendingPaymentPage((page) => page + 1)}>다음</button>
+        </div>
+      </section>
+      <section className={`${styles.block} ${styles.cancelledOrdersBlock} ${styles.queueBlock}`}>
+        <h2>취소 · 환불 ({cancelledOrders.length}) <button type="button" onClick={() => void hideOrderList(cancelledOrders, "취소·환불 주문")}>목록 삭제</button></h2>
+        {cancelledOrders.length === 0 && <p className={styles.empty}>취소 · 환불 주문 없음</p>}
+        <div className={`${styles.pagedList} ${styles.cancelledOrdersList}`}>{pagedCancelledOrders.map(renderCancelledOrderRow)}</div>
+        <div className={styles.pagination}>
+          <button disabled={cancelledOrderPage === 1} onClick={() => setCancelledOrderPage((page) => page - 1)}>이전</button>
+          <span>{cancelledOrderPage} / {cancelledOrderPageCount}</span>
+          <button disabled={cancelledOrderPage === cancelledOrderPageCount} onClick={() => setCancelledOrderPage((page) => page + 1)}>다음</button>
         </div>
       </section>
       </div>
@@ -994,17 +1030,6 @@ export default function AdminPage() {
           <button disabled={hitPage === hitPageCount} onClick={() => setHitPage((page) => page + 1)}>
             다음
           </button>
-        </div>
-      </section>
-
-      <section className={`${styles.block} ${styles.cancelledOrdersBlock}`}>
-        <h2>취소 · 환불 ({cancelledOrders.length}) <button type="button" onClick={() => void hideOrderList(cancelledOrders, "취소·환불 주문")}>목록 삭제</button></h2>
-        {cancelledOrders.length === 0 && <p className={styles.empty}>취소 · 환불 주문 없음</p>}
-        <div className={`${styles.pagedList} ${styles.cancelledOrdersList}`}>{pagedCancelledOrders.map(renderCancelledOrderRow)}</div>
-        <div className={styles.pagination}>
-          <button disabled={cancelledOrderPage === 1} onClick={() => setCancelledOrderPage((page) => page - 1)}>이전</button>
-          <span>{cancelledOrderPage} / {cancelledOrderPageCount}</span>
-          <button disabled={cancelledOrderPage === cancelledOrderPageCount} onClick={() => setCancelledOrderPage((page) => page + 1)}>다음</button>
         </div>
       </section>
 
@@ -1068,18 +1093,6 @@ export default function AdminPage() {
       </section>
       </div>
 
-      {toasts.length > 0 && (
-        <div className={styles.toastStack}>
-          {toasts.map((t) => (
-            <div key={t.id} className={styles.toast}>
-              <strong>🔔 새 주문 접수</strong>
-              <span>
-                {t.userId} · {t.product}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
       </>
       )}
 
@@ -1270,6 +1283,16 @@ export default function AdminPage() {
             </div>
             <RewardLedgerModal />
           </div>
+        </div>
+      )}
+      {toasts.length > 0 && (
+        <div className={styles.toastStack} role="status" aria-live="polite">
+          {toasts.map((toast) => (
+            <div key={toast.eventKey} className={styles.toast}>
+              <strong>🔔 {toast.title}</strong>
+              <span>{toast.userId} · {toast.product}</span>
+            </div>
+          ))}
         </div>
       )}
     </main>

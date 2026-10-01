@@ -124,7 +124,7 @@
 .rankingTickerItem b { position: relative; display: grid; place-items: center; width: 1.35em; height: 1.35em; color: #ffd34f; font-size: 1.15em; line-height: 1; filter: drop-shadow(0 1px 2px #000); }
 .rankingTickerItem b i { position: absolute; top: 48%; left: 50%; transform: translate(-50%,-50%); color: #17120a; font-size: .55em; font-style: normal; font-weight: 1000; text-shadow: 0 0 1px #fff; }
 .rankingTickerItem b[data-rank="2"] { filter: grayscale(1) brightness(1.5) drop-shadow(0 1px 2px #000); }
-.rankingTickerItem b[data-rank="3"] { filter: sepia(.7) saturate(1.6) drop-shadow(0 1px 2px #000); }
+.rankingTickerItem b[data-rank="3"] { filter: sepia(.7) saturate(1.6) brightness(.88) drop-shadow(0 1px 2px #000); }
 .rankingTickerItem em { color: var(--zone-text-color, #fff); font-style: normal; }
 .rankingTickerItem em { font-weight: 900; }
 @keyframes rankingTicker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
