@@ -28,7 +28,6 @@ type PendingBonus = {
   requestId: string;
 };
 
-const TROPHIES = ["🥇", "🥈", "🥉"];
 const formatWon = (amount: number) => `${amount.toLocaleString("ko-KR")}원`;
 
 export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
@@ -118,7 +117,12 @@ export default function OrderRankingPanel({ onBack }: { onBack: () => void }) {
             return (
               <article className={`${styles.rankingCard} ${isTopThree ? styles.topRankingCard : ""}`} key={row.userId}>
                 <div className={styles.rankingRank} aria-label={`${row.rank}위`}>
-                  {isTopThree ? TROPHIES[row.rank - 1] : `${row.rank}위`}
+                  {isTopThree ? (
+                    <span className={`${styles.rankingTrophy} ${styles[`rankingTrophy${row.rank}`]}`}>
+                      <span aria-hidden="true">🏆</span>
+                      <strong>{row.rank}</strong>
+                    </span>
+                  ) : `${row.rank}위`}
                 </div>
                 <div className={styles.rankingCustomer}>
                   <div className={styles.rankingIdentity}>

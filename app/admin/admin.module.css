@@ -1436,6 +1436,49 @@
   font-weight: 900;
 }
 
+.rankingTrophy {
+  position: relative;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  filter: drop-shadow(0 2px 7px currentColor);
+}
+
+.rankingTrophy > span {
+  font-size: 23px;
+  line-height: 1;
+}
+
+.rankingTrophy > strong {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: #17130a;
+  font-size: 11px;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.55);
+  transform: translate(-50%, -12%);
+}
+
+.rankingTrophy1 {
+  color: #ffd54a;
+  background: rgba(255, 194, 45, 0.2);
+}
+
+.rankingTrophy2 {
+  color: #dce5f2;
+  background: rgba(188, 203, 221, 0.18);
+}
+
+.rankingTrophy3 {
+  color: #f4a56f;
+  background: rgba(205, 112, 55, 0.18);
+}
+
 .rankingIdentity {
   display: flex;
   align-items: center;
