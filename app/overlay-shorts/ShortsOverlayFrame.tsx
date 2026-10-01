@@ -104,6 +104,9 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const openingOrder = live.opening;
   const waitingOrders = live.waiting;
   const displayedHitCards = live.hitCards;
+  const visibleHitCards = displayedHitCards.slice(0, 5);
+  const shouldScrollHitCards = visibleHitCards.length >= 4;
+  const renderedHitCards = shouldScrollHitCards ? [...visibleHitCards, ...visibleHitCards] : visibleHitCards;
   const latestHit = displayedHitCards[0] ?? null;
   const displayedRanking = ranking;
   const commonValues = {
@@ -381,12 +384,15 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
               ) : (
                 <div className={styles.zoneBody}>
                   {id === "hit" ? (
-                    <div className={styles.hitRows}>
-                        {displayedHitCards.slice(0, 5).map((hit) => {
+                    <div className={shouldScrollHitCards ? styles.hitRowsViewport : undefined}>
+                      <div className={`${styles.hitRows} ${shouldScrollHitCards ? styles.hitRowsScrolling : ""}`}>
+                        {renderedHitCards.map((hit, index) => {
                           const hitNickname = nickname(hit.youtube_nickname);
-                          return <p key={hit.id}><b style={textFit(`◆ ${hitNickname}`, 13)}>◆ {hitNickname}</b><span style={textFit(hit.card, 18)}>{hit.card}</span></p>;
+                          const label = `◆ ${hitNickname} · ${hit.card}`;
+                          return <p key={`${hit.id}-${index}`} aria-hidden={shouldScrollHitCards && index >= visibleHitCards.length || undefined}><span style={textFit(label, 24)}>{label}</span></p>;
                         })}
                         {displayedHitCards.length === 0 && <p className={styles.emptyState}>등록된 히트카드 없음</p>}
+                      </div>
                     </div>
                   ) : id === "current" ? (
                     <div className={styles.currentOrderColumns}>
