@@ -60,6 +60,13 @@ class RemoteDeploymentConfigurationTests(unittest.TestCase):
         config["MANGO_DEPLOY_APP_PATH"] = "/srv/mangotcg"
         self.assertEqual(deploy.configuration(config)["PLATFORM"], "linux")
 
+    def test_linux_preflight_preserves_active_and_data_bearing_releases(self):
+        script = deploy.linux_deploy_preflight_script()
+        self.assertIn('"$stale" != "$current"', script)
+        self.assertIn('! -e "$stale/.next/BUILD_ID"', script)
+        self.assertIn('! -e "$stale/data" && ! -L "$stale/data"', script)
+        self.assertIn('rm -rf -- "$stale"', script)
+
     def test_powershell_path_is_literal(self):
         self.assertEqual(deploy.ps_quote("C:\\team's app; $x"), "'C:\\team''s app; $x'")
 

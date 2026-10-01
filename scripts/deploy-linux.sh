@@ -34,7 +34,7 @@ node_modules_target="$(readlink -f "$current/node_modules")"
 # only unbuilt release directories that are neither active nor linked to data.
 for stale in "$app_root"/mangotcg-release-*-live; do
   [[ -d "$stale" && ! -L "$stale" && "$stale" != "$current" ]] || continue
-  [[ ! -e "$stale/.next/BUILD_ID" && ! -e "$stale/data" ]] || continue
+  [[ ! -e "$stale/.next/BUILD_ID" && ! -e "$stale/data" && ! -L "$stale/data" ]] || continue
   rm -rf -- "$stale"
 done
 
