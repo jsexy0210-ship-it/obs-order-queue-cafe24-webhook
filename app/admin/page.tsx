@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
+import { type LiveOrder } from "@/app/useLiveCardBreak";
+import { useAdminLiveCardBreak } from "./useAdminLiveCardBreak";
 import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import ShortsOverlayFrame from "@/app/overlay-shorts/ShortsOverlayFrame";
@@ -46,7 +47,7 @@ function formatOrderAmount(order: LiveOrder) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { opening, waiting, pendingPayments, cancelledOrders, hitCards, overlaySettings, loading: liveLoading } = useLiveCardBreak();
+  const { opening, waiting, pendingPayments, cancelledOrders, hitCards, overlaySettings, loading: liveLoading } = useAdminLiveCardBreak();
 
   const [form, setForm] = useState({
     userId: "",

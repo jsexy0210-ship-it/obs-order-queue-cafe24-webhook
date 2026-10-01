@@ -2558,18 +2558,29 @@
   align-items: stretch;
 }
 
-.operationsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.operationsGrid .primaryBlock { grid-column: span 1; }
-.operationsGrid .waitingOrdersBlock,
-.operationsGrid .pendingPaymentsBlock { grid-column: span 1; }
+.operationsGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas: "opening waiting pending" ". . tools";
+}
+.operationsGrid > .primaryBlock { grid-area: opening; min-width: 0; }
+.operationsGrid > .waitingOrdersBlock { grid-area: waiting; min-width: 0; }
+.operationsGrid > .pendingPaymentsBlock { grid-area: pending; min-width: 0; }
 
 .dashboardThirdColumn {
-  grid-column: 3;
-  grid-row: 2;
+  grid-area: tools;
+  min-width: 0;
   display: grid;
-  gap: 14px;
+  gap: 10px;
   align-content: start;
 }
+
+.dashboardThirdColumn > .block { min-width: 0; min-height: 0; padding: 12px; }
+.dashboardThirdColumn > .block h2 { margin-bottom: 8px; }
+.dashboardThirdColumn .form { gap: 8px; }
+.dashboardThirdColumn .form input { min-height: 38px; }
+.dashboardThirdColumn .form > button { min-height: 38px; margin-top: 0; }
+.dashboardThirdColumn .hitList { min-height: 0; max-height: 112px; overflow-y: auto; }
+.dashboardThirdColumn .hitItem { min-height: 30px; padding-block: 4px; }
 
 .toolsGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2945,6 +2956,8 @@
     overflow: visible;
   }
 
+  .operationsGrid .dashboardThirdColumn > .block { min-height: 0; }
+
   .hitList {
     min-height: 48px;
     max-height: none;
@@ -3037,10 +3050,14 @@
     grid-template-columns: 1fr;
   }
 
+  .operationsGrid { grid-template-areas: none; }
+
   .operationsGrid > *,
   .toolsGrid > * {
     grid-column: auto;
   }
+
+  .operationsGrid > * { grid-area: auto; }
 
   .orderDashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3178,17 +3195,15 @@
 @media (min-width: 561px) and (max-width: 900px) {
   .operationsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "opening waiting" "pending tools";
     gap: 12px;
   }
 
-  .operationsGrid > .block {
-    grid-column: span 1;
-  }
-
-  .dashboardThirdColumn {
-    grid-column: 2;
-    grid-row: auto;
-  }
+  .operationsGrid > .block { grid-area: auto; }
+  .operationsGrid > .primaryBlock { grid-area: opening; }
+  .operationsGrid > .waitingOrdersBlock { grid-area: waiting; }
+  .operationsGrid > .pendingPaymentsBlock { grid-area: pending; }
+  .dashboardThirdColumn { grid-area: tools; }
 
   .operationsGrid > .block {
     min-width: 0;
