@@ -9,15 +9,15 @@ import ShortsOverlayFrame from "@/app/overlay-shorts/ShortsOverlayFrame";
 import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 import RewardSettingsPanel from "./RewardSettingsPanel";
 import RewardLedgerModal from "./RewardLedgerModal";
-import OrderDashboard from "./OrderDashboard";
+import OrderDashboard, { DashboardRangePicker, type DashboardRange } from "./OrderDashboard";
 import OrderRankingPanel from "./OrderRankingPanel";
 import styles from "./admin.module.css";
 
 const DEFAULT_TIMER_SECONDS = 60;
 const BASIC_SHORTS_ZONE_IDS: ShortsZoneId[] = ["ranking", "hit", "current"];
 const ORDER_ANIMATION_ZONE_IDS: ShortsZoneId[] = ["announcement"];
-const WAITING_PAGE_SIZE = 5;
-const CANCELLED_ORDER_PAGE_SIZE = 5;
+const WAITING_PAGE_SIZE = 3;
+const CANCELLED_ORDER_PAGE_SIZE = 3;
 const HIT_PAGE_SIZE = 5;
 const TOAST_DISPLAY_MS = 5000;
 const SITE_LINKS = [
@@ -40,6 +40,10 @@ function getPaymentBadge(order: Pick<LiveOrder, "payment_method" | "payment_gate
   return { label: "카드", kind: "card" };
 }
 
+function formatOrderAmount(order: LiveOrder) {
+  return `${(order.actual_amount ?? order.unit_price * order.quantity).toLocaleString("ko-KR")}원`;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const { opening, waiting, pendingPayments, cancelledOrders, hitCards, overlaySettings, loading: liveLoading } = useLiveCardBreak();
@@ -52,9 +56,11 @@ export default function AdminPage() {
     tier: "",
     youtubeNickname: "",
   });
-  const [hitForm, setHitForm] = useState({ userId: "", card: "", youtubeNickname: "" });
+  const [hitForm, setHitForm] = useState({ card: "", youtubeNickname: "" });
   const [showHistory, setShowHistory] = useState(false);
   const [showRanking, setShowRanking] = useState(false);
+  const [showManualOrder, setShowManualOrder] = useState(false);
+  const [dashboardRange, setDashboardRange] = useState<DashboardRange>("day");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showHitHistory, setShowHitHistory] = useState(false);
   const [showRewardLedger, setShowRewardLedger] = useState(false);
@@ -380,11 +386,11 @@ export default function AdminPage() {
 
   // 이력 모달이 열려 있는 동안에는 뒤쪽 화면이 같이 스크롤되지 않도록 막습니다.
   useEffect(() => {
-    document.body.style.overflow = showHitHistory || showRewardLedger ? "hidden" : "";
+    document.body.style.overflow = showHitHistory || showRewardLedger || showManualOrder ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showHitHistory, showRewardLedger]);
+  }, [showHitHistory, showRewardLedger, showManualOrder]);
 
   useEffect(() => {
     setWaitingPage((page) => Math.min(page, waitingPageCount));
@@ -592,14 +598,11 @@ export default function AdminPage() {
     });
 
     setForm({ userId: "", product: "", quantity: 1, unitPrice: 15000, tier: "", youtubeNickname: "" });
+    setShowManualOrder(false);
   }
 
   async function addHit(e: FormEvent) {
     e.preventDefault();
-    if (!hitForm.userId) {
-      window.alert("구매자를 입력하세요.");
-      return;
-    }
     if (!hitForm.card) {
       window.alert("카드명을 입력하세요.");
       return;
@@ -608,10 +611,10 @@ export default function AdminPage() {
     await fetch("/api/hit-cards", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(hitForm),
+      body: JSON.stringify({ ...hitForm, userId: "" }),
     });
 
-    setHitForm({ userId: "", card: "", youtubeNickname: "" });
+    setHitForm({ card: "", youtubeNickname: "" });
   }
 
   async function removeHit(id: number) {
@@ -638,9 +641,10 @@ export default function AdminPage() {
           </div>
           {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
         </div>
-        <span className={styles.orderDescription}>
-          {order.product} × {order.quantity}
-        </span>
+        <div className={styles.orderProductLine}>
+          <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
+          <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
+        </div>
         <div className={styles.orderRowFooter}>
           <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
           {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
@@ -663,7 +667,10 @@ export default function AdminPage() {
           </div>
           {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
         </div>
-        <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
+        <div className={styles.orderProductLine}>
+          <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
+          <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
+        </div>
         <div className={styles.orderRowFooter}>
           <span className={styles.unpaidBadge}>입금 전</span>
           <div className={styles.rowActions}>
@@ -692,7 +699,10 @@ export default function AdminPage() {
           </div>
           {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
         </div>
-        <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
+        <div className={styles.orderProductLine}>
+          <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
+          <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
+        </div>
         <div className={styles.orderRowFooter}>
           <span className={styles.cancelStatusBadge} data-refunded={isRefunded}>{isRefunded ? "환불" : "취소"}</span>
           <span className={styles.cancelledOrderId}>{order.external_order_id ?? "-"}</span>
@@ -909,10 +919,18 @@ export default function AdminPage() {
       <>
       {!showOverlayPreview && (
       <>
-      <h2 className={styles.homeSectionTitle}>대시보드</h2>
-      <OrderDashboard />
+      <div className={`${styles.homeSectionHeader} ${styles.dashboardTitleHeader}`}>
+        <h2 className={styles.homeSectionTitle}>대시보드</h2>
+        <DashboardRangePicker value={dashboardRange} onChange={setDashboardRange} />
+      </div>
+      <OrderDashboard range={dashboardRange} />
 
-      <h2 className={styles.homeSectionTitle}>오버레이</h2>
+      <div className={styles.homeSectionHeader}>
+        <h2 className={styles.homeSectionTitle}>오버레이</h2>
+        <button className={styles.historyButton} onClick={() => setShowManualOrder(true)}>
+          주문 수동 추가
+        </button>
+      </div>
       <div className={styles.operationsGrid}>
       <section className={`${styles.block} ${styles.primaryBlock}`}>
         <h2>지금 오픈 중 <span className={styles.sectionCount}>{opening ? "1건" : "0건"}</span></h2>
@@ -926,8 +944,8 @@ export default function AdminPage() {
               {opening.youtube_nickname && <span className={styles.ytBadge}>YT: {opening.youtube_nickname}</span>}
             </div>
             <div className={styles.openingProduct}>
-              <span>{opening.product}</span>
-              <b>× {opening.quantity}</b>
+              <span>{opening.product} × {opening.quantity}</span>
+              <b className={styles.orderAmount}>{formatOrderAmount(opening)}</b>
             </div>
             <div className={styles.openingActions}>
               {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
@@ -957,7 +975,7 @@ export default function AdminPage() {
         </div>
       </section>
       <section className={`${styles.block} ${styles.pendingPaymentsBlock} ${styles.queueBlock}`} id="pending-payments">
-        <h2>무통장 입금 전 ({pendingPayments.length}) <button type="button" onClick={() => void hideOrderList(pendingPayments, "무통장 입금 전 주문")}>목록 삭제</button></h2>
+        <h2>무통장 입금 전 ({pendingPayments.length})</h2>
         <p className={styles.blockHint}>카페24 입금완료가 확인되면 대기 주문으로 자동 이동합니다.</p>
         {pendingPayments.length === 0 && <p className={styles.empty}>무통장 입금 전 주문 없음</p>}
         <div className={styles.pagedList}>{pagedPendingPayments.map(renderPendingPaymentRow)}</div>
@@ -967,8 +985,9 @@ export default function AdminPage() {
           <button disabled={pendingPaymentPage === pendingPaymentPageCount} onClick={() => setPendingPaymentPage((page) => page + 1)}>다음</button>
         </div>
       </section>
+      <div className={styles.dashboardThirdColumn}>
       <section className={`${styles.block} ${styles.cancelledOrdersBlock} ${styles.queueBlock}`}>
-        <h2>취소 · 환불 ({cancelledOrders.length}) <button type="button" onClick={() => void hideOrderList(cancelledOrders, "취소·환불 주문")}>목록 삭제</button></h2>
+        <h2>취소 · 환불 ({cancelledOrders.length})</h2>
         {cancelledOrders.length === 0 && <p className={styles.empty}>취소 · 환불 주문 없음</p>}
         <div className={`${styles.pagedList} ${styles.cancelledOrdersList}`}>{pagedCancelledOrders.map(renderCancelledOrderRow)}</div>
         <div className={styles.pagination}>
@@ -977,20 +996,10 @@ export default function AdminPage() {
           <button disabled={cancelledOrderPage === cancelledOrderPageCount} onClick={() => setCancelledOrderPage((page) => page + 1)}>다음</button>
         </div>
       </section>
-      </div>
 
-      <div className={styles.toolsGrid}>
       <section className={styles.block}>
         <h2>히트 카드 등록</h2>
         <form className={styles.form} onSubmit={addHit}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>구매자</label>
-            <input
-              placeholder="구매자명 입력"
-              value={hitForm.userId}
-              onChange={(e) => setHitForm({ ...hitForm, userId: e.target.value })}
-            />
-          </div>
           <div className={styles.field}>
             <label className={styles.fieldLabel}>유튜브 닉네임</label>
             <input
@@ -1013,8 +1022,7 @@ export default function AdminPage() {
           {pagedHitCards.map((h) => (
             <li key={h.id} className={styles.hitItem}>
               <span>
-                {h.user_id}
-                {h.youtube_nickname ? ` (YT: ${h.youtube_nickname})` : ""} — {h.card}
+                {h.user_id ? `${h.user_id}${h.youtube_nickname ? ` (YT: ${h.youtube_nickname})` : ""}` : h.youtube_nickname || "구매자 미등록"} — {h.card}
               </span>
               <button className={styles.hitDelete} onClick={() => removeHit(h.id)}>
                 삭제
@@ -1032,65 +1040,7 @@ export default function AdminPage() {
           </button>
         </div>
       </section>
-
-      <section className={styles.block}>
-        <h2>주문 수동 추가</h2>
-        <form className={styles.form} onSubmit={addManualOrder}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>구매자</label>
-            <input
-              placeholder="구매자명 입력"
-              value={form.userId}
-              onChange={(e) => setForm({ ...form, userId: e.target.value })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>유튜브 닉네임</label>
-            <input
-              placeholder="유튜브 닉네임 입력(선택)"
-              value={form.youtubeNickname}
-              onChange={(e) => setForm({ ...form, youtubeNickname: e.target.value })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>상품명</label>
-            <input
-              placeholder="상품명 입력"
-              value={form.product}
-              onChange={(e) => setForm({ ...form, product: e.target.value })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>구매수량</label>
-            <input
-              type="number"
-              min={1}
-              placeholder="수량 입력"
-              value={form.quantity}
-              onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>금액</label>
-            <input
-              type="number"
-              min={0}
-              placeholder="금액 입력"
-              value={form.unitPrice}
-              onChange={(e) => setForm({ ...form, unitPrice: Number(e.target.value) })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>등급</label>
-            <input
-              placeholder="등급 입력(선택)"
-              value={form.tier}
-              onChange={(e) => setForm({ ...form, tier: e.target.value })}
-            />
-          </div>
-          <button type="submit">추가</button>
-        </form>
-      </section>
+      </div>
       </div>
 
       </>
@@ -1282,6 +1232,45 @@ export default function AdminPage() {
               </button>
             </div>
             <RewardLedgerModal />
+          </div>
+        </div>
+      )}
+      {showManualOrder && (
+        <div className={`${styles.modalOverlay} ${styles.manualOrderOverlay}`} onClick={() => setShowManualOrder(false)}>
+          <div className={`${styles.modalCard} ${styles.manualOrderModal}`} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalTopBarWithTitle}>
+              <h2 className={styles.modalTitle}>주문 수동 추가</h2>
+              <button className={styles.modalCloseBtn} onClick={() => setShowManualOrder(false)}>
+                닫기 ✕
+              </button>
+            </div>
+            <form className={styles.form} onSubmit={addManualOrder}>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>구매자</label>
+                <input placeholder="구매자명 입력" value={form.userId} onChange={(e) => setForm({ ...form, userId: e.target.value })} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>유튜브 닉네임</label>
+                <input placeholder="유튜브 닉네임 입력(선택)" value={form.youtubeNickname} onChange={(e) => setForm({ ...form, youtubeNickname: e.target.value })} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>상품명</label>
+                <input placeholder="상품명 입력" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>구매수량</label>
+                <input type="number" min={1} placeholder="수량 입력" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>금액</label>
+                <input type="number" min={0} placeholder="금액 입력" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: Number(e.target.value) })} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>등급</label>
+                <input placeholder="등급 입력(선택)" value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value })} />
+              </div>
+              <button type="submit">추가</button>
+            </form>
           </div>
         </div>
       )}
