@@ -2532,12 +2532,13 @@
 }
 
 .operationsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.operationsGrid .primaryBlock,
+.operationsGrid .primaryBlock { grid-column: 1 / -1; }
 .operationsGrid .waitingOrdersBlock,
-.operationsGrid .pendingPaymentsBlock { grid-column: span 1; }
+.operationsGrid .pendingPaymentsBlock,
+.operationsGrid .cancelledOrdersBlock { grid-column: span 1; }
 
 .toolsGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .block {
@@ -2564,6 +2565,18 @@
   background: linear-gradient(145deg, rgba(104, 56, 234, 0.13), rgba(18, 22, 30, 0.92));
 }
 
+.sectionCount { margin-left: 6px; padding: 3px 8px; border: 1px solid rgba(196,181,253,.3); border-radius: 999px; background: rgba(124,92,255,.16); color: #d9ccff; font-size: 11px; font-weight: 850; vertical-align: middle; }
+.openingHero { display: grid; grid-template-columns: minmax(170px, .9fr) minmax(0, 2fr) auto; align-items: center; gap: 18px; min-height: 96px; padding: 16px 18px; border: 1px solid rgba(167,139,250,.25); border-radius: 14px; background: rgba(8,12,21,.52); }
+.openingIdentity { display: grid; gap: 8px; min-width: 0; }
+.openingBuyerLine,.orderIdentityMain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.openingBuyerLine strong,.orderIdentityMain strong { min-width: 0; overflow: hidden; color: #fff; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.memberGradeBadge { display: inline-flex; align-items: center; max-width: 100%; padding: 3px 8px; border: 1px solid rgba(167,139,250,.34); border-radius: 999px; background: rgba(124,92,255,.16); color: #ded3ff; font-size: 10px; font-weight: 850; line-height: 1.25; white-space: nowrap; }
+.openingProduct { display: flex; align-items: baseline; gap: 12px; min-width: 0; color: #fff; font-size: 18px; font-weight: 900; }
+.openingProduct span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.openingProduct b { flex: 0 0 auto; color: #e8ff42; font-size: 17px; }
+.openingActions { display: flex; align-items: center; gap: 10px; }
+.openingEmpty { display: grid; min-height: 74px; place-items: center; border: 1px dashed rgba(167,139,250,.25); border-radius: 12px; background: rgba(8,12,21,.3); color: #aab4c4; font-size: 13px; font-weight: 700; }
+
 .pendingPaymentsBlock { border-color: rgba(245, 158, 11, .36); background: linear-gradient(145deg, rgba(245, 158, 11, .1), rgba(18, 22, 30, .92)); }
 .blockHint { min-height: 30px; margin: -8px 0 8px; color: #b8c4d4; font-size: 11px; line-height: 1.4; }
 .paymentBadge,
@@ -2577,11 +2590,20 @@
 .confirmPaymentButton { flex: 0 0 auto; border: 1px solid rgba(251, 191, 36, .72); border-radius: 8px; background: #9a6508; color: #fff7d6; font-size: 11px; font-weight: 850; }
 .confirmPaymentButton:disabled { cursor: wait; opacity: .62; }
 .cancelledOrdersBlock { border-color: rgba(248, 113, 113, .34); background: linear-gradient(145deg, rgba(127, 29, 29, .16), rgba(18, 22, 30, .92)); }
+.operationsGrid > .cancelledOrdersBlock { background: linear-gradient(145deg, rgba(127, 29, 29, .16), rgba(18, 22, 30, .92)); }
 .cancelledOrdersList { min-height: 48px; }
 .cancelledOrderRow { border-bottom-color: rgba(248, 113, 113, .14); }
 .cancelStatusBadge { flex: 0 0 auto; padding: 3px 7px; border: 1px solid rgba(248, 113, 113, .4); border-radius: 999px; background: rgba(185, 28, 28, .18); color: #ffb4b4; font-size: 10px; font-weight: 900; line-height: 1.1; white-space: nowrap; }
 .cancelStatusBadge[data-refunded="true"] { border-color: rgba(196, 181, 253, .42); background: rgba(124, 92, 255, .18); color: #ded3ff; }
 .cancelledOrderId { flex: 0 1 126px !important; overflow: hidden; color: #8f9aaa; font-size: 10px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.row.queueOrderRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-height: 0; padding: 12px 4px; overflow: visible; border-bottom-color: rgba(255,255,255,.09); }
+.orderIdentity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; min-width: 0; }
+.orderIdentityMain { flex: 1 1 auto; }
+.orderRowFooter { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; min-width: 0; }
+.orderRowFooter .rowActions { margin-left: auto; }
+.waitingOrdersBlock .orderRowFooter .rowActions { display: flex; width: auto; flex-basis: auto; margin-left: auto; padding-top: 0; }
+.waitingOrdersBlock .orderRowFooter .rowActions button { width: auto; min-width: 62px; }
+.orderRowFooter .cancelledOrderId { flex: 1 1 auto !important; }
 .queueBlock { display: flex; flex-direction: column; }
 .queueBlock .pagedList { flex: 1 1 auto; min-height: 0; }
 .queueBlock .pagination { flex: 0 0 32px; margin-top: auto; }
@@ -2595,19 +2617,15 @@
   background: rgba(18, 22, 30, 0.9);
 }
 
-.orderDashboard .dashboardCard:first-of-type,
-.toolsGrid > .cancelledOrdersBlock {
+.orderDashboard .dashboardCard:first-of-type {
   background: linear-gradient(145deg, rgba(104, 56, 234, 0.13), rgba(18, 22, 30, 0.92));
 }
 
 .operationsGrid > .block:not(.primaryBlock),
-.toolsGrid > .block:not(:first-child):not(.cancelledOrdersBlock) {
+.toolsGrid > .block:not(:first-child) {
   background: rgba(18, 22, 30, 0.9);
 }
-
-.toolsGrid > .cancelledOrdersBlock {
-  order: -1;
-}
+.operationsGrid > .block.cancelledOrdersBlock { background: linear-gradient(145deg, rgba(127, 29, 29, .16), rgba(18, 22, 30, .92)); }
 
 .orderDashboard .dashboardCard,
 .operationsGrid > .block,
@@ -2617,14 +2635,15 @@
 
 .page[data-theme="light"] .orderDashboard .dashboardCard,
 .page[data-theme="light"] .operationsGrid > .block:not(.primaryBlock),
-.page[data-theme="light"] .toolsGrid > .block:not(:first-child):not(.cancelledOrdersBlock) {
+.page[data-theme="light"] .toolsGrid > .block:not(:first-child) {
   background: #fff;
 }
 
 .page[data-theme="light"] .orderDashboard .dashboardCard:first-of-type,
-.page[data-theme="light"] .toolsGrid > .cancelledOrdersBlock {
+.page[data-theme="light"] .operationsGrid > .cancelledOrdersBlock {
   background: linear-gradient(135deg, #f3efff, #fff 68%);
 }
+.page[data-theme="light"] .operationsGrid > .block.cancelledOrdersBlock { background: linear-gradient(135deg, #fff0f0, #fff 68%); }
 
 .page[data-theme="light"] .orderDashboard .dashboardCard,
 .page[data-theme="light"] .operationsGrid > .block,
@@ -2894,6 +2913,9 @@
 }
 
 @media (max-width: 900px) {
+  .openingHero { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .openingActions { justify-content: flex-end; }
+
   .page {
     padding: 24px 16px 44px;
   }
@@ -3099,5 +3121,117 @@
     flex: 1 1 calc(50% - 8px);
     width: auto;
     min-width: 120px;
+  }
+}
+
+@media (min-width: 561px) and (max-width: 900px) {
+  .operationsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .operationsGrid > .primaryBlock,
+  .operationsGrid > .cancelledOrdersBlock {
+    grid-column: 1 / -1;
+  }
+
+  .operationsGrid > .waitingOrdersBlock,
+  .operationsGrid > .pendingPaymentsBlock {
+    grid-column: span 1;
+  }
+
+  .operationsGrid > .block {
+    min-width: 0;
+    padding: 18px;
+  }
+
+  .openingHero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: 12px;
+  }
+
+  .openingActions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 560px) {
+  .homeSectionTitle + .operationsGrid {
+    margin-top: 12px;
+  }
+
+  .operationsGrid {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .operationsGrid > .block {
+    min-width: 0;
+    padding: 15px 14px;
+    border-radius: 14px;
+  }
+
+  .operationsGrid > .block h2 {
+    margin-bottom: 12px;
+  }
+
+  .openingHero {
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .openingProduct {
+    font-size: 16px;
+  }
+
+  .openingActions {
+    justify-content: flex-start;
+  }
+
+  .openingActions .completeButton {
+    min-height: 44px;
+    flex: 1 1 auto;
+    margin-left: 0;
+    padding-inline: 16px !important;
+  }
+
+  .queueBlock .pagedList {
+    min-height: 0;
+  }
+
+  .row.queueOrderRow {
+    gap: 7px;
+    padding: 10px 0;
+  }
+
+  .orderIdentity {
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .orderIdentityMain {
+    min-width: 0;
+  }
+
+  .orderIdentity > .ytBadge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .orderRowFooter {
+    gap: 6px;
+  }
+
+  .operationsGrid .waitingOrdersBlock .orderRowFooter .rowActions {
+    width: 100%;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .operationsGrid .orderRowFooter .rowActions button {
+    min-height: 42px;
+    flex: 1 1 0;
   }
 }

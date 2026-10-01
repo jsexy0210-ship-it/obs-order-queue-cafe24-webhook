@@ -422,7 +422,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                         <b className={styles.currentOrderHeading}>오픈</b>
                         {openingOrder ? (
                           <p className={`${styles.completedOrderRow} ${nickname(openingOrder.youtube_nickname) === "-" ? styles.orderWithoutNickname : ""}`}>{nickname(openingOrder.youtube_nickname) !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(openingOrder)}<i style={textFit(nickname(openingOrder.youtube_nickname), 14)}>{nickname(openingOrder.youtube_nickname)}</i></span>}<CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} /></p>
-                        ) : <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>오픈 주문 없음</p>}
+                        ) : <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>-</p>}
                       </section>
                       <section className={styles.currentOrderColumn}>
                         <b className={styles.currentOrderHeading}>대기 <em>{waitingOrders.length}건</em></b>
