@@ -48,7 +48,7 @@ data_target="$(readlink -f "$current/data")"
 db_before="$(stat -c '%i:%s:%Y' "$data_target/cardbreak.db")"
 mkdir -p "$release"
 unzip -q "$archive" -d "$release"
-ln -s "$node_modules_target" "$release/node_modules"
+cp -al "$node_modules_target" "$release/node_modules"
 cp "$current/.env.local" "$release/.env.local"
 [[ ! -e "$release/data" ]] || {
   echo "Candidate release unexpectedly contains runtime data." >&2
