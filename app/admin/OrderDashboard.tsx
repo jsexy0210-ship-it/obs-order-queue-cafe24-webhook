@@ -18,7 +18,7 @@ type RewardEntry = {
   order_created_at: string;
 };
 type Grade = { id: string; name: string };
-type DashboardRange = "day" | "week" | "month" | "year";
+export type DashboardRange = "day" | "week" | "month" | "year";
 
 const BANK_DEPOSIT_METHODS = new Set(["cash", "deposit", "escrow_cash"]);
 const HOUR_MS = 60 * 60 * 1000;
@@ -81,12 +81,11 @@ function makeSeries(orders: Order[], range: DashboardRange, now: number): Series
   return series;
 }
 
-function RangePicker({ value, onChange, title }: {
+export function DashboardRangePicker({ value, onChange }: {
   value: DashboardRange;
   onChange: (value: DashboardRange) => void;
-  title: string;
 }) {
-  return <div className={styles.dashboardRangePicker} role="group" aria-label={`${title} 기간`}>
+  return <div className={styles.dashboardRangePicker} role="group" aria-label="대시보드 기간">
     {RANGE_OPTIONS.map((option) => <button
       key={option.value}
       type="button"
@@ -98,13 +97,10 @@ function RangePicker({ value, onChange, title }: {
   </div>;
 }
 
-export default function OrderDashboard() {
+export default function OrderDashboard({ range }: { range: DashboardRange }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [rewardEntries, setRewardEntries] = useState<RewardEntry[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
-  const [amountRange, setAmountRange] = useState<DashboardRange>("day");
-  const [paymentRange, setPaymentRange] = useState<DashboardRange>("day");
-  const [rewardRange, setRewardRange] = useState<DashboardRange>("day");
   const [now, setNow] = useState(0);
   const [syncError, setSyncError] = useState(false);
 
@@ -143,16 +139,16 @@ export default function OrderDashboard() {
   const amountOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
     return order.status !== "cancelled" && Boolean(order.paid_at)
-      && time >= rangeStart(amountRange, now) && time <= now;
+      && time >= rangeStart(range, now) && time <= now;
   });
   const paymentOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
     return order.status !== "cancelled" && Boolean(order.paid_at)
-      && time >= rangeStart(paymentRange, now) && time <= now;
+      && time >= rangeStart(range, now) && time <= now;
   });
   const currentRewards = rewardEntries.filter((entry) => {
     const time = parseUtc(entry.order_created_at);
-    return time >= rangeStart(rewardRange, now) && time <= now;
+    return time >= rangeStart(range, now) && time <= now;
   });
   const totalAmount = amountOrders.reduce((total, order) => total + order.actual_amount, 0);
   const cardCount = paymentOrders.filter(
@@ -179,8 +175,8 @@ export default function OrderDashboard() {
         .reduce((total, entry) => total + entry.amount, 0),
     };
   });
-  const amountSeries = makeSeries(amountOrders, amountRange, now);
-  const paymentSeries = makeSeries(paymentOrders, paymentRange, now);
+  const amountSeries = makeSeries(amountOrders, range, now);
+  const paymentSeries = makeSeries(paymentOrders, range, now);
   const amountPeak = Math.max(1, ...amountSeries.map((point) => point.amount));
   const amountLinePoints = amountSeries
     .map((point, index) => {
@@ -200,11 +196,10 @@ export default function OrderDashboard() {
       <div className={`${styles.dashboardCard} ${styles.chartDashboardCard}`}>
         <div className={styles.dashboardCardHeader}>
           <span>총 주문금액</span>
-          <RangePicker title="총 주문금액" value={amountRange} onChange={setAmountRange} />
         </div>
         <strong>{totalAmount.toLocaleString("ko-KR")}원</strong>
-        <small>{RANGE_OPTIONS.find((option) => option.value === amountRange)?.description} · 주문금액 추이</small>
-        <div className={styles.lineChart} role="img" aria-label={`${amountRange} 기간별 총 주문금액 선 그래프`}>
+        <small>{RANGE_OPTIONS.find((option) => option.value === range)?.description} · 주문금액 추이</small>
+        <div className={styles.lineChart} role="img" aria-label={`${range} 기간별 총 주문금액 선 그래프`}>
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <line x1="0" y1="26" x2="100" y2="26" />
             <line x1="0" y1="58" x2="100" y2="58" />
@@ -220,11 +215,10 @@ export default function OrderDashboard() {
       <div className={`${styles.dashboardCard} ${styles.chartDashboardCard}`}>
         <div className={styles.dashboardCardHeader}>
           <span>카드결제 + 무통장 총계</span>
-          <RangePicker title="결제 건수" value={paymentRange} onChange={setPaymentRange} />
         </div>
         <strong>{paymentCount}건</strong>
         <small>카드결제 {cardCount}건 · 무통장 {bankCount}건</small>
-        <div className={styles.barChart} role="img" aria-label={`${paymentRange} 기간별 카드결제와 무통장 주문 건수 막대 그래프`}>
+        <div className={styles.barChart} role="img" aria-label={`${range} 기간별 카드결제와 무통장 주문 건수 막대 그래프`}>
           {paymentSeries.map((point) => (
             <div
               className={styles.barColumn}
@@ -254,10 +248,9 @@ export default function OrderDashboard() {
       <div className={`${styles.dashboardCard} ${styles.rewardDashboardCard}`}>
         <div className={styles.dashboardCardHeader}>
           <span>적립금 정보</span>
-          <RangePicker title="기간별 적립금" value={rewardRange} onChange={setRewardRange} />
         </div>
         <strong>{rewardTotal.toLocaleString("ko-KR")}원</strong>
-        <small>누적 적립금 · 지급 완료 원장 기준 · {RANGE_OPTIONS.find((option) => option.value === rewardRange)?.description} 순지급</small>
+        <small>누적 적립금 · 지급 완료 원장 기준 · {RANGE_OPTIONS.find((option) => option.value === range)?.description} 순지급</small>
         <div className={styles.rewardBreakdown} aria-label="등급별 카드결제와 무통장 적립금 순지급">
           {rewardByGrade.map((grade) => (
             <div className={styles.rewardGradeTotal} key={grade.id}>

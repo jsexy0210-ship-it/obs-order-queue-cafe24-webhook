@@ -219,7 +219,7 @@
   padding: 7px 12px;
   border: none;
   border-radius: 6px;
-  background: #ff4d5f;
+  background: #d94359;
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -228,7 +228,7 @@
 }
 
 .rowDeleteButton:hover {
-  background: #ff6b7a;
+  background: #c7354b;
 }
 
 .sectionTitle {
