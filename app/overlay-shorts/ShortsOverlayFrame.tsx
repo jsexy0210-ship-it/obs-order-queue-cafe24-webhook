@@ -8,6 +8,8 @@ import styles from "./shorts.module.css";
 type Props = {
   settingsOverride?: OverlaySettings;
   editing?: boolean;
+  /** 관리 화면에서는 실제 방송 비율의 독립된 미리보기 캔버스를 사용합니다. */
+  preview?: boolean;
   /** 기본 오버레이와 신규 주문 연출을 관리 화면에서 분리해 미리봅니다. */
   zoneIds?: readonly ShortsZoneId[];
   /** 관리 화면에서 최신 실제 주문으로 신규 주문 효과를 미리봅니다. */
@@ -89,7 +91,7 @@ function CurrentOrderProduct({ product, quantity }: Pick<LiveOrder, "product" | 
   return <em ref={viewportRef} className={styles.currentOrderProduct} style={{ "--text-fit": String(fit) } as CSSProperties}><span ref={textRef}>{label}</span></em>;
 }
 
-export default function ShortsOverlayFrame({ settingsOverride, editing = false, zoneIds = SHORTS_ZONE_IDS, showAnimationPreview = false, previewOrderKind = "repeat", onZoneChange }: Props) {
+export default function ShortsOverlayFrame({ settingsOverride, editing = false, preview = false, zoneIds = SHORTS_ZONE_IDS, showAnimationPreview = false, previewOrderKind = "repeat", onZoneChange }: Props) {
   const live = useLiveCardBreak();
   const [ranking, setRanking] = useState<RankingRow[]>([]);
   const [newOrderEffect, setNewOrderEffect] = useState<NewOrderEffect | null>(null);
@@ -306,7 +308,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   }
 
   return (
-    <div className={`${styles.shortsShell} ${editing ? styles.editorShell : styles.liveShell}`} aria-label={editing ? "YouTube Shorts 실제 비율 미리보기" : "망고TCG 라이브 오버레이"}>
+    <div className={`${styles.shortsShell} ${!preview && !editing ? styles.liveShell : ""}`} aria-label={editing || preview ? "YouTube Shorts 실제 비율 미리보기" : "망고TCG 라이브 오버레이"}>
       {editing && <div className={styles.youtubeTop} aria-label="YouTube 상단 앱 UI 잠금 영역">
         <span>←</span><b>@MangoTCG</b><span className={styles.subscribe}>구독</span><span>•••</span>
       </div>}

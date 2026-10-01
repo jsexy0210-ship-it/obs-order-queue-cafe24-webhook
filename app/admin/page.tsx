@@ -1176,6 +1176,7 @@ export default function AdminPage() {
               <ShortsOverlayFrame
                 settingsOverride={shortsSettings}
                 editing={editingOverlay}
+                preview
                 zoneIds={overlayPreviewMode === "basic" ? BASIC_SHORTS_ZONE_IDS : ORDER_ANIMATION_ZONE_IDS}
                 showAnimationPreview={overlayPreviewMode === "animation"}
                 previewOrderKind={selectedNewOrderCopy}
