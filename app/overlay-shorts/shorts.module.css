@@ -66,7 +66,7 @@
 .zoneAnnouncement { align-content: center; text-align: center; }
 .zoneAnnouncement p { font-size: clamp(9px, 9cqw, 17px); }
 .hitRows { display: grid; gap: clamp(4px, 1cqw, 8px); }
-.hitRowsViewport { height: 100%; overflow: hidden; }
+.hitRowsViewport { height: min(100%, 30cqw); overflow: hidden; }
 .hitRows p { display: block; min-width: 0; padding: clamp(4px, 1.1cqw, 9px); border: 1px solid color-mix(in srgb, var(--zone-border-color, #ff9214) 78%, transparent); border-radius: 0; background: rgba(0,0,0,.22); }
 .hitRows span { display: block; min-width: 0; overflow: visible; white-space: nowrap; color: var(--zone-text-color, #fff); font-size: clamp(11px, calc(3.8cqw * var(--text-fit, 1)), 28px); line-height: 1.25; font-weight: 900; }
 .hitRowsScrolling { animation: hitRowsDown 14s linear infinite; }
