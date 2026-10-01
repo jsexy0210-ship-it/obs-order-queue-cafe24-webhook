@@ -17,6 +17,25 @@ def encoded_command(script):
     return "powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand " + encoded
 
 
+def linux_deploy_preflight_script():
+    return r'''set -euo pipefail
+app_root="$1"
+current="$(pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, "", $3); print $3; exit}')"
+[[ "$app_root" == /* && "$current" == "$app_root"/mangotcg-release-* && -f "$current/data/cardbreak.db" && -f "$current/.env.local" ]] || {
+  echo "Current MangoTCG runtime files are unavailable." >&2
+  exit 1
+}
+removed=0
+for stale in "$app_root"/mangotcg-release-*-live; do
+  [[ -d "$stale" && ! -L "$stale" && "$stale" != "$current" ]] || continue
+  [[ ! -e "$stale/.next/BUILD_ID" && ! -e "$stale/data" && ! -L "$stale/data" ]] || continue
+  rm -rf -- "$stale"
+  removed=$((removed + 1))
+done
+printf 'inactive_incomplete_releases_removed=%s\n' "$removed"
+'''
+
+
 def configuration(environ):
     names = ("HOST", "USER", "SSH_KEY", "KNOWN_HOSTS", "APP_PATH")
     missing = ["MANGO_DEPLOY_" + n for n in names if not environ.get("MANGO_DEPLOY_" + n, "").strip()]
@@ -183,6 +202,13 @@ def main():
             )
             subprocess.run(["ssh", "-F", str(ssh_config), "production", encoded_command(command)], check=True)
         else:
+            remote_preflight = "bash -s -- " + shlex.quote(config["APP_PATH"])
+            subprocess.run(
+                ["ssh", "-F", str(ssh_config), "production", remote_preflight],
+                input=linux_deploy_preflight_script(),
+                text=True,
+                check=True,
+            )
             incoming = "/root/.mangotcg-incoming/" + sha
             subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
             subprocess.run(["scp", "-F", str(ssh_config), str(archive), "scripts/deploy-linux.sh", f"production:{incoming}/"], check=True)
