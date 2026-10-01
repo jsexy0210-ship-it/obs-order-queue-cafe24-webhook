@@ -344,7 +344,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
           if (!zone.visible) return null;
           if (id === "announcement" && !displayedOrderEffect) return null;
           const style = {
-            left: `${zone.x}%`, top: `${zone.y}%`, width: `${zone.width}%`, minHeight: `${zone.height}%`,
+            left: `${zone.x}%`, top: `${zone.y}%`, width: `${zone.width}%`, height: `${zone.height}%`,
             zIndex: zone.zIndex,
             "--zone-accent": zone.accent,
             "--zone-title-color": zone.titleColor,
