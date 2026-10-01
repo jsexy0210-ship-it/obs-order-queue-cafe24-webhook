@@ -1,6 +1,7 @@
 type Cafe24Normalized = {
   externalOrderId: string;
   userId: string;
+  memberId: string | null;
   product: string;
   quantity: number;
   unitPrice: number;
@@ -113,6 +114,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
     "member_id",
     "name",
   ]);
+  const memberId = pick(resource, ["member_id", "memberId"]);
 
   const items = resource.extra_info ?? resource.items ?? resource.order_items ?? resource.order_products ?? [];
   const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : undefined;
@@ -159,6 +161,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
   return {
     externalOrderId: String(orderId),
     userId: String(buyerName).trim(),
+    memberId: memberId ? String(memberId).trim() : null,
     product: String(productName),
     quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
     unitPrice: Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 15000,

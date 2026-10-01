@@ -137,6 +137,7 @@ export async function currentOrderView(
       source: "cafe24",
       external_order_id: remote.order_id,
       user_id: remote.billing_name || "구매자 확인 불가",
+      member_id: remote.member_id?.trim() || null,
       product: items.map((item) => item.product_name).filter(Boolean).join(" · ") || "카페24 주문",
       quantity: items.reduce((total, item) => total + Number(item.quantity || 0), 0) || 1,
       unit_price: 0,

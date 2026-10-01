@@ -158,12 +158,17 @@ export async function listDetailedRewardLedger(limit = 30): Promise<DetailedRewa
 
 export type DashboardRewardEntry = Pick<
   RewardLedgerRow,
-  "external_order_id" | "action" | "amount" | "grade_id" | "processed_at"
-> & { payment_kind: "card" | "bank" | "unknown" };
+  "external_order_id" | "action" | "amount" | "grade_id"
+> & {
+  payment_kind: "card" | "bank" | "unknown";
+  // 적립금 표시는 지급 처리일이 아닌 이 주문이 만들어진 시각을 기준으로 합니다.
+  order_created_at: string;
+};
 
-export function getDashboardRewardEntries(sinceUtc: string): DashboardRewardEntry[] {
+export function getDashboardRewardEntries(): DashboardRewardEntry[] {
   return db.prepare(
-    `SELECT l.external_order_id, l.action, l.amount, l.grade_id, l.processed_at,
+    `SELECT l.external_order_id, l.action, l.amount, l.grade_id,
+       COALESCE(o.created_at, l.created_at) AS order_created_at,
        CASE
          -- 지급 당시 원장에 저장한 적용률로 결제수단을 판별한다. 주문 이력이 정리돼도
          -- 카드/무통장 적립금 분류가 사라지지 않도록 orders 테이블에 의존하지 않는다.
@@ -172,8 +177,9 @@ export function getDashboardRewardEntries(sinceUtc: string): DashboardRewardEntr
          ELSE 'unknown'
        END AS payment_kind
        FROM reward_ledger l
-      WHERE l.status = 'succeeded' AND l.processed_at >= ?`
-  ).all(sinceUtc) as DashboardRewardEntry[];
+       LEFT JOIN orders o ON o.external_order_id = l.external_order_id
+      WHERE l.status = 'succeeded'`
+  ).all() as DashboardRewardEntry[];
 }
 
 export function getDashboardCumulativeRewardBalance() {

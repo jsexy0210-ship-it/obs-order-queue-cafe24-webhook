@@ -36,8 +36,8 @@ export async function GET(request: Request) {
       syncError = true;
     }
     const current = await currentOrderView(getOrderHistory(), cafe24Orders);
-    const statuses = new Map(current.flatMap((order) => order.external_order_id
-      ? [[order.external_order_id, order.status] as const] : []));
+    const orderDates = new Map(current.flatMap((order) => order.external_order_id
+      ? [[order.external_order_id, order.created_at] as const] : []));
     const cumulativeReward = getDashboardCumulativeRewardBalance();
     const legacyRewardBalanceByGrade = await getDashboardLegacyRewardBalanceByGrade();
     return NextResponse.json({
@@ -45,11 +45,12 @@ export async function GET(request: Request) {
         .map(({ created_at, payment_method, paid_at, status, actual_amount }) => ({
           created_at, payment_method, paid_at, status, actual_amount,
         })),
-      rewardEntries: getDashboardRewardEntries(dashboardStartUtc)
-        .filter((entry) => statuses.get(entry.external_order_id) !== "cancelled")
+      rewardEntries: getDashboardRewardEntries()
         .map((entry) => ({
           amount: entry.action === "recover" ? -entry.amount : entry.amount,
-          grade_id: entry.grade_id, payment_kind: entry.payment_kind, processed_at: entry.processed_at,
+          grade_id: entry.grade_id,
+          payment_kind: entry.payment_kind,
+          order_created_at: orderDates.get(entry.external_order_id) ?? entry.order_created_at,
         })),
       cumulativeRewardBalance: cumulativeReward.amount,
       cumulativeRewardSource: cumulativeReward.source,

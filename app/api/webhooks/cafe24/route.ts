@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { cancelOrder, insertOrder, markOrderPaid, updateCafe24Order } from "@/lib/store";
+import {
+  cancelOrder,
+  insertOrder,
+  markOrderPaid,
+  saveCafe24OrderIdentity,
+  updateCafe24Order,
+} from "@/lib/store";
 import {
   extractCafe24OrderId,
   extractCafe24PaymentInfo,
   normalizeCafe24Order,
   redactPiiForLogging,
 } from "@/lib/cafe24";
-import { getCafe24OrderForReward } from "@/lib/cafe24Admin";
+import { getCafe24OrderBuyerInfo, getCafe24OrderForReward } from "@/lib/cafe24Admin";
 import { issueRewardForOrder, recoverRewardForOrder } from "@/lib/rewardService";
 import { getRewardSettings } from "@/lib/rewardStore";
 
@@ -113,6 +119,7 @@ export async function POST(req: NextRequest) {
           source: "cafe24",
           externalOrderId: normalized.externalOrderId,
           userId: normalized.userId,
+          memberId: normalized.memberId,
           product: normalized.product,
           quantity: normalized.quantity,
           unitPrice: normalized.unitPrice,
@@ -201,6 +208,7 @@ export async function POST(req: NextRequest) {
       const orderInput = {
         externalOrderId: orderId,
         userId: normalized.userId,
+        memberId: normalized.memberId,
         product: normalized.product,
         quantity,
         unitPrice,
@@ -214,6 +222,7 @@ export async function POST(req: NextRequest) {
       if (!matched) {
         insertOrder({ source: "cafe24", ...orderInput, paid: normalized.paid, paymentDate: normalized.paymentDate });
       }
+      saveCafe24OrderIdentity(orderId, { memberId: normalized.memberId, buyerName: normalized.userId });
       if (normalized.paid) markOrderPaid(orderId, normalized);
 
       let reward: unknown = { outcome: "not_triggered" };
@@ -270,6 +279,7 @@ export async function POST(req: NextRequest) {
     source: "cafe24",
     externalOrderId: normalized.externalOrderId,
     userId: normalized.userId,
+    memberId: normalized.memberId,
     product: normalized.product,
     quantity: normalized.quantity,
     unitPrice: normalized.unitPrice,
@@ -280,6 +290,18 @@ export async function POST(req: NextRequest) {
     paid: normalized.paid,
     paymentDate: normalized.paymentDate,
   });
+
+  // 웹훅은 회원 ID를 생략할 수 있으므로, 카페24 구매자 조회값으로 보완해
+  // 이후 주문랭킹이 이름이 아닌 같은 회원 계정 단위로 항상 합산되게 합니다.
+  try {
+    const buyer = await getCafe24OrderBuyerInfo(normalized.externalOrderId);
+    saveCafe24OrderIdentity(normalized.externalOrderId, {
+      memberId: buyer?.memberId ?? normalized.memberId,
+      buyerName: buyer?.name ?? normalized.userId,
+    });
+  } catch {
+    // 웹훅 수신 자체는 보존합니다. 다음 랭킹 조회 때 누락된 회원 ID를 다시 보완합니다.
+  }
 
   // 카드결제는 주문 생성 이벤트 시점에 이미 결제완료(T)로 전달될 수 있다.
   // paid 이벤트만 기다리면 별도 결제완료 웹훅이 오지 않는 카드 주문은 영구적으로

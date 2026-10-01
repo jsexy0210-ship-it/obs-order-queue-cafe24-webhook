@@ -1,9 +1,15 @@
-import { changeCafe24Points, getCafe24CustomerGroups, getCafe24OrderForReward } from "./cafe24Admin";
+import {
+  changeCafe24Points,
+  getCafe24CustomerGroups,
+  getCafe24OrderBuyerInfo,
+  getCafe24OrderForReward,
+} from "./cafe24Admin";
 import { db } from "./db";
 import { assertCafe24BonusExecutionAllowed } from "./rewardExecution";
 import { getBuyerInfo, getCurrentCustomerGroupNo } from "./buyerNames";
 import { isAfterRewardStart } from "./rewardCutoff";
 import { refreshCafe24PointBalanceSnapshot } from "./rewardService";
+import { saveCafe24OrderIdentity } from "./store";
 
 export type OrderRankingRow = {
   rank: number;
@@ -20,6 +26,7 @@ export type OrderRankingRow = {
 
 type RankingSourceRow = {
   user_id: string;
+  buyer_name: string | null;
   youtube_nickname: string | null;
   tier: string;
   total_purchase_amount: number;
@@ -29,22 +36,27 @@ type RankingSourceRow = {
 /** 카페24에서 결제가 확인된 누적 주문만으로 구매자별 랭킹을 만듭니다. */
 export function getOrderRanking(limit = 10): OrderRankingRow[] {
   const sources = db.prepare(
-    `SELECT user_id,
+    `WITH eligible_orders AS (
+       SELECT *, COALESCE(NULLIF(member_id, ''), 'order:' || COALESCE(external_order_id, id)) AS ranking_user_id
+         FROM orders
+        WHERE source = 'cafe24'
+          AND paid_at IS NOT NULL
+          AND status <> 'cancelled'
+     )
+     SELECT ranking_user_id AS user_id,
+            MAX(user_id) AS buyer_name,
             MAX(youtube_nickname) AS youtube_nickname,
             MAX(NULLIF(tier, '')) AS tier,
             SUM(COALESCE(actual_amount, unit_price * quantity)) AS total_purchase_amount,
             COUNT(*) AS order_count
-       FROM orders
-      WHERE source = 'cafe24'
-        AND paid_at IS NOT NULL
-        AND status <> 'cancelled'
-      GROUP BY user_id
+       FROM eligible_orders
+      GROUP BY ranking_user_id
       ORDER BY total_purchase_amount DESC, order_count DESC, user_id ASC
       LIMIT ?`
   ).all(limit) as RankingSourceRow[];
 
   const rewardRows = db.prepare(
-    `SELECT o.user_id,
+    `SELECT COALESCE(NULLIF(o.member_id, ''), 'order:' || COALESCE(o.external_order_id, o.id)) AS user_id,
             SUM(CASE
               WHEN l.action = 'issue' AND l.status = 'succeeded' THEN l.amount
               WHEN l.action = 'recover' AND l.status = 'succeeded' THEN -l.amount
@@ -55,7 +67,7 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
       WHERE o.source = 'cafe24'
         AND o.paid_at IS NOT NULL
         AND o.status <> 'cancelled'
-      GROUP BY o.user_id`
+      GROUP BY COALESCE(NULLIF(o.member_id, ''), 'order:' || COALESCE(o.external_order_id, o.id))`
   ).all() as Array<{ user_id: string; reward_points: number | null }>;
   const rewards = new Map(rewardRows.map((row) => [row.user_id, Number(row.reward_points ?? 0)]));
 
@@ -64,20 +76,19 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
        FROM cafe24_member_point_balance_snapshots`
   ).all() as Array<{ member_id: string; buyer_name: string; balance: number }>;
   const pointBalancesByMemberId = new Map(pointBalanceRows.map((row) => [row.member_id, Number(row.balance)]));
-  const pointBalancesByBuyerName = new Map(pointBalanceRows.map((row) => [row.buyer_name, Number(row.balance)]));
 
   const bonusRows = db.prepare(
-    `SELECT user_id, SUM(amount) AS bonus_points
+    `SELECT COALESCE(NULLIF(member_id, ''), user_id) AS user_id, SUM(amount) AS bonus_points
        FROM ranking_bonus_ledger
       WHERE status = 'succeeded'
-      GROUP BY user_id`
+      GROUP BY COALESCE(NULLIF(member_id, ''), user_id)`
   ).all() as Array<{ user_id: string; bonus_points: number | null }>;
   const bonuses = new Map(bonusRows.map((row) => [row.user_id, Number(row.bonus_points ?? 0)]));
 
   return sources.map((row, index) => ({
     rank: index + 1,
     userId: row.user_id,
-    buyerName: null,
+    buyerName: row.buyer_name,
     youtubeNickname: row.youtube_nickname,
     tier: row.tier || null,
     totalPurchaseAmount: Number(row.total_purchase_amount ?? 0),
@@ -85,7 +96,6 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
     // 카페24 잔액 스냅샷이 있으면 현재 누적 적립금을 우선 표시합니다.
     // 스냅샷이 없는 기존 회원만 실제 지급·회수 원장 합계를 사용합니다.
     rewardPoints: pointBalancesByMemberId.get(row.user_id)
-      ?? pointBalancesByBuyerName.get(row.user_id)
       ?? rewards.get(row.user_id)
       ?? 0,
     bonusPoints: bonuses.get(row.user_id) ?? 0,
@@ -95,6 +105,7 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
 
 /** 최근 결제 주문의 회원 ID로 카페24의 현재 회원등급을 조회합니다. */
 export async function getOrderRankingWithGrades(limit = 10): Promise<OrderRankingRow[]> {
+  await hydrateMissingRankingMemberIds();
   const ranking = getOrderRanking(limit);
   if (ranking.length === 0) return ranking;
 
@@ -106,15 +117,47 @@ export async function getOrderRankingWithGrades(limit = 10): Promise<OrderRankin
     if (!order) return { ...row, tier: null };
     const buyer = await getBuyerInfo(order.external_order_id);
     const groupNo = buyer?.memberId ? await getCurrentCustomerGroupNo(buyer.memberId) : null;
-    return { ...row, buyerName: buyer?.name ?? null, tier: groupNo ? groupNames.get(groupNo) ?? null : null };
+    return {
+      ...row,
+      buyerName: buyer?.name ?? row.buyerName,
+      tier: groupNo ? groupNames.get(groupNo) ?? row.tier : row.tier,
+    };
   }));
+}
+
+/** 이전 웹훅이 생략한 회원 ID도 랭킹을 열 때 카페24 값으로 한 번 보완해 DB에 남깁니다. */
+async function hydrateMissingRankingMemberIds() {
+  const rows = db.prepare(
+    `SELECT external_order_id
+       FROM orders
+      WHERE source = 'cafe24'
+        AND paid_at IS NOT NULL
+        AND external_order_id IS NOT NULL
+        AND NULLIF(member_id, '') IS NULL`
+  ).all() as Array<{ external_order_id: string }>;
+
+  for (let index = 0; index < rows.length; index += 5) {
+    await Promise.all(rows.slice(index, index + 5).map(async ({ external_order_id }) => {
+      try {
+        const buyer = await getCafe24OrderBuyerInfo(external_order_id);
+        if (buyer?.memberId) {
+          saveCafe24OrderIdentity(external_order_id, {
+            memberId: buyer.memberId,
+            buyerName: buyer.name,
+          });
+        }
+      } catch {
+        // 카페24 일시 조회 실패 주문은 다음 새로고침 때 다시 보완합니다.
+      }
+    }));
+  }
 }
 
 function findLatestCafe24Order(userId: string) {
   return db.prepare(
     `SELECT external_order_id
        FROM orders
-      WHERE user_id = ?
+      WHERE COALESCE(NULLIF(member_id, ''), 'order:' || COALESCE(external_order_id, id)) = ?
         AND source = 'cafe24'
         AND external_order_id IS NOT NULL
         AND paid_at IS NOT NULL
@@ -139,6 +182,7 @@ export async function grantRankingBonus(userId: string, amount: number, requestI
 
   assertCafe24BonusExecutionAllowed();
 
+  await hydrateMissingRankingMemberIds();
   const ranking = getOrderRanking(10);
   const rankingRow = ranking.find((row) => row.userId === userId);
   if (!rankingRow || rankingRow.rank > 10) {
@@ -150,11 +194,10 @@ export async function grantRankingBonus(userId: string, amount: number, requestI
     throw new Error("카페24 주문번호가 있는 구매자에게만 보너스 적립금을 지급할 수 있습니다.");
   }
 
-  // 표시명은 마스킹되어 서로 다른 회원이 같아질 수 있습니다.
-  // 같은 표시명으로 합쳐진 모든 결제 주문의 실제 회원 ID가 일치해야 지급합니다.
+  // 랭킹은 카페24 실제 회원 ID로 묶으므로, 동일 계정 주문만 지급 기준에 포함합니다.
   const orderIds = db.prepare(
     `SELECT external_order_id FROM orders
-      WHERE user_id = ? AND source = 'cafe24' AND paid_at IS NOT NULL
+      WHERE member_id = ? AND source = 'cafe24' AND paid_at IS NOT NULL
         AND external_order_id IS NOT NULL AND status <> 'cancelled'`
   ).all(userId) as Array<{ external_order_id: string }>;
   const memberIds = new Set<string>();

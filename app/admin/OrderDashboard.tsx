@@ -11,7 +11,12 @@ type Order = {
   status: string;
 };
 
-type RewardEntry = { amount: number; grade_id: string; payment_kind: "card" | "bank" | "unknown"; processed_at: string };
+type RewardEntry = {
+  amount: number;
+  grade_id: string;
+  payment_kind: "card" | "bank" | "unknown";
+  order_created_at: string;
+};
 type Grade = { id: string; name: string };
 type DashboardRange = "day" | "week" | "month" | "year";
 
@@ -146,7 +151,7 @@ export default function OrderDashboard() {
       && time >= rangeStart(paymentRange, now) && time <= now;
   });
   const currentRewards = rewardEntries.filter((entry) => {
-    const time = parseUtc(entry.processed_at);
+    const time = parseUtc(entry.order_created_at);
     return time >= rangeStart(rewardRange, now) && time <= now;
   });
   const totalAmount = amountOrders.reduce((total, order) => total + order.actual_amount, 0);

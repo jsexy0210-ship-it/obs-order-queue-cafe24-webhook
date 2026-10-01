@@ -39,6 +39,7 @@ db.exec(`
     source TEXT NOT NULL DEFAULT 'manual',        -- 'cafe24' | 'manual'
     external_order_id TEXT UNIQUE,                 -- 카페24 주문번호 (중복 웹훅 방지 + 취소/환불 매칭용)
     user_id TEXT NOT NULL,                          -- 화면에 노출되는 ID 형식 (예: ID-24018)
+    member_id TEXT,                                 -- 카페24 실제 회원 ID (랭킹 합산 및 추적 기준)
     product TEXT NOT NULL,
     quantity INTEGER NOT NULL,
     unit_price INTEGER NOT NULL DEFAULT 15000,
@@ -168,6 +169,10 @@ if (!orderColumns.some((col) => col.name === "easypay_name")) {
 if (!orderColumns.some((col) => col.name === "actual_amount")) {
   db.exec("ALTER TABLE orders ADD COLUMN actual_amount INTEGER");
 }
+if (!orderColumns.some((col) => col.name === "member_id")) {
+  db.exec("ALTER TABLE orders ADD COLUMN member_id TEXT");
+}
+db.exec("CREATE INDEX IF NOT EXISTS idx_orders_member_id ON orders(member_id)");
 
 const hitCardColumns = db.prepare("PRAGMA table_info(hit_cards)").all() as { name: string }[];
 if (!hitCardColumns.some((col) => col.name === "youtube_nickname")) {

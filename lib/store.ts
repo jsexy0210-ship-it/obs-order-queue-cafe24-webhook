@@ -9,6 +9,7 @@ export type OrderRow = {
   source: string;
   external_order_id: string | null;
   user_id: string;
+  member_id: string | null;
   product: string;
   quantity: number;
   unit_price: number;
@@ -180,6 +181,7 @@ export function insertOrder(input: {
   source: "cafe24" | "manual";
   externalOrderId?: string | null;
   userId: string;
+  memberId?: string | null;
   product: string;
   quantity: number;
   unitPrice?: number;
@@ -194,10 +196,10 @@ export function insertOrder(input: {
 }) {
   const stmt = db.prepare(`
     INSERT INTO orders (
-      source, external_order_id, user_id, product, quantity, unit_price, tier,
+      source, external_order_id, user_id, member_id, product, quantity, unit_price, tier,
       actual_amount, youtube_nickname, payment_method, payment_gateway_name, easypay_name, paid_at, status
     ) VALUES (
-      @source, @externalOrderId, @userId, @product, @quantity, @unitPrice, @tier,
+      @source, @externalOrderId, @userId, @memberId, @product, @quantity, @unitPrice, @tier,
       @actualAmount, @youtubeNickname, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting'
     )
   `);
@@ -207,6 +209,7 @@ export function insertOrder(input: {
       source: input.source,
       externalOrderId: input.externalOrderId ?? null,
       userId: input.userId,
+      memberId: input.memberId?.trim() || null,
       product: input.product,
       quantity: input.quantity,
       unitPrice: input.unitPrice ?? 15000,
@@ -232,6 +235,7 @@ export function insertOrder(input: {
 export function updateCafe24Order(input: {
   externalOrderId: string;
   userId: string;
+  memberId?: string | null;
   product: string;
   quantity: number;
   unitPrice: number;
@@ -243,7 +247,7 @@ export function updateCafe24Order(input: {
 }): boolean {
   const result = db.prepare(
     `UPDATE orders SET
-       user_id = ?, product = ?, quantity = ?, unit_price = ?,
+       user_id = ?, member_id = COALESCE(?, member_id), product = ?, quantity = ?, unit_price = ?,
        actual_amount = COALESCE(?, actual_amount),
        youtube_nickname = COALESCE(?, youtube_nickname),
        payment_method = COALESCE(?, payment_method),
@@ -252,6 +256,7 @@ export function updateCafe24Order(input: {
      WHERE source = 'cafe24' AND external_order_id = ?`
   ).run(
     input.userId,
+    input.memberId?.trim() || null,
     input.product,
     input.quantity,
     input.unitPrice,
@@ -268,13 +273,33 @@ export function updateCafe24Order(input: {
 
 export function setOpening(id: number, timerSeconds = 60) {
   const tx = db.transaction(() => {
-    db.prepare("UPDATE orders SET status = 'done' WHERE status = 'opening'").run();
+    db.prepare(
+      "UPDATE orders SET status = 'done', completed_at = COALESCE(completed_at, datetime('now')) WHERE status = 'opening'"
+    ).run();
     db.prepare(
       "UPDATE orders SET status = 'opening', started_at = datetime('now'), timer_seconds = ? WHERE id = ?"
     ).run(timerSeconds, id);
   });
   tx();
   broadcastUpdate();
+}
+
+/** 카페24 주문의 실제 회원 ID와 구매자명을 주문 원장에 영구 저장합니다. */
+export function saveCafe24OrderIdentity(
+  externalOrderId: string,
+  identity: { memberId?: string | null; buyerName?: string | null }
+) {
+  const memberId = identity.memberId?.trim() || null;
+  const buyerName = identity.buyerName?.trim() || null;
+  if (!memberId && !buyerName) return false;
+  const result = db.prepare(
+    `UPDATE orders
+        SET member_id = COALESCE(?, member_id),
+            user_id = COALESCE(?, user_id)
+      WHERE external_order_id = ? AND source = 'cafe24'`
+  ).run(memberId, buyerName, externalOrderId);
+  if (result.changes) broadcastUpdate();
+  return result.changes > 0;
 }
 
 export function completeOpening(id: number) {
