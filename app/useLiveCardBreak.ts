@@ -14,6 +14,7 @@ export type LiveOrder = {
   product_image_url: string | null;
   quantity: number;
   unit_price: number;
+  actual_amount?: number | null;
   tier: string;
   status: OrderStatus;
   prev_status: string | null;

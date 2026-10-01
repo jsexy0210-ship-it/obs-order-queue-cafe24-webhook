@@ -65,12 +65,12 @@
 .zone p { margin: 0; white-space: pre-line; color: var(--zone-text-color, #fff); font-size: clamp(13px, 3.6cqw, 26px); line-height: 1.35; font-weight: 850; overflow: hidden; }
 .zoneAnnouncement { align-content: center; text-align: center; }
 .zoneAnnouncement p { font-size: clamp(9px, 9cqw, 17px); }
-.hitRows { display: grid; gap: 6px; }
+.hitRows { display: grid; gap: var(--hit-item-gap, 6px); }
 .hitRowsViewport { position: relative; height: 100%; overflow: hidden; }
-.hitRows p { display: block; min-width: 0; padding: clamp(4px, 1.1cqw, 9px); border: 1px solid color-mix(in srgb, var(--zone-border-color, #ff9214) 78%, transparent); border-radius: 0; background: rgba(0,0,0,.22); }
+.hitRows p { display: flex; align-items: center; min-width: 0; height: var(--hit-item-height, auto); box-sizing: border-box; padding: clamp(4px, 1.1cqw, 9px); border: 1px solid color-mix(in srgb, var(--zone-border-color, #ff9214) 78%, transparent); border-radius: 0; background: rgba(0,0,0,.22); }
 .hitRows span { display: block; min-width: 0; overflow: visible; white-space: nowrap; color: var(--zone-text-color, #fff); font-size: clamp(11px, calc(3.8cqw * var(--text-fit, 1)), 28px); line-height: 1.25; font-weight: 900; }
 .hitRowsScrolling { width: 100%; animation: hitRowLoop var(--hit-ticker-duration, 20s) linear infinite reverse; will-change: transform; }
-.hitRowsGroup { display: grid; gap: 6px; padding-bottom: 6px; }
+.hitRowsGroup { display: grid; gap: var(--hit-item-gap, 6px); padding-bottom: var(--hit-item-gap, 6px); }
 @keyframes hitRowLoop { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
 .currentOrderColumns { display: grid; gap: clamp(6px, 1.6cqw, 12px); }
 .zoneCurrent .zoneBody { margin-top: clamp(3px, .7cqw, 6px); padding-top: clamp(3px, .7cqw, 6px); }
@@ -106,7 +106,7 @@
 .waitingOrderRows em.currentOrderProduct { display: block; min-width: 0; overflow: visible; font-size: clamp(13px, 3.8cqw, 26px); }
 .currentOrderProduct > span { display: inline-block; white-space: normal; overflow-wrap: anywhere; }
 .emptyState { display: block !important; padding: clamp(6px, 1.5cqw, 12px); color: var(--zone-text-color, rgba(255,255,255,.92)) !important; font-size: clamp(13px, 3.6cqw, 26px) !important; font-weight: 900; line-height: 1.3; text-align: center; }
-.emptyOrderState { border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 72%, transparent); }
+.emptyOrderState { min-height: 32px; display: grid !important; place-items: center; border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 72%, transparent); background: rgba(12,16,24,.82); text-align: center; }
 .zoneToast { display: block; align-content: unset; text-align: left; border: 0; border-radius: 999px; background: transparent; box-shadow: none; }
 .zoneToast .zoneBody { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; margin: 0; padding: clamp(6px, 1.4cqw, 12px); box-sizing: border-box; border-radius: 999px; background: color-mix(in srgb, var(--zone-text-background-color, #04080e) calc(var(--zone-background-opacity, .9) * 100%), transparent); }
 .orderEffectBody { display: grid; grid-template-columns: auto minmax(0, .72fr) minmax(0, 1.8fr); align-items: center; justify-content: start; justify-items: start; gap: clamp(6px, 1.4cqw, 12px); width: 100%; height: 100%; min-width: 0; text-align: left; }
@@ -121,7 +121,11 @@
 .rankingTicker { min-width: 0; width: 100%; height: 100%; overflow: hidden; }
 .rankingTickerTrack { width: max-content; min-width: max-content; height: 100%; display: flex; align-items: center; padding-left: 0; animation: rankingTicker var(--ranking-ticker-duration, 20s) linear infinite; }
 .rankingTickerItem { display: inline-flex; align-items: center; gap: clamp(6px, 1.2cqw, 10px); margin-right: clamp(14px, 2.8cqw, 28px); color: var(--zone-text-color, #fff); font-size: clamp(14px, 2.8cqw, 26px); font-weight: 900; white-space: nowrap; }
-.rankingTickerItem b, .rankingTickerItem em { color: var(--zone-text-color, #fff); font-style: normal; }
+.rankingTickerItem b { position: relative; display: grid; place-items: center; width: 1.35em; height: 1.35em; color: #ffd34f; font-size: 1.15em; line-height: 1; filter: drop-shadow(0 1px 2px #000); }
+.rankingTickerItem b i { position: absolute; top: 48%; left: 50%; transform: translate(-50%,-50%); color: #17120a; font-size: .55em; font-style: normal; font-weight: 1000; text-shadow: 0 0 1px #fff; }
+.rankingTickerItem b[data-rank="2"] { filter: grayscale(1) brightness(1.5) drop-shadow(0 1px 2px #000); }
+.rankingTickerItem b[data-rank="3"] { filter: sepia(.7) saturate(1.6) drop-shadow(0 1px 2px #000); }
+.rankingTickerItem em { color: var(--zone-text-color, #fff); font-style: normal; }
 .rankingTickerItem em { font-weight: 900; }
 @keyframes rankingTicker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .editableZone { outline: 1px dashed rgba(255,255,255,.84); outline-offset: 0; cursor: move; touch-action: none; }

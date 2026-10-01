@@ -55,6 +55,7 @@ function formatYoutubeNickname(youtubeNickname: string | null | undefined) {
   let nickname = youtubeNickname?.trim() ?? "";
   while (/\([^()]*\)/.test(nickname)) nickname = nickname.replace(/\([^()]*\)/g, " ");
   nickname = nickname.replace(/[()]/g, "").replace(/\s+/g, " ").trim();
+  nickname = nickname.replaceAll("빙귀쟁이", "방귀쟁이");
   return nickname || "-";
 }
 
@@ -698,13 +699,13 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
           ) : (
             <div className={styles.heroCard}>
               <div className={styles.emptyMessage}>
-                대기 중인 주문 없음
+                -
               </div>
             </div>
           )}
 
           <div className={styles.queueList}>
-            {waiting.map((order) => {
+            {waiting.length === 0 ? <div className={`${styles.emptyMessage} ${styles.emptyQueueMessage}`}>-</div> : waiting.map((order) => {
               const cancelled = order.status === "cancelled";
 
               return (

@@ -20,7 +20,6 @@ const WAITING_PAGE_SIZE = 5;
 const CANCELLED_ORDER_PAGE_SIZE = 5;
 const HIT_PAGE_SIZE = 5;
 const TOAST_DISPLAY_MS = 5000;
-const ORDER_ALERT_NOTIFICATION_TITLE = "망고TCG 새 주문";
 const SITE_LINKS = [
   { label: "망고TCG 사이트", href: "https://mangotcg.com/" },
   { label: "쇼핑몰 관리자", href: "https://dhdudals5555.cafe24.com/disp/admin/shop1/main/dashboard" },
@@ -110,6 +109,7 @@ export default function AdminPage() {
     : shortsSettings.shorts.zones[selectedShortsZoneId];
 
   const seenOrderIds = useRef<Set<number> | null>(null);
+  const alertedOrderStates = useRef<Map<number, "pending" | "paid"> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
@@ -316,43 +316,64 @@ export default function AdminPage() {
       }, TOAST_DISPLAY_MS);
     });
 
-    const cafe24Orders = newOrders.filter(
-      (order) => order.source === "cafe24" && order.status === "waiting"
-    );
+  }, [waiting]);
 
-    if (!orderAlertsEnabled || cafe24Orders.length === 0) return;
-
-    playOrderChime();
-
-    if (typeof window.Notification !== "undefined" && Notification.permission === "granted") {
-      cafe24Orders.forEach((order) => {
-        const totalPrice = order.unit_price * order.quantity;
-        const notification = new Notification(ORDER_ALERT_NOTIFICATION_TITLE, {
-          body: `${order.user_id} · ${order.product} × ${order.quantity} · ${totalPrice.toLocaleString(
-            "ko-KR"
-          )}원`,
-          tag: `mangotcg-order-${order.external_order_id ?? order.id}`,
-          requireInteraction: true,
-          silent: true,
-        });
-
-        notification.onclick = () => {
-          window.focus();
-          const orderIndex = waiting.findIndex((item) => item.id === order.id);
-          if (orderIndex >= 0) {
-            setWaitingPage(Math.floor(orderIndex / WAITING_PAGE_SIZE) + 1);
-          }
-          requestAnimationFrame(() => {
-            document.getElementById("waiting-orders")?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          });
-          notification.close();
-        };
-      });
+  useEffect(() => {
+    if (!orderAlertsEnabled) {
+      alertedOrderStates.current = null;
+      return;
     }
-  }, [waiting, orderAlertsEnabled, playOrderChime]);
+    let cancelled = false;
+    const checkOrders = async () => {
+      try {
+        const response = await fetch("/api/orders", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json() as {
+          pendingPayments?: LiveOrder[];
+          waiting?: LiveOrder[];
+          rewardSummaries?: Record<string, { issue?: { amount: number; status: string } }>;
+        };
+        if (cancelled) return;
+        const next = new Map<number, "pending" | "paid">();
+        for (const order of data.pendingPayments ?? []) next.set(order.id, "pending");
+        for (const order of data.waiting ?? []) next.set(order.id, "paid");
+        const previous = alertedOrderStates.current;
+        alertedOrderStates.current = next;
+        if (previous === null) return;
+        for (const order of [...(data.pendingPayments ?? []), ...(data.waiting ?? [])]) {
+          if (order.source !== "cafe24") continue;
+          const status = next.get(order.id)!;
+          const before = previous.get(order.id);
+          if (before === status || (status === "pending" && before !== undefined)) continue;
+          playOrderChime();
+          if (typeof window.Notification === "undefined" || Notification.permission !== "granted") continue;
+          const paid = status === "paid";
+          const summary = order.external_order_id ? data.rewardSummaries?.[order.external_order_id]?.issue : undefined;
+          const issuedPoints = summary?.status === "succeeded" ? `\n카페24 적립금 지급 ${summary.amount.toLocaleString("ko-KR")}원` : "";
+          const createdAt = new Date(`${order.created_at.replace(" ", "T")}Z`).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+          const amount = (order.actual_amount ?? order.unit_price * order.quantity).toLocaleString("ko-KR");
+          const payment = getPaymentBadge(order).label;
+          const notice = new Notification(paid ? "주문 입금 완료" : "무통장 입금 전 신규 주문", {
+            body: [
+              `주문번호 ${order.external_order_id ?? "-"} · ${createdAt}`,
+              `구매자 ${order.user_id} · 유튜브 ${order.youtube_nickname ?? "-"}`,
+              `${order.product} × ${order.quantity} · ${amount}원`,
+              `${payment} · ${paid ? "입금 완료" : "입금 전"} · ${order.tier || "등급 미확인"}${issuedPoints}`,
+            ].join("\n"),
+            tag: `mangotcg-order-${order.external_order_id ?? order.id}-${status}`,
+            requireInteraction: true,
+            silent: true,
+          });
+          notice.onclick = () => { window.focus(); notice.close(); };
+        }
+      } catch {
+        // 주문 알림 상태 조회가 일시 실패하면 다음 간격에서 다시 확인합니다.
+      }
+    };
+    void checkOrders();
+    const timer = window.setInterval(() => void checkOrders(), 3000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [orderAlertsEnabled, playOrderChime]);
 
   // 이력 모달이 열려 있는 동안에는 뒤쪽 화면이 같이 스크롤되지 않도록 막습니다.
   useEffect(() => {
@@ -478,6 +499,20 @@ export default function AdminPage() {
     } finally {
       setSavingShortsSettings(false);
     }
+  }
+
+  async function hideOrderList(orders: typeof pendingPayments, label: string) {
+    if (orders.length === 0 || !window.confirm(`${label} ${orders.length}건을 목록에서 삭제할까요? 카페24 주문과 적립금 내역은 유지됩니다.`)) return;
+    const results = await Promise.all(orders.map((order) => fetch(`/api/orders/${order.id}`, {
+      method: "DELETE",
+      headers: order.external_order_id ? { "Content-Type": "application/json" } : undefined,
+      body: order.external_order_id ? JSON.stringify({ externalOrderId: order.external_order_id }) : undefined,
+    })));
+    if (results.some((response) => !response.ok)) {
+      window.alert("일부 주문을 목록에서 삭제하지 못했습니다. 새로고침 후 다시 확인해 주세요.");
+      return;
+    }
+    window.location.reload();
   }
 
   function goToDashboard() {
@@ -797,8 +832,8 @@ export default function AdminPage() {
           </div>
           <div className={styles.settingRow}>
             <div>
-              <h3>주문 알림</h3>
-              <p>새 카페24 주문이 들어오면 소리와 Windows 알림을 표시합니다.</p>
+              <h3>브라우저 주문 알림</h3>
+              <p>관리자 브라우저에서 새 카페24 주문의 소리와 Windows 알림을 표시합니다.</p>
             </div>
             <button
               className={styles.historyButton}
@@ -896,7 +931,7 @@ export default function AdminPage() {
         </div>
       </section>
       <section className={`${styles.block} ${styles.pendingPaymentsBlock} ${styles.queueBlock}`} id="pending-payments">
-        <h2>무통장 입금 전 ({pendingPayments.length})</h2>
+        <h2>무통장 입금 전 ({pendingPayments.length}) <button type="button" onClick={() => void hideOrderList(pendingPayments, "무통장 입금 전 주문")}>목록 삭제</button></h2>
         <p className={styles.blockHint}>카페24 입금완료가 확인되면 대기 주문으로 자동 이동합니다.</p>
         {pendingPayments.length === 0 && <p className={styles.empty}>무통장 입금 전 주문 없음</p>}
         <div className={styles.pagedList}>{pagedPendingPayments.map(renderPendingPaymentRow)}</div>
@@ -963,7 +998,7 @@ export default function AdminPage() {
       </section>
 
       <section className={`${styles.block} ${styles.cancelledOrdersBlock}`}>
-        <h2>취소 · 환불 ({cancelledOrders.length})</h2>
+        <h2>취소 · 환불 ({cancelledOrders.length}) <button type="button" onClick={() => void hideOrderList(cancelledOrders, "취소·환불 주문")}>목록 삭제</button></h2>
         {cancelledOrders.length === 0 && <p className={styles.empty}>취소 · 환불 주문 없음</p>}
         <div className={`${styles.pagedList} ${styles.cancelledOrdersList}`}>{pagedCancelledOrders.map(renderCancelledOrderRow)}</div>
         <div className={styles.pagination}>
@@ -1151,6 +1186,10 @@ export default function AdminPage() {
                     {selectedShortsZoneId === "ranking" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>순위, 유튜브 닉네임, 총 주문 건수가 자동으로 표시됩니다.</p>}
                     {selectedShortsZoneId === "announcement" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>첫주문, 신규 주문, VIP 주문의 노출 시간·위치·크기·색상·모션을 각각 설정할 수 있습니다.</p>}
                     {(selectedShortsZoneId === "ranking" || selectedShortsZoneId === "hit") && <label className={styles.wideFormField}>{selectedShortsZoneId === "hit" ? "HIT 흐름 속도(초)" : "VIP 흐름 속도(초)"}<input type="number" min="5" max="60" value={selectedShortsZoneSettings.tickerDurationSeconds} onChange={(event) => updateShortsZone(selectedShortsZoneId, "tickerDurationSeconds", Number(event.target.value))} /><small>작을수록 빠르게 흐릅니다.</small></label>}
+                    {selectedShortsZoneId === "hit" && overlayPreviewMode === "basic" && <>
+                      <label>항목 간격(px)<input type="number" min="0" max="32" value={shortsSettings.shorts.hitItemGap} onChange={(event) => setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, hitItemGap: Math.min(32, Math.max(0, Number(event.target.value) || 0)) } }))} /></label>
+                      <label>항목 높이(px)<input type="number" min="0" max="80" value={shortsSettings.shorts.hitItemHeight} onChange={(event) => setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, hitItemHeight: Math.min(80, Math.max(0, Number(event.target.value) || 0)) } }))} /><small>0은 내용에 맞춤</small></label>
+                    </>}
                     <label className={`${styles.opacityControl} ${styles.wideFormField}`}>{overlayPreviewMode === "animation" ? "토스트 배경 불투명도" : "카드 배경 불투명도"}
                       <span><input type="range" min="0" max="100" value={selectedShortsZoneSettings.backgroundOpacity} onChange={(event) => updateShortsZone(selectedShortsZoneId, "backgroundOpacity", Number(event.target.value))} /><output>{selectedShortsZoneSettings.backgroundOpacity}%</output></span>
                     </label>

@@ -93,6 +93,8 @@ export type OverlaySettings = {
   shorts: {
     zones: Record<ShortsZoneId, ShortsZoneSettings>;
     newOrder: NewOrderEffectSettings;
+    hitItemGap: number;
+    hitItemHeight: number;
   };
 };
 
@@ -158,6 +160,8 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
     timerText: "#ffffff",
   },
   shorts: {
+    hitItemGap: 6,
+    hitItemHeight: 0,
     zones: {
       hit: {
         visible: true,

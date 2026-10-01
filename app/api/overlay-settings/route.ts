@@ -105,6 +105,8 @@ export async function PUT(req: NextRequest) {
       timerText: color(body.colors?.timerText, DEFAULT_OVERLAY_SETTINGS.colors.timerText),
     },
     shorts: {
+      hitItemGap: clamp(body.shorts?.hitItemGap ?? DEFAULT_OVERLAY_SETTINGS.shorts.hitItemGap, 0, 32),
+      hitItemHeight: clamp(body.shorts?.hitItemHeight ?? DEFAULT_OVERLAY_SETTINGS.shorts.hitItemHeight, 0, 80),
       zones,
       newOrder: {
         first: {
