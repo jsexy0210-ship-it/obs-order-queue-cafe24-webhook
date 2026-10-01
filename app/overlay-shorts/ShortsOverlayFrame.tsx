@@ -402,13 +402,18 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                   {id === "hit" ? (
                     <div className={shouldScrollHitCards ? styles.hitRowsViewport : undefined}>
                       <div className={`${styles.hitRows} ${shouldScrollHitCards ? styles.hitRowsScrolling : ""}`}>
-                        {renderedHitCards.map((hit, index) => {
+                        {shouldScrollHitCards ? [false, true].map((duplicate) => (
+                          <div className={styles.hitRowsGroup} aria-hidden={duplicate || undefined} key={duplicate ? "copy" : "source"}>
+                            {renderedHitCards.map((hit) => {
+                              const hitNickname = nickname(hit.youtube_nickname);
+                              const label = `◆ ${hitNickname} · ${hit.card}`;
+                              return <p key={`${hit.id}-${duplicate ? "copy" : "source"}`}><span style={textFit(label, 24)}>{label}</span></p>;
+                            })}
+                          </div>
+                        )) : renderedHitCards.map((hit) => {
                           const hitNickname = nickname(hit.youtube_nickname);
                           const label = `◆ ${hitNickname} · ${hit.card}`;
-                          const flowStyle = shouldScrollHitCards
-                            ? { "--hit-delay": `-${(index * zone.tickerDurationSeconds / renderedHitCards.length).toFixed(2)}s` } as CSSProperties
-                            : undefined;
-                          return <p key={hit.id} style={flowStyle}><span style={textFit(label, 24)}>{label}</span></p>;
+                          return <p key={hit.id}><span style={textFit(label, 24)}>{label}</span></p>;
                         })}
                         {displayedHitCards.length === 0 && <p className={styles.emptyState}>등록된 히트카드 없음</p>}
                       </div>
