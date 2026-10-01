@@ -2589,6 +2589,7 @@
   min-height: 460px;
   overflow: hidden;
 }
+.operationsGrid > .primaryBlock,
 .operationsGrid > .waitingOrdersBlock,
 .operationsGrid > .pendingPaymentsBlock {
   height: 276px;
