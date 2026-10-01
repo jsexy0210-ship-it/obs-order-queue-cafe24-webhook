@@ -67,6 +67,11 @@ class RemoteDeploymentConfigurationTests(unittest.TestCase):
         self.assertIn('! -e "$stale/data" && ! -L "$stale/data"', script)
         self.assertIn('rm -rf -- "$stale"', script)
 
+    def test_linux_release_hardlinks_dependencies_without_a_root_symlink(self):
+        script = Path(__file__).with_name("deploy-linux.sh").read_text(encoding="utf-8")
+        self.assertIn('cp -al "$node_modules_target" "$release/node_modules"', script)
+        self.assertNotIn('ln -s "$node_modules_target" "$release/node_modules"', script)
+
     def test_powershell_path_is_literal(self):
         self.assertEqual(deploy.ps_quote("C:\\team's app; $x"), "'C:\\team''s app; $x'")
 
