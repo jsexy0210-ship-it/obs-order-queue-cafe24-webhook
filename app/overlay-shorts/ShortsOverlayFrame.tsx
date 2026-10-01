@@ -99,7 +99,9 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const [newOrderEffect, setNewOrderEffect] = useState<NewOrderEffect | null>(null);
   const [previewOrder, setPreviewOrder] = useState<EffectOrder | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuides>({});
+  const [hitLoopDistance, setHitLoopDistance] = useState(1);
   const stageRef = useRef<HTMLDivElement>(null);
+  const hitRowsViewportRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<Interaction | null>(null);
   const seenOrderIds = useRef<Set<number> | null>(null);
   const settings = settingsOverride ?? live.overlaySettings;
@@ -120,6 +122,19 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
     card: latestHit?.card ?? "등록된 히트카드 없음",
     count: actualActiveOrder?.id ?? 1,
   };
+
+  useEffect(() => {
+    if (!shouldScrollHitCards) return;
+    const viewport = hitRowsViewportRef.current;
+    if (!viewport) return;
+    const updateDistance = () => {
+      setHitLoopDistance(Math.max(1, Math.ceil(viewport.getBoundingClientRect().height + 96)));
+    };
+    updateDistance();
+    const observer = new ResizeObserver(updateDistance);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [shouldScrollHitCards, renderedHitCards.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -400,13 +415,16 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
               ) : (
                 <div className={styles.zoneBody}>
                   {id === "hit" ? (
-                    <div className={shouldScrollHitCards ? styles.hitRowsViewport : undefined}>
+                    <div ref={shouldScrollHitCards ? hitRowsViewportRef : undefined} className={shouldScrollHitCards ? styles.hitRowsViewport : undefined}>
                       <div className={`${styles.hitRows} ${shouldScrollHitCards ? styles.hitRowsScrolling : ""}`}>
                         {renderedHitCards.map((hit, index) => {
                           const hitNickname = nickname(hit.youtube_nickname);
                           const label = `◆ ${hitNickname} · ${hit.card}`;
                           const flowStyle = shouldScrollHitCards
-                            ? { "--hit-delay": `-${(index * zone.tickerDurationSeconds / renderedHitCards.length).toFixed(2)}s` } as CSSProperties
+                            ? {
+                              "--hit-delay": `-${(index * zone.tickerDurationSeconds / renderedHitCards.length).toFixed(2)}s`,
+                              "--hit-loop-distance": `${hitLoopDistance}px`,
+                            } as CSSProperties
                             : undefined;
                           return <p key={hit.id} style={flowStyle}><span style={textFit(label, 24)}>{label}</span></p>;
                         })}
