@@ -6,7 +6,11 @@ if (!appRoot || !path.isAbsolute(appRoot)) throw new Error("Invalid application 
 
 const environment = fs.readFileSync(path.join(appRoot, ".env.local"), "utf8");
 const tokenLine = environment.split(/\r?\n/).find((line) => line.startsWith("CAFE24_WEBHOOK_TOKEN="));
-const token = tokenLine?.slice("CAFE24_WEBHOOK_TOKEN=".length).trim();
+const rawToken = tokenLine?.slice("CAFE24_WEBHOOK_TOKEN=".length).trim();
+const token = rawToken && (
+  (rawToken.startsWith('"') && rawToken.endsWith('"'))
+  || (rawToken.startsWith("'") && rawToken.endsWith("'"))
+) ? rawToken.slice(1, -1) : rawToken;
 if (!token) throw new Error("Missing Cafe24 reconciliation credentials.");
 
 const response = await fetch("http://127.0.0.1:3001/api/internal/cafe24-reconcile", {
