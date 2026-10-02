@@ -234,7 +234,7 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
       </div>
       <div className={`${styles.dashboardCard} ${styles.chartDashboardCard}`}>
         <div className={styles.dashboardCardHeader}>
-          <span>카드결제 + 무통장 총계</span>
+          <span>총 결제건수</span>
         </div>
         <strong>{paymentCount}건</strong>
         <small>카드결제 {cardCount}건 · 무통장 {bankCount}건</small>
@@ -267,7 +267,7 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
       </div>
       <div className={`${styles.dashboardCard} ${styles.rewardDashboardCard}`}>
         <div className={styles.dashboardCardHeader}>
-          <span>적립금 정보</span>
+          <span>적립금 지급 현황</span>
         </div>
         <strong>{rewardTotal.toLocaleString("ko-KR")}원</strong>
         <small>누적 적립금 · 지급 완료 원장 기준 · {RANGE_OPTIONS.find((option) => option.value === range)?.description} 순지급</small>

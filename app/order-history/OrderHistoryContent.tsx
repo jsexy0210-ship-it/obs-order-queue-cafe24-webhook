@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import styles from "./order-history.module.css";
@@ -164,6 +164,16 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
   const [selectedYear, setSelectedYear] = useState(() => currentKstDate().getUTCFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => currentKstDate().getUTCMonth() + 1);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const currentKst = currentKstDate();
+  const currentYear = currentKst.getUTCFullYear();
+  const currentMonth = currentKst.getUTCMonth() + 1;
+  const selectableYears = useMemo(() => Array.from(new Set([currentYear, ...availableYears]))
+    .filter((year) => year <= currentYear)
+    .sort((a, b) => b - a), [availableYears, currentYear]);
+  const selectableMonths = useMemo(() => Array.from(
+    { length: selectedYear === currentYear ? currentMonth : 12 },
+    (_, index) => index + 1
+  ), [currentMonth, currentYear, selectedYear]);
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/admin/login");
@@ -210,6 +220,16 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
     const interval = setInterval(() => void load(), 10000); // 10초마다 자동 새로고침
     return () => clearInterval(interval);
   }, [load]);
+
+  // 연도 변경이나 자정 경과로 미래 월이 선택된 상태가 되지 않도록 최신 유효 월로 맞춥니다.
+  useEffect(() => {
+    if (!selectableYears.includes(selectedYear)) {
+      setSelectedYear(currentYear);
+      setSelectedMonth(currentMonth);
+      return;
+    }
+    if (!selectableMonths.includes(selectedMonth)) setSelectedMonth(currentMonth);
+  }, [currentMonth, currentYear, selectableMonths, selectableYears, selectedMonth, selectedYear]);
 
   // 새로고침 등으로 목록 길이가 줄어들어 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정합니다.
   const orderTotalPages = Math.max(1, Math.ceil(orders.length / ORDER_PAGE_SIZE));
@@ -263,11 +283,14 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
             <select
               value={selectedYear}
               onChange={(event) => {
-                setSelectedYear(Number(event.target.value));
+                const nextYear = Number(event.target.value);
+                setSelectedYear(nextYear);
+                // 당년으로 돌아오면 아직 도래하지 않은 월 대신 당월을 기본으로 표시합니다.
+                if (nextYear === currentYear) setSelectedMonth(currentMonth);
                 setOrderPage(1);
               }}
             >
-              {(availableYears.length > 0 ? availableYears : [selectedYear]).map((year) => (
+              {selectableYears.map((year) => (
                 <option key={year} value={year}>{year}년</option>
               ))}
             </select>
@@ -281,7 +304,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                 setOrderPage(1);
               }}
             >
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+              {selectableMonths.map((month) => (
                 <option key={month} value={month}>{month}월</option>
               ))}
             </select>
