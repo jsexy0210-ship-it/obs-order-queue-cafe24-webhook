@@ -1193,6 +1193,10 @@ export default function AdminPage() {
                     <span className={styles.toggleTrack} aria-hidden="true"><i /></span>
                     <output>{selectedShortsZoneSettings.visible ? "On" : "Off"}</output>
                   </label>
+                  {overlayPreviewMode === "basic" && <label className={`${styles.opacityControl} ${styles.wideFormField}`}>
+                    오픈 주문 없음 배경 투명도
+                    <span><input type="range" min="0" max="100" value={shortsSettings.openingEmptyTransparency} onChange={(event) => setShortsSettings((current) => ({ ...current, openingEmptyTransparency: Number(event.target.value) }))} /><output>{shortsSettings.openingEmptyTransparency}%</output></span>
+                  </label>}
                   {overlayPreviewMode === "animation" && (
                     <div className={styles.newOrderCopySection}>
                       <h3>주문 유형별 설정</h3>

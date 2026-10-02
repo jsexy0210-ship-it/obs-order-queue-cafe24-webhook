@@ -276,6 +276,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
       orderVisible,
       panelBackgroundVisible,
       panelBackgroundTransparency,
+      openingEmptyTransparency: overlaySettings.openingEmptyTransparency,
       scales: scalesRef.current,
       widths: widthsRef.current,
       position: positionRef.current,
@@ -498,6 +499,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     "--panel-background": panelBackgroundVisible
       ? `rgba(${parseInt(colors.panelBackground.slice(1, 3), 16)}, ${parseInt(colors.panelBackground.slice(3, 5), 16)}, ${parseInt(colors.panelBackground.slice(5, 7), 16)}, ${(100 - panelBackgroundTransparency) / 100})`
       : "transparent",
+    "--opening-empty-background": `rgba(12, 16, 24, ${(100 - overlaySettings.openingEmptyTransparency) / 100})`,
     "--primary-text": colors.primaryText,
     "--order-text": colors.orderText,
     "--hit-header-text": colors.hitHeaderText,
@@ -698,7 +700,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
             </div>
           ) : (
             <div className={styles.heroCard}>
-              <div className={styles.emptyMessage}>
+              <div className={`${styles.emptyMessage} ${styles.openingEmptyMessage}`}>
                 -
               </div>
             </div>

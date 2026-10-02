@@ -122,6 +122,7 @@
 .rankingTickerTrack { width: max-content; min-width: max-content; height: 100%; display: flex; align-items: center; padding-left: 0; animation: rankingTicker var(--ranking-ticker-duration, 20s) linear infinite; }
 .rankingTickerItem { display: inline-flex; align-items: center; gap: clamp(6px, 1.2cqw, 10px); margin-right: clamp(14px, 2.8cqw, 28px); color: var(--zone-text-color, #fff); font-size: clamp(14px, 2.8cqw, 26px); font-weight: 900; white-space: nowrap; }
 .rankingTickerItem b { position: relative; display: grid; place-items: center; width: 1.35em; height: 1.35em; color: #ffd34f; font-size: 1.15em; line-height: 1; filter: drop-shadow(0 1px 2px #000); }
+.rankingTickerItem b[data-rank="1"] .rankingTrophyIcon { filter: brightness(2); }
 .rankingTickerItem b i { position: absolute; top: 48%; left: 50%; transform: translate(-50%,-50%); color: #17120a; font-size: .55em; font-style: normal; font-weight: 1000; text-shadow: 0 0 1px #fff; }
 .rankingTickerItem b[data-rank="2"] { filter: grayscale(1) brightness(1.5) drop-shadow(0 1px 2px #000); }
 .rankingTickerItem b[data-rank="3"] { filter: sepia(.7) saturate(1.6) brightness(.88) drop-shadow(0 1px 2px #000); }

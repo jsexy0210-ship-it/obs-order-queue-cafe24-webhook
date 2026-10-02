@@ -393,7 +393,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                   <div className={styles.rankingTickerTrack}>
                     {[...displayedRanking, ...displayedRanking].map((row, index) => (
                       <span className={styles.rankingTickerItem} key={`${row.rank}-${index}`}>
-                        <b aria-label={`${row.rank}위`} data-rank={row.rank}>🏆<i>{rankingIcon(row.rank)}</i></b><em>{nickname(row.youtubeNickname)}</em>
+                        <b aria-label={`${row.rank}위`} data-rank={row.rank}><span className={styles.rankingTrophyIcon}>🏆</span><i>{rankingIcon(row.rank)}</i></b><em>{nickname(row.youtubeNickname)}</em>
                       </span>
                     ))}
                     {displayedRanking.length === 0 && <span className={styles.rankingTickerItem}>주문 랭킹을 불러오는 중입니다</span>}
