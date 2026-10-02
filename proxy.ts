@@ -20,6 +20,14 @@ const PUBLIC_PATHS = new Set([
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const isLocalDevelopment = process.env.NODE_ENV === "development"
+    && ["localhost", "127.0.0.1", "::1", "[::1]"].includes(req.nextUrl.hostname);
+
+  // 로컬 개발 브라우저에서는 임의의 계정 입력으로 즉시 화면을 확인할 수 있게 한다.
+  // 운영 및 외부 호스트의 인증 경로에는 영향을 주지 않는다.
+  if (isLocalDevelopment) {
+    return NextResponse.next();
+  }
 
   if (PUBLIC_PATHS.has(pathname)) {
     return NextResponse.next();

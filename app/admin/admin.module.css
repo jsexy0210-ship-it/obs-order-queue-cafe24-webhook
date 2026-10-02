@@ -511,6 +511,8 @@
 
 .rewardDashboardCard {
   grid-column: auto;
+  display: flex;
+  flex-direction: column;
   border-color: rgba(139, 104, 255, 0.36);
   background: linear-gradient(145deg, rgba(113, 76, 226, 0.25), rgba(50, 31, 105, 0.14));
 }
@@ -523,8 +525,9 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
-  max-height: 116px;
   margin-top: 7px;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow-y: auto;
 }
 
@@ -683,8 +686,8 @@
 }
 
 .page[data-theme="light"] .ytBadge {
-  background: #ffe8eb;
-  color: #b4233a;
+  background: #d94359;
+  color: #fff;
 }
 
 .page[data-theme="light"] .pagination span {
@@ -760,11 +763,57 @@
   max-width: min(980px, calc(100vw - 40px));
 }
 
+.hitRegistrationModal {
+  max-width: min(580px, calc(100vw - 40px));
+}
+
+.hitRegistrationForm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hitRegistrationForm > button {
+  grid-column: 1 / -1;
+}
+
 .rewardLedgerModal {
   max-width: min(1720px, calc(100vw - 40px));
   height: min(900px, calc(100vh - 40px));
   max-height: calc(100vh - 40px);
   overflow-y: hidden;
+}
+
+.queueHistoryModal {
+  max-width: min(620px, calc(100vw - 40px));
+}
+
+.queueHistoryCount {
+  margin: 4px 0 0;
+  color: #8e98a8;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.queueHistoryList {
+  display: grid;
+  gap: 4px;
+  max-height: min(560px, calc(100vh - 190px));
+  overflow-y: auto;
+}
+
+.queueHistoryList .completedOpeningRow {
+  padding: 10px 6px !important;
+  border-bottom: 1px solid rgba(255,255,255,.09) !important;
+}
+
+.queueHistoryEmpty {
+  display: grid;
+  min-height: 130px;
+  margin: 0;
+  place-items: center;
+  color: #aab4c4;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: center;
 }
 
 .rewardLedgerModalContent {
@@ -855,7 +904,7 @@
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(255, 0, 0, 0.15);
-  color: #ff8080;
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
@@ -1011,6 +1060,26 @@
   padding: 4px 0;
 }
 
+.hitItemText {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.hitItemText b,
+.hitItemText em {
+  overflow: hidden;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hitItemText b { flex: 0 1 auto; color: #dfe7f3; }
+.hitItemText em { flex: 1 1 auto; color: #f8fafc; }
+
 .hitDelete {
   flex: 0 0 auto;
   padding: 3px 8px;
@@ -1019,6 +1088,7 @@
   background: var(--delete-button-color);
   color: #fff;
   font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
 }
 .overlayEditorModal {
@@ -2585,8 +2655,8 @@
 .operationsSecondaryRow > .block h2 { margin-bottom: 8px; }
 .operationsGrid > .block,
 .operationsSecondaryRow > .block {
-  height: 460px;
-  min-height: 460px;
+  height: 276px;
+  min-height: 276px;
   overflow: hidden;
 }
 .operationsGrid > .primaryBlock,
@@ -2631,6 +2701,46 @@
   background: linear-gradient(145deg, rgba(104, 56, 234, 0.13), rgba(18, 22, 30, 0.92));
 }
 
+.queueCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.queueCardHeader h2 {
+  min-width: 0;
+  margin: 0;
+}
+
+.operationsSecondaryRow > .block .queueCardHeader {
+  margin-bottom: 8px;
+}
+
+.operationsSecondaryRow > .block .queueCardHeader h2 {
+  margin: 0;
+}
+
+.queueHistoryButton {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid rgba(167,139,250,.36);
+  border-radius: 7px;
+  background: rgba(124,92,255,.13);
+  color: #dfd5ff;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.queueHistoryButton:hover {
+  border-color: rgba(167,139,250,.7);
+  background: rgba(124,92,255,.25);
+  color: #fff;
+}
+
 .sectionCount { margin-left: 6px; padding: 3px 8px; border: 1px solid rgba(196,181,253,.3); border-radius: 999px; background: rgba(124,92,255,.16); color: #d9ccff; font-size: 11px; font-weight: 850; vertical-align: middle; }
 .openingHero { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 12px; min-height: 96px; padding: 16px 18px; border: 1px solid rgba(167,139,250,.25); border-radius: 14px; background: rgba(8,12,21,.52); }
 .openingIdentity { display: grid; gap: 8px; min-width: 0; }
@@ -2644,9 +2754,17 @@
 .openingProduct .orderAmount { color: #8cf0b1; font-size: 12px; }
 .openingActions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; min-width: 0; }
 .openingEmpty { display: grid; min-height: 74px; place-items: center; border: 1px dashed rgba(167,139,250,.25); border-radius: 12px; background: rgba(8,12,21,.3); color: #aab4c4; font-size: 13px; font-weight: 700; }
+.openingCardBody { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; gap: 8px; overflow-y: auto; }
+.completedOpeningSection { display: grid; gap: 5px; padding-top: 8px; }
+.completedOpeningHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.completedOpeningHeader h3 { margin: 0; color: #cbd5e1; font-size: 11px; font-weight: 850; }
+.completedOpeningHeader span { color: #8e98a8; font-size: 10px; font-weight: 800; }
+.completedOpeningEmpty { margin: 0; color: #8e98a8; font-size: 11px; font-weight: 700; }
+.completedOpeningRow { min-height: 0 !important; gap: 5px !important; padding: 6px 4px !important; border-bottom: 0 !important; background: rgba(255,255,255,.025); }
+.completedOpeningTime { flex: 0 0 auto; color: #aab4c4; font-size: 10px; font-variant-numeric: tabular-nums; font-weight: 800; white-space: nowrap; }
+.completedOpeningBadge { flex: 0 0 auto; padding: 3px 7px; border: 1px solid rgba(74,222,128,.35); border-radius: 999px; background: rgba(34,197,94,.14); color: #9df4bb; font-size: 10px; font-weight: 900; line-height: 1.1; white-space: nowrap; }
 
 .pendingPaymentsBlock { border-color: rgba(245, 158, 11, .36); background: linear-gradient(145deg, rgba(245, 158, 11, .1), rgba(18, 22, 30, .92)); }
-.blockHint { min-height: 30px; margin: -8px 0 8px; color: #b8c4d4; font-size: 11px; line-height: 1.4; }
 .paymentBadge,
 .unpaidBadge { flex: 0 0 auto; padding: 3px 7px; border-radius: 999px; font-size: 10px; font-weight: 900; line-height: 1.1; white-space: nowrap; }
 .paymentBadge { border: 1px solid rgba(96, 165, 250, .35); background: rgba(59, 130, 246, .16); color: #a9d4ff; }
@@ -2672,8 +2790,6 @@
 .orderAmount { flex: 0 0 auto; color: #8cf0b1; font-size: 11px; font-weight: 850; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .orderRowFooter { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; min-width: 0; }
 .orderRowFooter .rowActions { margin-left: auto; }
-.waitingOrdersBlock .orderRowFooter .rowActions { display: flex; width: auto; flex-basis: auto; margin-left: auto; padding-top: 0; }
-.waitingOrdersBlock .orderRowFooter .rowActions button { width: auto; min-width: 62px; }
 .orderRowFooter .cancelledOrderId { flex: 1 1 auto !important; }
 .queueBlock { display: flex; flex-direction: column; }
 .queueBlock .pagedList { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
@@ -2743,22 +2859,6 @@
 
 .rowActions { display: flex; flex: 0 0 auto; gap: 6px; margin-left: auto; }
 .rowActions button { min-width: 62px; padding-inline: 9px; }
-.waitingOrdersBlock .row { flex-wrap: wrap; }
-.waitingOrdersBlock .rowActions {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  width: 100%;
-  flex-basis: 100%;
-  margin-left: 0;
-  padding-top: 4px;
-}
-
-.waitingOrdersBlock .rowActions button {
-  width: 100%;
-  min-width: 0;
-  margin-left: 0;
-}
-
 .orderDescription {
   min-width: 80px;
   flex: 1 1 auto !important;
@@ -2882,6 +2982,29 @@
   cursor: pointer;
 }
 
+/* 행 공통 버튼색보다 삭제·입금완료 의미색을 우선한다. */
+.row .hitDelete {
+  margin-left: 0;
+  background: var(--delete-button-color) !important;
+  color: #fff;
+}
+
+.row .confirmPaymentButton {
+  margin-left: 0;
+  border-color: transparent;
+  background: #28b7ff !important;
+  color: #04121c;
+}
+
+.hitDelete:hover,
+.row .danger:hover {
+  background: #dc2626;
+}
+
+.row .hitDelete:hover {
+  background: #dc2626 !important;
+}
+
 .pagination button:disabled {
   cursor: default;
   opacity: 0.3;
@@ -2904,6 +3027,67 @@
 .manualOrderModal {
   max-width: 680px;
 }
+
+.manualOrderHistory {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+
+.manualOrderHistoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.manualOrderHistoryHeader h3 {
+  margin: 0;
+  color: #dce5f2;
+  font-size: 13px;
+}
+
+.manualOrderHistoryHeader span {
+  color: #8e98a8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.manualOrderHistoryList {
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.manualOrderHistoryList li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
+  padding: 8px 9px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,.025);
+}
+
+.manualOrderHistoryList li > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.manualOrderHistoryList strong { overflow: hidden; color: #f8fafc; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.manualOrderHistoryList time { flex: 0 0 auto; color: #8e98a8; font-size: 10px; font-weight: 750; }
+.manualOrderHistoryList span { overflow: hidden; color: #cbd5e1; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.manualOrderHistoryList b { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: #8cf0b1; font-size: 11px; white-space: nowrap; }
+.manualOrderHistoryEmpty { display: grid; min-height: 72px; margin: 0; place-items: center; color: #8e98a8; font-size: 12px; font-weight: 750; }
 
 /* 관리자 홈은 3열 × 4행을 데스크톱 한 화면에서 조작할 수 있도록 압축합니다. */
 @media (min-width: 901px) {
@@ -3068,6 +3252,12 @@
   .operationsGrid,
   .toolsGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .orderDashboard,
+  .operationsSecondaryRow {
+    gap: 12px;
   }
 
   .operationsGrid { grid-template-areas: none; }
@@ -3077,7 +3267,16 @@
     grid-column: auto;
   }
 
-  .operationsGrid > * { grid-area: auto; }
+  /* 데스크톱의 이름 있는 배치를 같은 우선순위로 해제해야 모바일에서
+   * 암묵적인 3열이 다시 생기지 않는다. */
+  .operationsGrid > .primaryBlock,
+  .operationsGrid > .waitingOrdersBlock,
+  .operationsGrid > .pendingPaymentsBlock,
+  .operationsGrid > .operationsSecondaryRow {
+    grid-area: auto;
+    grid-column: auto;
+    grid-row: auto;
+  }
 
   .orderDashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3158,7 +3357,11 @@
     justify-content: center;
   }
 
-  .statusGrid {
+  .orderDashboard,
+  .statusGrid,
+  .operationsGrid,
+  .toolsGrid,
+  .operationsSecondaryRow {
     gap: 10px;
   }
 
@@ -3180,7 +3383,8 @@
     gap: 6px;
   }
 
-  .rewardDashboardCard { height: 340px; }
+  /* 세 번째 카드도 두 번째 카드와 같은 높이를 유지하고, 등급 내역만 카드 안에서 스크롤한다. */
+  .rewardDashboardCard { height: 220px; }
 
   .rewardGradeTotal {
     min-height: 48px;
@@ -3266,9 +3470,15 @@
   }
 
   .operationsSecondaryRow {
-    grid-column: 1;
+    width: 100%;
+    grid-column: auto;
     grid-row: auto;
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .operationsGrid > .operationsSecondaryRow > .block {
+    height: 276px;
+    min-height: 276px;
   }
 
   .operationsGrid > .block {
@@ -3278,6 +3488,10 @@
   }
 
   .operationsGrid > .block h2 {
+    margin-bottom: 12px;
+  }
+
+  .operationsGrid > .block .queueCardHeader {
     margin-bottom: 12px;
   }
 
@@ -3333,14 +3547,78 @@
     gap: 6px;
   }
 
-  .operationsGrid .waitingOrdersBlock .orderRowFooter .rowActions {
-    width: 100%;
-    flex-basis: 100%;
-    margin-left: 0;
-  }
-
   .operationsGrid .orderRowFooter .rowActions button {
     min-height: 42px;
     flex: 1 1 0;
   }
+}
+
+/* 오픈 완료·시작·입금 완료는 조작성을 위해 기존 가로폭의 6배로 통일한다. */
+.operationsGrid .primaryBlock .completeButton {
+  inline-size: min(624px, 100%);
+  min-width: 0;
+  flex: 0 1 624px !important;
+  font-size: 14px !important;
+}
+
+.operationsGrid .waitingOrdersBlock .rowActions button,
+.operationsGrid .pendingPaymentsBlock .confirmPaymentButton {
+  inline-size: min(372px, 100%);
+  min-width: 0;
+  flex: 0 1 372px !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff !important;
+}
+
+.operationsGrid .primaryBlock .completeButton {
+  font-size: 11px !important;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff !important;
+}
+
+/* 주문 카드와 HIT&RGB 이력의 유튜브 닉네임 배지는 같은 위치 규칙을 사용한다. */
+.orderIdentity > .ytBadge,
+.hitItemText > .ytBadge {
+  flex: 0 1 auto;
+  align-self: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 홈의 모든 삭제 버튼은 목록 위치와 무관하게 같은 외형을 사용한다. */
+.operationsGrid .hitDelete,
+.operationsSecondaryRow .hitDelete {
+  inline-size: 72px;
+  block-size: 38px;
+  min-height: 38px;
+  padding: 0 !important;
+}
+
+/* 처리 버튼은 내용 길이만큼인 액션 묶음이 아닌 주문 행 전체 폭을 기준으로 늘린다. */
+.operationsGrid .primaryBlock .orderRowFooter .rowActions,
+.operationsGrid .waitingOrdersBlock .orderRowFooter .rowActions,
+.operationsGrid .pendingPaymentsBlock .orderRowFooter .rowActions {
+  flex: 1 0 100%;
+  inline-size: 100%;
+  margin-left: 0;
+}
+
+.operationsGrid .primaryBlock .orderRowFooter .completeButton,
+.operationsGrid .waitingOrdersBlock .orderRowFooter .rowActions button {
+  inline-size: min(624px, 100%);
+  flex: 0 1 624px !important;
+}
+
+.operationsGrid .pendingPaymentsBlock .orderRowFooter .rowActions {
+  flex-wrap: nowrap;
+}
+
+.operationsGrid .pendingPaymentsBlock .orderRowFooter .confirmPaymentButton {
+  inline-size: auto;
+  max-inline-size: 372px;
+  flex: 1 1 372px !important;
 }

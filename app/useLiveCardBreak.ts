@@ -21,6 +21,7 @@ export type LiveOrder = {
   cancel_reason: string | null;
   cancelled_at: string | null;
   started_at: string | null;
+  completed_at: string | null;
   timer_seconds: number | null;
   youtube_nickname: string | null;
   paid_at: string | null;

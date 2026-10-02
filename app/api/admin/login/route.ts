@@ -8,6 +8,14 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  // 개발 서버는 로컬 루프백에서만 입력값 검증을 생략한다.
+  // 외부 개발 서버와 운영 서버는 기존 계정 인증을 반드시 거친다.
+  const isLocalDevelopment = process.env.NODE_ENV === "development"
+    && ["localhost", "127.0.0.1", "::1", "[::1]"].includes(req.nextUrl.hostname);
+  if (isLocalDevelopment) {
+    return NextResponse.json({ ok: true, developmentBypass: true });
+  }
+
   if (!areAdminAccountsConfigured()) {
     return NextResponse.json(
       { error: "서버에 관리자 계정이 올바르게 설정되어 있지 않습니다." },

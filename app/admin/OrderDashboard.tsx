@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "./admin.module.css";
+import { DEVELOPMENT_HOME_SAMPLES_ENABLED, getDevelopmentDashboardSamples } from "./developmentHomeSamples";
 
 type Order = {
   created_at: string;
@@ -107,6 +108,25 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
   useEffect(() => {
     let active = true;
     const load = async () => {
+      if (DEVELOPMENT_HOME_SAMPLES_ENABLED) {
+        const samples = getDevelopmentDashboardSamples();
+        if (!active) return;
+        setOrders(samples.orders);
+        setRewardEntries(samples.rewardEntries);
+        setGrades([
+          { id: "starter", name: "Starter" },
+          { id: "trainer", name: "Trainer" },
+          { id: "collector", name: "Collector" },
+          { id: "elite_collector", name: "Elite Collector" },
+          { id: "master_collector", name: "Master Collector" },
+          { id: "champion", name: "Champion" },
+          { id: "legend", name: "Legend" },
+          { id: "legend_vip", name: "Legend VIP" },
+        ]);
+        setSyncError(false);
+        setNow(Date.now());
+        return;
+      }
       try {
         const [historyResponse, settingsResponse] = await Promise.all([
           fetch("/api/order-history?range=dashboard", { cache: "no-store" }),

@@ -262,6 +262,32 @@ export function getLiveState(): LiveState {
   };
 }
 
+/** 관리자 홈의 당일 최종 오픈 이력입니다. 한국 시간 자정을 경계로 완료된 주문만 반환합니다. */
+export function getTodayCompletedOrders(): OrderRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM orders
+       WHERE status = 'done'
+         AND completed_at IS NOT NULL
+         AND completed_at >= datetime('now', '+9 hours', 'start of day', '-9 hours')
+         AND completed_at < datetime('now', '+9 hours', 'start of day', '+15 hours')
+       ORDER BY completed_at DESC, id DESC`
+    )
+    .all() as OrderRow[];
+}
+
+/** 관리자에서 직접 입력한 주문을 최신 입력순으로 반환합니다. */
+export function getManualOrderHistory(limit = 50): OrderRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM orders
+       WHERE source = 'manual'
+       ORDER BY id DESC
+       LIMIT ?`
+    )
+    .all(limit) as OrderRow[];
+}
+
 /**
  * 주문 이력 화면용: 상태와 무관하게 누적 주문을 최신순으로 반환합니다.
  * 연/월을 전달하면 한국 시간(UTC+9) 기준 해당 월만 반환합니다.

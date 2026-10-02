@@ -30,6 +30,7 @@ const SITE_LINKS = [
 
 type Toast = { id: number; eventKey: string; title: string; userId: string; product: string };
 type PaymentBadge = { label: "카드" | "무통장" | "카드+적립금" | "무통장+적립금"; kind: "card" | "bank" | "card-point" | "bank-point" };
+type QueueHistoryKind = "opening" | "waiting" | "pending";
 
 function getPaymentBadge(order: Pick<LiveOrder, "payment_method" | "payment_gateway_name" | "easypay_name">): PaymentBadge {
   const payment = [order.payment_method, order.payment_gateway_name, order.easypay_name].filter(Boolean).join(" ").toLowerCase();
@@ -45,9 +46,38 @@ function formatOrderAmount(order: LiveOrder) {
   return `${(order.actual_amount ?? order.unit_price * order.quantity).toLocaleString("ko-KR")}원`;
 }
 
+function formatYoutubeNickname(youtubeNickname: string) {
+  return `유튜브 닉네임 - ${youtubeNickname}`;
+}
+
+function parseOrderDate(value: string) {
+  const normalized = value.replace(" ", "T");
+  return new Date(/[zZ]|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}Z`);
+}
+
+function formatCompletedTime(completedAt: string | null) {
+  if (!completedAt) return "완료 시각 미확인";
+  const date = parseOrderDate(completedAt);
+  if (Number.isNaN(date.getTime())) return "완료 시각 미확인";
+  return date.toLocaleTimeString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+}
+
+function isTodayInKorea(value: string | null) {
+  if (!value) return false;
+  const date = parseOrderDate(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" });
+  return formatter.format(date) === formatter.format(new Date());
+}
+
 export default function AdminPage() {
   const router = useRouter();
-  const { opening, waiting, pendingPayments, cancelledOrders, hitCards, overlaySettings, loading: liveLoading } = useAdminLiveCardBreak();
+  const { opening, completedToday, manualOrders, waiting, pendingPayments, cancelledOrders, hitCards, overlaySettings, loading: liveLoading } = useAdminLiveCardBreak();
 
   const [form, setForm] = useState({
     userId: "",
@@ -64,6 +94,7 @@ export default function AdminPage() {
   const [dashboardRange, setDashboardRange] = useState<DashboardRange>("day");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showHitHistory, setShowHitHistory] = useState(false);
+  const [showHitRegistration, setShowHitRegistration] = useState(false);
   const [showRewardLedger, setShowRewardLedger] = useState(false);
   const [showOverlayPreview, setShowOverlayPreview] = useState(false);
   const [showLegacyOverlayMenu, setShowLegacyOverlayMenu] = useState(false);
@@ -88,6 +119,7 @@ export default function AdminPage() {
   const [cancelledOrderPage, setCancelledOrderPage] = useState(1);
   const [hitPage, setHitPage] = useState(1);
   const [confirmingPaymentId, setConfirmingPaymentId] = useState<number | null>(null);
+  const [queueHistoryModal, setQueueHistoryModal] = useState<QueueHistoryKind | null>(null);
 
   const waitingPageCount = Math.max(1, Math.ceil(waiting.length / WAITING_PAGE_SIZE));
   const pendingPaymentPageCount = Math.max(1, Math.ceil(pendingPayments.length / WAITING_PAGE_SIZE));
@@ -106,6 +138,17 @@ export default function AdminPage() {
     cancelledOrderPage * CANCELLED_ORDER_PAGE_SIZE
   );
   const pagedHitCards = hitCards.slice((hitPage - 1) * HIT_PAGE_SIZE, hitPage * HIT_PAGE_SIZE);
+
+  const todayWaiting = waiting.filter((order) => isTodayInKorea(order.created_at));
+  const todayPendingPayments = pendingPayments.filter((order) => isTodayInKorea(order.created_at));
+  const queueHistory = queueHistoryModal === "opening"
+    ? { title: "오늘 최종 오픈", empty: "오늘 최종 오픈 이력이 없습니다.", orders: completedToday }
+    : queueHistoryModal === "waiting"
+      ? { title: "대기 주문 · 오늘 이력", empty: "오늘 접수된 대기 주문이 없습니다.", orders: todayWaiting }
+      : queueHistoryModal === "pending"
+        ? { title: "무통장 입금 전 · 오늘 이력", empty: "오늘 접수된 무통장 입금 전 주문이 없습니다.", orders: todayPendingPayments }
+        : null;
+
   const editableShortsZoneIds = overlayPreviewMode === "basic" ? BASIC_SHORTS_ZONE_IDS : ORDER_ANIMATION_ZONE_IDS;
   const selectedShortsZoneId = editableShortsZoneIds.includes(selectedShortsZone)
     ? selectedShortsZone
@@ -387,11 +430,11 @@ export default function AdminPage() {
 
   // 이력 모달이 열려 있는 동안에는 뒤쪽 화면이 같이 스크롤되지 않도록 막습니다.
   useEffect(() => {
-    document.body.style.overflow = showHitHistory || showRewardLedger || showManualOrder ? "hidden" : "";
+    document.body.style.overflow = showHitHistory || showHitRegistration || showRewardLedger || showManualOrder || queueHistoryModal ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showHitHistory, showRewardLedger, showManualOrder]);
+  }, [showHitHistory, showHitRegistration, showRewardLedger, showManualOrder, queueHistoryModal]);
 
   useEffect(() => {
     setWaitingPage((page) => Math.min(page, waitingPageCount));
@@ -558,11 +601,6 @@ export default function AdminPage() {
     });
   }
 
-  async function removeOrder(id: number) {
-    if (!window.confirm("대기 중인 주문을 삭제하시겠습니까?")) return;
-    await fetch(`/api/orders/${id}`, { method: "DELETE" });
-  }
-
   async function confirmPendingPayment(order: LiveOrder) {
     const orderNumber = order.external_order_id ?? String(order.id);
     if (!window.confirm(`${orderNumber} 주문의 실제 입금을 확인했습니다.\n카페24에서도 입금확인 처리하고 대기 주문으로 이동할까요?`)) return;
@@ -616,6 +654,7 @@ export default function AdminPage() {
     });
 
     setHitForm({ card: "", youtubeNickname: "" });
+    setShowHitRegistration(false);
   }
 
   async function removeHit(id: number) {
@@ -640,7 +679,7 @@ export default function AdminPage() {
             <strong>{order.user_id || "구매자 미확인"}</strong>
             <span className={styles.memberGradeBadge}>{order.tier || "등급 미확인"}</span>
           </div>
-          {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
+          {order.youtube_nickname && <span className={styles.ytBadge}>{formatYoutubeNickname(order.youtube_nickname)}</span>}
         </div>
         <div className={styles.orderProductLine}>
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
@@ -651,8 +690,35 @@ export default function AdminPage() {
           {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
           <div className={styles.rowActions}>
             <button onClick={() => startOpening(order.id)}>오픈시작</button>
-            <button className={styles.danger} onClick={() => removeOrder(order.id)}>삭제</button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderQueueHistoryRow(order: LiveOrder, kind: QueueHistoryKind) {
+    const payment = getPaymentBadge(order);
+    const isOpeningHistory = kind === "opening";
+    const isPendingHistory = kind === "pending";
+    const timestamp = isOpeningHistory ? order.completed_at : order.created_at;
+    return (
+      <div className={`${styles.row} ${styles.queueOrderRow} ${styles.completedOpeningRow}`} key={order.id}>
+        <div className={styles.orderIdentity}>
+          <div className={styles.orderIdentityMain}>
+            <strong>{order.user_id || "구매자 미확인"}</strong>
+            <span className={styles.memberGradeBadge}>{order.tier || "등급 미확인"}</span>
+          </div>
+          <time className={styles.completedOpeningTime} dateTime={timestamp ?? undefined}>
+            {formatCompletedTime(timestamp)}
+          </time>
+        </div>
+        <div className={styles.orderProductLine}>
+          <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
+          <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
+        </div>
+        <div className={styles.orderRowFooter}>
+          <span className={styles.completedOpeningBadge}>{isOpeningHistory ? "최종오픈" : isPendingHistory ? "입금 전" : "대기"}</span>
+          <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
         </div>
       </div>
     );
@@ -666,7 +732,7 @@ export default function AdminPage() {
             <strong>{order.user_id || "구매자 미확인"}</strong>
             <span className={styles.memberGradeBadge}>{order.tier || "등급 미확인"}</span>
           </div>
-          {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
+          {order.youtube_nickname && <span className={styles.ytBadge}>{formatYoutubeNickname(order.youtube_nickname)}</span>}
         </div>
         <div className={styles.orderProductLine}>
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
@@ -698,7 +764,7 @@ export default function AdminPage() {
             <strong>{order.user_id || "구매자 미확인"}</strong>
             <span className={styles.memberGradeBadge}>{order.tier || "등급 미확인"}</span>
           </div>
-          {order.youtube_nickname && <span className={styles.ytBadge}>YT: {order.youtube_nickname}</span>}
+          {order.youtube_nickname && <span className={styles.ytBadge}>{formatYoutubeNickname(order.youtube_nickname)}</span>}
         </div>
         <div className={styles.orderProductLine}>
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
@@ -929,39 +995,47 @@ export default function AdminPage() {
       <div className={styles.homeSectionHeader}>
         <h2 className={styles.homeSectionTitle}>오버레이</h2>
         <button className={styles.historyButton} onClick={() => setShowManualOrder(true)}>
-          주문 수동 추가
+          주문 직접입력
         </button>
       </div>
       <div className={styles.operationsGrid}>
-      <section className={`${styles.block} ${styles.primaryBlock}`}>
-        <h2>지금 오픈 중 <span className={styles.sectionCount}>{opening ? "1건" : "0건"}</span></h2>
-        {opening ? (
-          <div className={`${styles.row} ${styles.queueOrderRow} ${styles.openingOrderRow}`}>
-            <div className={styles.orderIdentity}>
-              <div className={styles.orderIdentityMain}>
-                <strong>{opening.user_id || "구매자 미확인"}</strong>
-                <span className={styles.memberGradeBadge}>{opening.tier || "등급 미확인"}</span>
+      <section className={`${styles.block} ${styles.primaryBlock} ${styles.queueBlock}`}>
+        <div className={styles.queueCardHeader}>
+          <h2>지금 오픈 중 <span className={styles.sectionCount}>{opening ? "1건" : "0건"}</span></h2>
+          <button type="button" className={styles.queueHistoryButton} onClick={() => setQueueHistoryModal("opening")}>이력보기</button>
+        </div>
+        <div className={styles.openingCardBody}>
+          {opening ? (
+            <div className={`${styles.row} ${styles.queueOrderRow} ${styles.openingOrderRow}`}>
+              <div className={styles.orderIdentity}>
+                <div className={styles.orderIdentityMain}>
+                  <strong>{opening.user_id || "구매자 미확인"}</strong>
+                  <span className={styles.memberGradeBadge}>{opening.tier || "등급 미확인"}</span>
+                </div>
+                {opening.youtube_nickname && <span className={styles.ytBadge}>{formatYoutubeNickname(opening.youtube_nickname)}</span>}
               </div>
-              {opening.youtube_nickname && <span className={styles.ytBadge}>YT: {opening.youtube_nickname}</span>}
-            </div>
-            <div className={styles.orderProductLine}>
-              <span className={styles.orderDescription}>{opening.product} × {opening.quantity}</span>
-              <span className={styles.orderAmount}>{formatOrderAmount(opening)}</span>
-            </div>
-            <div className={styles.orderRowFooter}>
-              {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
-              <div className={styles.rowActions}>
-                <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료</button>
+              <div className={styles.orderProductLine}>
+                <span className={styles.orderDescription}>{opening.product} × {opening.quantity}</span>
+                <span className={styles.orderAmount}>{formatOrderAmount(opening)}</span>
+              </div>
+              <div className={styles.orderRowFooter}>
+                {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
+                <div className={styles.rowActions}>
+                  <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료</button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <p className={styles.openingEmpty}>현재 진행 중인 오픈이 없습니다.</p>
-        )}
+          ) : (
+            <p className={styles.openingEmpty}>현재 진행 중인 오픈이 없습니다.</p>
+          )}
+        </div>
       </section>
 
       <section className={`${styles.block} ${styles.waitingOrdersBlock} ${styles.queueBlock}`} id="waiting-orders">
-        <h2>대기 주문 ({waiting.length})</h2>
+        <div className={styles.queueCardHeader}>
+          <h2>대기 주문 ({waiting.length})</h2>
+          <button type="button" className={styles.queueHistoryButton} onClick={() => setQueueHistoryModal("waiting")}>이력보기</button>
+        </div>
         {waiting.length === 0 && <p className={styles.empty}>대기 중인 주문 없음</p>}
         <div className={styles.pagedList}>{pagedWaiting.map(renderWaitingRow)}</div>
         <div className={styles.pagination}>
@@ -978,8 +1052,10 @@ export default function AdminPage() {
         </div>
       </section>
       <section className={`${styles.block} ${styles.pendingPaymentsBlock} ${styles.queueBlock}`} id="pending-payments">
-        <h2>무통장 입금 전 ({pendingPayments.length})</h2>
-        <p className={styles.blockHint}>카페24 입금완료가 확인되면 대기 주문으로 자동 이동합니다.</p>
+        <div className={styles.queueCardHeader}>
+          <h2>무통장 입금 전 ({pendingPayments.length})</h2>
+          <button type="button" className={styles.queueHistoryButton} onClick={() => setQueueHistoryModal("pending")}>이력보기</button>
+        </div>
         {pendingPayments.length === 0 && <p className={styles.empty}>무통장 입금 전 주문 없음</p>}
         <div className={styles.pagedList}>{pagedPendingPayments.map(renderPendingPaymentRow)}</div>
         <div className={styles.pagination}>
@@ -1001,31 +1077,18 @@ export default function AdminPage() {
       </section>
 
       <section className={styles.block}>
-        <h2>히트 카드 등록</h2>
-        <form className={styles.form} onSubmit={addHit}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>유튜브 닉네임</label>
-            <input
-              placeholder="유튜브 닉네임 입력(선택)"
-              value={hitForm.youtubeNickname}
-              onChange={(e) => setHitForm({ ...hitForm, youtubeNickname: e.target.value })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>카드명</label>
-            <input
-              placeholder="카드명 입력"
-              value={hitForm.card}
-              onChange={(e) => setHitForm({ ...hitForm, card: e.target.value })}
-            />
-          </div>
-          <button type="submit">등록</button>
-        </form>
+        <div className={styles.queueCardHeader}>
+          <h2>HIT&amp;RGB</h2>
+          <button type="button" className={styles.queueHistoryButton} onClick={() => setShowHitRegistration(true)}>신규등록</button>
+        </div>
+        {hitCards.length === 0 && <p className={styles.empty}>등록된 히트카드 이력 없음</p>}
         <ul className={styles.hitList}>
           {pagedHitCards.map((h) => (
             <li key={h.id} className={styles.hitItem}>
-              <span>
-                {h.user_id ? `${h.user_id}${h.youtube_nickname ? ` (YT: ${h.youtube_nickname})` : ""}` : h.youtube_nickname || "구매자 미등록"} — {h.card}
+              <span className={styles.hitItemText}>
+                {h.user_id && <b>{h.user_id}</b>}
+                {h.youtube_nickname && <span className={styles.ytBadge}>{formatYoutubeNickname(h.youtube_nickname)}</span>}
+                <em>{h.card}</em>
               </span>
               <button className={styles.hitDelete} onClick={() => removeHit(h.id)}>
                 삭제
@@ -1238,11 +1301,75 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      {queueHistory && queueHistoryModal && (
+        <div className={styles.modalOverlay} onClick={() => setQueueHistoryModal(null)}>
+          <section
+            className={`${styles.modalCard} ${styles.queueHistoryModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="queue-history-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalTopBarWithTitle}>
+              <div>
+                <h2 className={styles.modalTitle} id="queue-history-title">{queueHistory.title}</h2>
+                <p className={styles.queueHistoryCount}>당일 {queueHistory.orders.length}건</p>
+              </div>
+              <button className={styles.modalCloseBtn} onClick={() => setQueueHistoryModal(null)}>
+                닫기 ✕
+              </button>
+            </div>
+            <div className={styles.queueHistoryList}>
+              {queueHistory.orders.length === 0
+                ? <p className={styles.queueHistoryEmpty}>{queueHistory.empty}</p>
+                : queueHistory.orders.map((order) => renderQueueHistoryRow(order, queueHistoryModal))}
+            </div>
+          </section>
+        </div>
+      )}
+      {showHitRegistration && (
+        <div className={styles.modalOverlay} onClick={() => setShowHitRegistration(false)}>
+          <section
+            className={`${styles.modalCard} ${styles.hitRegistrationModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hit-registration-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalTopBarWithTitle}>
+              <h2 className={styles.modalTitle} id="hit-registration-title">HIT&amp;RGB 등록</h2>
+              <button className={styles.modalCloseBtn} onClick={() => setShowHitRegistration(false)}>
+                닫기 ✕
+              </button>
+            </div>
+            <form className={`${styles.form} ${styles.hitRegistrationForm}`} onSubmit={addHit}>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>유튜브 닉네임</label>
+                <input
+                  placeholder="유튜브 닉네임 입력(선택)"
+                  value={hitForm.youtubeNickname}
+                  onChange={(event) => setHitForm({ ...hitForm, youtubeNickname: event.target.value })}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>카드명</label>
+                <input
+                  autoFocus
+                  placeholder="카드명 입력"
+                  value={hitForm.card}
+                  onChange={(event) => setHitForm({ ...hitForm, card: event.target.value })}
+                />
+              </div>
+              <button type="submit">등록</button>
+            </form>
+          </section>
+        </div>
+      )}
       {showManualOrder && (
         <div className={`${styles.modalOverlay} ${styles.manualOrderOverlay}`} onClick={() => setShowManualOrder(false)}>
           <div className={`${styles.modalCard} ${styles.manualOrderModal}`} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalTopBarWithTitle}>
-              <h2 className={styles.modalTitle}>주문 수동 추가</h2>
+              <h2 className={styles.modalTitle}>주문 직접입력</h2>
               <button className={styles.modalCloseBtn} onClick={() => setShowManualOrder(false)}>
                 닫기 ✕
               </button>
@@ -1274,6 +1401,28 @@ export default function AdminPage() {
               </div>
               <button type="submit">추가</button>
             </form>
+            <section className={styles.manualOrderHistory} aria-label="직접 입력 주문 이력">
+              <div className={styles.manualOrderHistoryHeader}>
+                <h3>직접 입력 이력</h3>
+                <span>{manualOrders.length}건</span>
+              </div>
+              {manualOrders.length === 0 ? (
+                <p className={styles.manualOrderHistoryEmpty}>직접 입력한 주문이 없습니다.</p>
+              ) : (
+                <ul className={styles.manualOrderHistoryList}>
+                  {manualOrders.map((order) => (
+                    <li key={order.id}>
+                      <div>
+                        <strong>{order.user_id}</strong>
+                        <time dateTime={order.created_at}>{formatCompletedTime(order.created_at)}</time>
+                      </div>
+                      <span>{order.product} × {order.quantity}</span>
+                      <b>{formatOrderAmount(order)}</b>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         </div>
       )}
