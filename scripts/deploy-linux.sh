@@ -30,11 +30,24 @@ node_modules_target="$(readlink -f "$current/node_modules")"
   exit 1
 }
 
-# Failed copies/builds can leave an inactive directory on a full disk. Remove
-# only unbuilt release directories that are neither active nor linked to data.
+# Keep one known-good rollback release. Failed builds and older completed
+# releases only contain code/build artifacts, so they are safe to reclaim.
+rollback=""
+rollback_mtime=0
+for candidate in "$app_root"/mangotcg-release-*-live; do
+  [[ -d "$candidate" && ! -L "$candidate" && "$candidate" != "$current" ]] || continue
+  [[ -f "$candidate/.next/BUILD_ID" && -L "$candidate/data" && -f "$candidate/.env.local" ]] || continue
+  candidate_mtime="$(stat -c '%Y' "$candidate")"
+  if (( candidate_mtime > rollback_mtime )); then
+    rollback="$candidate"
+    rollback_mtime="$candidate_mtime"
+  fi
+done
+
 for stale in "$app_root"/mangotcg-release-*-live; do
   [[ -d "$stale" && ! -L "$stale" && "$stale" != "$current" ]] || continue
-  [[ ! -e "$stale/.next/BUILD_ID" && ! -e "$stale/data" && ! -L "$stale/data" ]] || continue
+  [[ "$stale" != "$rollback" ]] || continue
+  [[ ! -e "$stale/data" || -L "$stale/data" ]] || continue
   rm -rf -- "$stale"
 done
 

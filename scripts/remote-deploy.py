@@ -26,13 +26,27 @@ current="$(pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, "", 
   exit 1
 }
 removed=0
+rollback=""
+rollback_mtime=0
+for candidate in "$app_root"/mangotcg-release-*-live; do
+  [[ -d "$candidate" && ! -L "$candidate" && "$candidate" != "$current" ]] || continue
+  [[ -f "$candidate/.next/BUILD_ID" && -L "$candidate/data" && -f "$candidate/.env.local" ]] || continue
+  candidate_mtime="$(stat -c '%Y' "$candidate")"
+  if (( candidate_mtime > rollback_mtime )); then
+    rollback="$candidate"
+    rollback_mtime="$candidate_mtime"
+  fi
+done
 for stale in "$app_root"/mangotcg-release-*-live; do
   [[ -d "$stale" && ! -L "$stale" && "$stale" != "$current" ]] || continue
-  [[ ! -e "$stale/.next/BUILD_ID" && ! -e "$stale/data" && ! -L "$stale/data" ]] || continue
+  [[ "$stale" != "$rollback" ]] || continue
+  # A real data directory is never a disposable release and must be preserved.
+  [[ ! -e "$stale/data" || -L "$stale/data" ]] || continue
+  # Remove failed builds as well as completed releases older than the rollback copy.
   rm -rf -- "$stale"
   removed=$((removed + 1))
 done
-printf 'inactive_incomplete_releases_removed=%s\n' "$removed"
+printf 'inactive_releases_removed=%s rollback_retained=%s\n' "$removed" "${rollback##*/}"
 '''
 
 
