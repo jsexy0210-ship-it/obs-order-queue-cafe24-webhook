@@ -73,24 +73,32 @@ function CurrentOrderProduct({ product, quantity }: Pick<LiveOrder, "product" | 
   const label = `${product} · ×${quantity}`;
   const viewportRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
-  const [fit, setFit] = useState(1);
+  const [overflowing, setOverflowing] = useState(false);
+  const [duration, setDuration] = useState(8);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     const text = textRef.current;
     if (!viewport || !text) return;
     const measure = () => {
-      const baseWidth = text.getBoundingClientRect().width / Math.max(fit, .01);
-      const nextFit = Math.max(.15, Math.min(1, (viewport.clientWidth - 1) / Math.max(1, baseWidth)));
-      setFit((current) => Math.abs(current - nextFit) < .01 ? current : nextFit);
+      const isOverflowing = text.scrollWidth > viewport.clientWidth + 1;
+      setOverflowing((current) => current === isOverflowing ? current : isOverflowing);
+      const nextDuration = Math.max(6, Math.min(30, text.scrollWidth / 30));
+      setDuration((current) => Math.abs(current - nextDuration) < .5 ? current : nextDuration);
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(viewport);
+    observer.observe(text);
     return () => observer.disconnect();
-  }, [label, fit]);
+  }, [label]);
 
-  return <em ref={viewportRef} className={styles.currentOrderProduct} style={{ "--text-fit": String(fit) } as CSSProperties}><span ref={textRef}>{label}</span></em>;
+  return <em ref={viewportRef} className={`${styles.currentOrderProduct} ${overflowing ? styles.currentOrderProductScrolling : ""}`} style={{ "--product-ticker-duration": `${duration}s` } as CSSProperties}>
+    <span className={styles.currentOrderProductTrack}>
+      <span ref={textRef} className={styles.currentOrderProductText}>{label}</span>
+      {overflowing && <span className={styles.currentOrderProductText} aria-hidden="true">{label}</span>}
+    </span>
+  </em>;
 }
 
 export default function ShortsOverlayFrame({ settingsOverride, editing = false, preview = false, zoneIds = SHORTS_ZONE_IDS, showAnimationPreview = false, previewOrderKind = "repeat", onZoneChange }: Props) {
