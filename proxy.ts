@@ -5,11 +5,12 @@ import {
   getValidAdminAuthTokens,
 } from "@/lib/adminAuth";
 
-// 카페24 웹훅은 별도의 토큰으로 인증하고, 로그인 API는 인증 전 호출해야 한다.
+// 카페24 웹훅·정기 보정은 별도의 토큰으로 인증하고, 로그인 API는 인증 전 호출해야 한다.
 const PUBLIC_PATHS = new Set([
   "/admin/login",
   "/api/admin/login",
   "/api/webhooks/cafe24",
+  "/api/internal/cafe24-reconcile",
   "/api/cafe24/oauth/callback",
   "/api/overlay-live",
   "/api/overlay-stream",
