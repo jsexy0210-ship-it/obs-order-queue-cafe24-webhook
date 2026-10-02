@@ -4,7 +4,7 @@ import {
   listCafe24Orders,
   type Cafe24RewardOrder,
 } from "./cafe24Admin";
-import { extractCafe24YoutubeNickname, normalizeCafe24Order } from "./cafe24";
+import { extractCafe24YoutubeNickname } from "./cafe24";
 import { db } from "./db";
 import { broadcastUpdate } from "./events";
 
@@ -67,15 +67,16 @@ function actualAmount(order: Cafe24RewardOrder) {
 }
 
 function orderFromCafe24(order: Cafe24RewardOrder): ReconciliationOrder | null {
-  const normalized = normalizeCafe24Order({ order });
   const externalOrderId = order.order_id?.trim();
-  if (!normalized || !externalOrderId || normalized.externalOrderId !== externalOrderId) return null;
+  if (!externalOrderId) return null;
 
   const items = order.items ?? [];
+  const product = items.map((item) => item.product_name?.trim()).filter((name): name is string => Boolean(name)).join(" · ")
+    || "카페24 주문";
   const quantity = items.reduce((total, item) => {
     const value = Number(item.quantity ?? 0);
     return total + (Number.isFinite(value) && value > 0 ? value : 0);
-  }, 0) || normalized.quantity;
+  }, 0) || 1;
   const amount = actualAmount(order);
   const itemAmount = items.reduce((total, item) => {
     const value = Number(item.payment_amount ?? 0);
@@ -85,19 +86,19 @@ function orderFromCafe24(order: Cafe24RewardOrder): ReconciliationOrder | null {
     ? Math.round(itemAmount / quantity)
     : amount > 0
       ? Math.round(amount / quantity)
-      : normalized.unitPrice;
+      : 0;
   const paid = isCafe24OrderPaid(order) && order.canceled !== "T";
 
   return {
     externalOrderId,
-    userId: normalized.userId,
-    memberId: normalized.memberId,
-    product: normalized.product,
+    userId: order.billing_name?.trim() || "구매자 확인 불가",
+    memberId: order.member_id?.trim() || null,
+    product,
     quantity,
     unitPrice,
     actualAmount: amount,
-    youtubeNickname: extractCafe24YoutubeNickname(order.additional_order_info_list) ?? normalized.youtubeNickname,
-    paymentMethod: paymentMethod(order) ?? normalized.paymentMethod,
+    youtubeNickname: extractCafe24YoutubeNickname(order.additional_order_info_list),
+    paymentMethod: paymentMethod(order),
     paidAt: paid ? sqliteUtc(order.payment_date) : null,
     createdAt: sqliteUtc(order.order_date, new Date().toISOString().slice(0, 19).replace("T", " "))!,
     cancelledAt: order.canceled === "T" ? sqliteUtc(order.cancel_date) : null,
@@ -143,8 +144,9 @@ export async function reconcileCafe24Orders(input: ReconciliationInput): Promise
       try {
         return await getCafe24OrderForReward(order.order_id!);
       } catch {
-        result.failedCount += 1;
-        return null;
+        // 일부 취소·오래된 주문은 상세 조회가 제한될 수 있습니다. 목록 원본으로도
+        // 금액·결제·상태 보정은 가능하므로 해당 주문을 누락시키지 않습니다.
+        return order;
       }
     });
     const orders = details.flatMap((order) => {
