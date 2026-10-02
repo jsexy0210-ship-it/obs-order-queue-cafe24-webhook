@@ -28,12 +28,20 @@ on:
         required: false
         type: boolean
         default: false
+      daily_cafe24_reconciliation:
+        description: 'Reconcile recent Cafe24 orders into the operational order history without changing rewards'
+        required: false
+        type: boolean
+        default: false
       nickname_backfill_cutoff_kst:
         description: 'Only inspect orders from this KST minute onward, YYYY-MM-DD HH:MM'
         required: false
         type: string
   push:
     branches: [main]
+  schedule:
+    # 03:20 KST. Recent 7 days are reconciled each run to cover delayed webhooks and refunds.
+    - cron: '20 18 * * *'
 
 permissions:
   contents: read
@@ -64,6 +72,7 @@ jobs:
           MANGO_SYNC_AUDITED_ORDERS: ${{ inputs.sync_audited_orders && 'true' || 'false' }}
           MANGO_RECOVERY_RESTORE: ${{ inputs.recovery_restore && 'true' || 'false' }}
           MANGO_YOUTUBE_NICKNAME_BACKFILL: ${{ inputs.youtube_nickname_backfill && 'true' || 'false' }}
+          MANGO_DAILY_CAFE24_RECONCILIATION: ${{ (github.event_name == 'schedule' || inputs.daily_cafe24_reconciliation) && 'true' || 'false' }}
           MANGO_BACKFILL_CUTOFF_KST: ${{ inputs.nickname_backfill_cutoff_kst }}
           MANGO_RECOVERY_ADMIN_PRIMARY_ID: ${{ secrets.ADMIN_PRIMARY_ID }}
           MANGO_RECOVERY_ADMIN_PRIMARY_PASSWORD: ${{ secrets.ADMIN_PRIMARY_PASSWORD }}

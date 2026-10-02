@@ -150,6 +150,26 @@ def main():
                 f"{incoming}/reconcile-known-orders-linux.mjs", runtime_root,
             ], check=True)
             return
+        if os.environ.get("MANGO_DAILY_CAFE24_RECONCILIATION") == "true":
+            if config["PLATFORM"] != "linux":
+                raise ValueError("Daily Cafe24 reconciliation is available only for Linux production hosts")
+            incoming = "/root/.mangotcg-incoming/daily-order-reconciliation-" + sha
+            subprocess.run(["ssh", "-F", str(ssh_config), "production", f"mkdir -p {incoming}"], check=True)
+            subprocess.run([
+                "scp", "-F", str(ssh_config), "scripts/run-cafe24-reconciliation-linux.mjs",
+                f"production:{incoming}/",
+            ], check=True)
+            runtime_root = subprocess.check_output([
+                "ssh", "-F", str(ssh_config), "production",
+                "pm2 show obs-overlay | awk -F '│' '/exec cwd/ {gsub(/^ +| +$/, \"\", $3); print $3; exit}'",
+            ], text=True).strip()
+            if not runtime_root.startswith(config["APP_PATH"].rstrip("/") + "/mangotcg-release-"):
+                raise ValueError("Could not identify the active production runtime")
+            subprocess.run([
+                "ssh", "-F", str(ssh_config), "production", "node",
+                f"{incoming}/run-cafe24-reconciliation-linux.mjs", runtime_root,
+            ], check=True)
+            return
         if os.environ.get("MANGO_RECOVERY_DIAGNOSE") == "true":
             if config["PLATFORM"] != "linux":
                 raise ValueError("Recovery diagnosis is available only for Linux production hosts")

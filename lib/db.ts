@@ -140,9 +140,27 @@ db.exec(`
     hidden_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- 매일 실행되는 카페24 주문 보정 작업의 결과입니다. 개인정보나 주문 상세는 남기지 않습니다.
+  CREATE TABLE IF NOT EXISTS cafe24_reconciliation_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT,
+    range_start TEXT NOT NULL,
+    range_end TEXT NOT NULL,
+    checked_count INTEGER NOT NULL DEFAULT 0,
+    inserted_count INTEGER NOT NULL DEFAULT 0,
+    updated_count INTEGER NOT NULL DEFAULT 0,
+    cancelled_count INTEGER NOT NULL DEFAULT 0,
+    skipped_hidden_count INTEGER NOT NULL DEFAULT 0,
+    skipped_conflict_count INTEGER NOT NULL DEFAULT 0,
+    failed_count INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'running'
+  );
+
   CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
   CREATE INDEX IF NOT EXISTS idx_reward_ledger_status ON reward_ledger(status, action);
   CREATE INDEX IF NOT EXISTS idx_ranking_bonus_user ON ranking_bonus_ledger(user_id, status);
+  CREATE INDEX IF NOT EXISTS idx_cafe24_reconciliation_runs_started_at ON cafe24_reconciliation_runs(started_at);
 `);
 
 // 이미 만들어져 있던 기존 DB 파일에는 completed_at 컬럼이 없을 수 있으므로,
