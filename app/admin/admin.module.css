@@ -1636,6 +1636,10 @@
   background: rgba(255, 194, 45, 0.2);
 }
 
+.rankingTrophy1 > span {
+  filter: brightness(2);
+}
+
 .rankingTrophy2 {
   color: #dce5f2;
   background: rgba(188, 203, 221, 0.18);
