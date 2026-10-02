@@ -100,7 +100,11 @@
 .zoneCurrent .completedOrderRow span, .zoneCurrent .waitingOrderRows span { color: var(--zone-nickname-color, #fff); }
 .completedOrderRow em.currentOrderProduct,
 .waitingOrderRows em.currentOrderProduct { display: block; flex: 1 1 0; min-width: 0; overflow: hidden; font-size: clamp(13px, 3.8cqw, 26px); font-style: normal; white-space: nowrap; }
-.currentOrderProduct > span { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.currentOrderProductTrack { display: block; width: 100%; overflow: hidden; white-space: nowrap; }
+.currentOrderProductText { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.currentOrderProductScrolling .currentOrderProductTrack { display: flex; width: max-content; animation: currentOrderProductLoop var(--product-ticker-duration, 12s) linear infinite; will-change: transform; }
+.currentOrderProductScrolling .currentOrderProductText { flex: 0 0 auto; width: max-content; max-width: none; overflow: visible; padding-right: 36px; text-overflow: clip; }
+@keyframes currentOrderProductLoop { to { transform: translate3d(-50%, 0, 0); } }
 @keyframes waitingOrderLoop { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
 .emptyState { display: block !important; padding: clamp(6px, 1.5cqw, 12px); color: var(--zone-text-color, rgba(255,255,255,.92)) !important; font-size: clamp(13px, 3.6cqw, 26px) !important; font-weight: 900; line-height: 1.3; text-align: center; }
 .emptyOrderState { min-height: 32px; display: grid !important; place-items: center; border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 72%, transparent); background: rgba(12,16,24,.82); text-align: center; }
