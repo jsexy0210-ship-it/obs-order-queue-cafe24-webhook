@@ -1086,7 +1086,7 @@ export default function AdminPage() {
           {pagedHitCards.map((h) => (
             <li key={h.id} className={styles.hitItem}>
               <span className={styles.hitItemText}>
-                {h.user_id && <b>{h.user_id}</b>}
+                {(h.youtube_nickname || h.user_id) && <b>◆ {h.youtube_nickname || h.user_id} -</b>}
                 <em>{h.card}</em>
               </span>
               <button className={styles.hitDelete} onClick={() => removeHit(h.id)}>
