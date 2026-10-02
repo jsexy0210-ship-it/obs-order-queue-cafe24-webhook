@@ -132,7 +132,10 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
 
   useEffect(() => {
     let cancelled = false;
+    let loading = false;
     const loadRanking = () => {
+      if (loading) return;
+      loading = true;
       fetch("/api/overlay-ranking", { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("ranking failed")))
         .then((data: { ranking?: RankingRow[] }) => {
@@ -140,11 +143,18 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
         })
         .catch(() => {
           if (!cancelled) setRanking([]);
-        });
+        })
+        .finally(() => { loading = false; });
     };
     loadRanking();
-    const timer = window.setInterval(loadRanking, 30_000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    const timer = window.setInterval(loadRanking, 3_000);
+    const refreshWhenVisible = () => { if (document.visibilityState === "visible") loadRanking(); };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, []);
 
   // 관리 화면의 신규 주문 효과는 최신 실제 주문으로 미리봅니다.

@@ -13,6 +13,7 @@ const PUBLIC_PATHS = new Set([
   "/api/internal/cafe24-reconcile",
   "/api/cafe24/oauth/callback",
   "/api/overlay-live",
+  "/api/overlay-ranking",
   "/api/overlay-stream",
   "/overlay-cardbreak",
   "/overlay-shorts",
