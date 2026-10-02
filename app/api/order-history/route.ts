@@ -35,7 +35,9 @@ export async function GET(request: Request) {
     } catch {
       syncError = true;
     }
-    const current = await currentOrderView(getOrderHistory(), cafe24Orders);
+    // 대시보드도 주문 이력과 같은 숨김 주문 기준으로 집계합니다.
+    const hiddenOrderIds = getHiddenOrderHistoryIds();
+    const current = await currentOrderView(getOrderHistory(), cafe24Orders, hiddenOrderIds);
     const orderDates = new Map(current.flatMap((order) => order.external_order_id
       ? [[order.external_order_id, order.created_at] as const] : []));
     const cumulativeReward = getDashboardCumulativeRewardBalance();
@@ -46,6 +48,7 @@ export async function GET(request: Request) {
           created_at, payment_method, paid_at, status, actual_amount,
         })),
       rewardEntries: getDashboardRewardEntries()
+        .filter((entry) => !hiddenOrderIds.has(entry.external_order_id))
         .map((entry) => ({
           amount: entry.action === "recover" ? -entry.amount : entry.amount,
           grade_id: entry.grade_id,
