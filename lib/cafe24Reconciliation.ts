@@ -208,7 +208,7 @@ export async function reconcileCafe24Orders(input: ReconciliationInput): Promise
           continue;
         }
         if (source === "cafe24") {
-          update.run(order);
+          update.run({ ...order, cancelled: Number(order.cancelled), paid: Number(order.paid) });
           result.updatedCount += 1;
           if (order.cancelled) result.cancelledCount += 1;
           continue;
