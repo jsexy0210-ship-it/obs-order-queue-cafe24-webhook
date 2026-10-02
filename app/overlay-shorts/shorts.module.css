@@ -72,9 +72,10 @@
 .hitRowsScrolling { width: 100%; animation: hitRowLoop var(--hit-ticker-duration, 20s) linear infinite reverse; will-change: transform; }
 .hitRowsGroup { display: grid; gap: var(--hit-item-gap, 6px); padding-bottom: var(--hit-item-gap, 6px); }
 @keyframes hitRowLoop { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
-.currentOrderColumns { display: grid; gap: clamp(6px, 1.6cqw, 12px); }
-.zoneCurrent .zoneBody { margin-top: clamp(3px, .7cqw, 6px); padding-top: clamp(3px, .7cqw, 6px); }
-.currentOrderColumn { display: grid; gap: clamp(4px, 1cqw, 8px); min-width: 0; }
+.currentOrderColumns { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; min-height: 0; gap: clamp(6px, 1.6cqw, 12px); }
+.zoneCurrent .zoneBody { display: grid; min-height: 0; margin-top: clamp(3px, .7cqw, 6px); padding-top: clamp(3px, .7cqw, 6px); }
+.currentOrderColumn { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min-height: 0; gap: clamp(4px, 1cqw, 8px); }
+.openingOrderColumn { grid-template-rows: auto auto; }
 .currentOrderHeading { display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: clamp(4px, 1cqw, 8px); border-radius: 0; background: color-mix(in srgb, var(--zone-title-background-color, #086f9a) calc(var(--zone-title-background-opacity, .88) * 100%), transparent); color: var(--zone-title-color, #fff45c); font-size: clamp(14px, 3.8cqw, 28px); font-weight: 950; }
 .zoneCurrent .currentOrderHeading { background: transparent; }
 .currentOrderHeading em { color: var(--zone-text-color, #fff); font-size: .85em; font-style: normal; }
@@ -84,27 +85,23 @@
 .currentOrderColumn:last-child .currentOrderHeading { padding: clamp(4px, .9cqw, 7px); font-size: clamp(13px, 3.4cqw, 24px); }
 .currentOrderColumn:last-child .waitingOrderRows { gap: clamp(3px, .8cqw, 6px); }
 .currentOrderColumn:last-child .waitingOrderRows p { padding: clamp(4px, 1cqw, 8px); font-size: clamp(13px, 3.5cqw, 24px); }
-.completedOrderRow, .waitingOrderRows p { display: grid; align-items: center; gap: clamp(5px, 1.3cqw, 10px); min-width: 0; padding: clamp(5px, 1.3cqw, 10px); border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 78%, transparent); border-radius: 0; background: rgba(0,0,0,.24); color: var(--zone-text-color, #fff); font-size: clamp(13px, 3.8cqw, 26px); }
-.completedOrderRow { grid-template-columns: minmax(0, 1fr); }
-.waitingOrderRows { display: grid; gap: clamp(3px, 3cqw, 6px); }
-.waitingOrderRows p { grid-template-columns: minmax(0, 1fr); margin: 0; }
-.completedOrderRow.orderWithoutNickname { grid-template-columns: minmax(0, 1fr); }
-.waitingOrderRows p.orderWithoutNickname { grid-template-columns: minmax(0, 1fr); }
-.completedOrderRow span, .completedOrderRow em, .waitingOrderRows span, .waitingOrderRows em { min-width: 0; overflow: visible; white-space: normal; overflow-wrap: anywhere; font-style: normal; font-size: clamp(13px, 3.8cqw, 26px); line-height: 1.25; }
-.currentOrderIdentity { display: flex; align-items: center; gap: clamp(2px, 2cqw, 4px); }
-.currentOrderIdentity > i { min-width: 0; overflow: visible; white-space: nowrap; color: var(--zone-nickname-color, #fff); font-style: normal; font-size: inherit; font-weight: 900; }
+.completedOrderRow, .waitingOrderRows p { display: flex; flex-wrap: nowrap; align-items: center; gap: clamp(5px, 1.3cqw, 10px); min-width: 0; overflow: hidden; padding: clamp(5px, 1.3cqw, 10px); border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 78%, transparent); border-radius: 0; background: rgba(0,0,0,.24); color: var(--zone-text-color, #fff); font-size: clamp(13px, 3.8cqw, 26px); white-space: nowrap; }
+.completedOrderRow { width: 100%; box-sizing: border-box; }
+.waitingOrderViewport { height: 100%; min-height: 0; overflow: hidden; }
+.waitingOrderRows { width: 100%; }
+.waitingOrderRowsScrolling { animation: waitingOrderLoop var(--waiting-ticker-duration, 20s) linear infinite reverse; will-change: transform; }
+.waitingOrderRowsGroup { display: grid; gap: var(--waiting-item-gap, 6px); padding-bottom: var(--waiting-item-gap, 6px); }
+.waitingOrderRows p { margin: 0; }
+.currentOrderIdentity { display: flex; flex: 0 1 46%; align-items: center; min-width: 0; max-width: 52%; gap: clamp(2px, 1cqw, 4px); overflow: hidden; }
+.currentOrderIdentity > i { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zone-nickname-color, #fff); font-style: normal; font-size: inherit; font-weight: 900; }
 .currentOrderBadge { display: inline-grid; flex: 0 0 auto; place-items: center; min-width: clamp(30px, 8cqw, 58px); height: clamp(18px, 5cqw, 34px); padding: 0 clamp(5px, 1.2cqw, 9px); border-radius: 999px; background: var(--order-badge-background, #7c3aed); color: var(--order-badge-color, #fff); font-size: clamp(10px, 2.6cqw, 18px); font-weight: 950; line-height: 1; white-space: nowrap; }
-.completedOrderRow:not(.orderWithoutNickname) span { grid-column: 1 / -1; }
-.completedOrderRow:not(.orderWithoutNickname) em { grid-column: 1; }
-.waitingOrderRows p:not(.orderWithoutNickname) span { grid-column: 1 / -1; grid-row: 1; }
-.waitingOrderRows p:not(.orderWithoutNickname) em { grid-column: 1 / -1; grid-row: 2; }
-.waitingOrderRows p.orderWithoutNickname em { grid-column: 1 / -1; }
 .completedOrderRow span, .waitingOrderRows span { color: var(--zone-title-color, #fff45c); font-weight: 900; }
 .zoneCurrent .currentOrderHeading, .zoneCurrent .currentOrderHeading em { color: var(--zone-title-color, #fff45c); }
 .zoneCurrent .completedOrderRow span, .zoneCurrent .waitingOrderRows span { color: var(--zone-nickname-color, #fff); }
 .completedOrderRow em.currentOrderProduct,
-.waitingOrderRows em.currentOrderProduct { display: block; min-width: 0; overflow: visible; font-size: clamp(13px, 3.8cqw, 26px); }
-.currentOrderProduct > span { display: inline-block; white-space: normal; overflow-wrap: anywhere; }
+.waitingOrderRows em.currentOrderProduct { display: block; flex: 1 1 0; min-width: 0; overflow: hidden; font-size: clamp(13px, 3.8cqw, 26px); font-style: normal; white-space: nowrap; }
+.currentOrderProduct > span { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes waitingOrderLoop { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
 .emptyState { display: block !important; padding: clamp(6px, 1.5cqw, 12px); color: var(--zone-text-color, rgba(255,255,255,.92)) !important; font-size: clamp(13px, 3.6cqw, 26px) !important; font-weight: 900; line-height: 1.3; text-align: center; }
 .emptyOrderState { min-height: 32px; display: grid !important; place-items: center; border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 72%, transparent); background: rgba(12,16,24,.82); text-align: center; }
 .zoneToast { display: block; align-content: unset; text-align: left; border: 0; border-radius: 999px; background: transparent; box-shadow: none; }

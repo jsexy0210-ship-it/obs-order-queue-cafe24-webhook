@@ -96,6 +96,7 @@ export type OverlaySettings = {
     newOrder: NewOrderEffectSettings;
     hitItemGap: number;
     hitItemHeight: number;
+    waitingItemGap: number;
   };
 };
 
@@ -164,6 +165,7 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
   shorts: {
     hitItemGap: 6,
     hitItemHeight: 0,
+    waitingItemGap: 6,
     zones: {
       hit: {
         visible: true,
