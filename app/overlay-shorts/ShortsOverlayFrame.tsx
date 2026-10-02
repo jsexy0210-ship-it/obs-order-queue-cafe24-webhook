@@ -110,6 +110,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const displayedHitCards = live.hitCards;
   const visibleHitCards = displayedHitCards;
   const shouldScrollHitCards = visibleHitCards.length >= 4;
+  const shouldScrollWaitingOrders = waitingOrders.length >= 3;
   const renderedHitCards = visibleHitCards;
   const latestHit = displayedHitCards[0] ?? null;
   const displayedRanking = ranking;
@@ -372,6 +373,8 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
             "--hit-ticker-duration": `${zone.tickerDurationSeconds}s`,
             "--hit-item-gap": `${settings.shorts.hitItemGap}px`,
             "--hit-item-height": settings.shorts.hitItemHeight > 0 ? `${settings.shorts.hitItemHeight}px` : "auto",
+            "--waiting-ticker-duration": `${zone.tickerDurationSeconds}s`,
+            "--waiting-item-gap": `${settings.shorts.waitingItemGap}px`,
             "--motion-duration": `${zone.motionDurationSeconds}s`,
           } as CSSProperties;
           const value = id === "current"
@@ -418,20 +421,26 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                     </div>
                   ) : id === "current" ? (
                     <div className={styles.currentOrderColumns}>
-                      <section className={styles.currentOrderColumn}>
+                      <section className={`${styles.currentOrderColumn} ${styles.openingOrderColumn}`}>
                         <b className={styles.currentOrderHeading}>오픈</b>
                         {openingOrder ? (
                           <p className={`${styles.completedOrderRow} ${nickname(openingOrder.youtube_nickname) === "-" ? styles.orderWithoutNickname : ""}`}>{nickname(openingOrder.youtube_nickname) !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(openingOrder)}<i style={textFit(nickname(openingOrder.youtube_nickname), 14)}>{nickname(openingOrder.youtube_nickname)}</i></span>}<CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} /></p>
                         ) : <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>-</p>}
                       </section>
-                      <section className={styles.currentOrderColumn}>
+                      <section className={`${styles.currentOrderColumn} ${styles.waitingOrderColumn}`}>
                         <b className={styles.currentOrderHeading}>대기 <em>{waitingOrders.length}건</em></b>
-                        <div className={styles.waitingOrderRows}>
-                          {waitingOrders.slice(0, 4).map((order, index) => {
-                            const orderNickname = nickname(order.youtube_nickname);
-                            return <p key={order.id} className={orderNickname === "-" ? styles.orderWithoutNickname : ""}>{orderNickname !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(order)}<i style={textFit(orderNickname, 13)}>{orderNickname}</i></span>}<CurrentOrderProduct product={order.product} quantity={order.quantity} /></p>;
-                          })}
-                          {waitingOrders.length === 0 && <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>-</p>}
+                        <div className={styles.waitingOrderViewport}>
+                          <div className={`${styles.waitingOrderRows} ${shouldScrollWaitingOrders ? styles.waitingOrderRowsScrolling : ""}`}>
+                            {(shouldScrollWaitingOrders ? [false, true] : [false]).map((copy) => (
+                              <div className={styles.waitingOrderRowsGroup} key={copy ? "next-cycle" : "current-cycle"} aria-hidden={copy || undefined}>
+                                {waitingOrders.map((order) => {
+                                  const orderNickname = nickname(order.youtube_nickname);
+                                  return <p key={`${order.id}-${copy ? "next" : "current"}`} className={orderNickname === "-" ? styles.orderWithoutNickname : ""}>{orderNickname !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(order)}<i style={textFit(orderNickname, 13)}>{orderNickname}</i></span>}<CurrentOrderProduct product={order.product} quantity={order.quantity} /></p>;
+                                })}
+                                {waitingOrders.length === 0 && <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>-</p>}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </section>
                     </div>

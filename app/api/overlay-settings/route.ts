@@ -108,6 +108,7 @@ export async function PUT(req: NextRequest) {
     shorts: {
       hitItemGap: clamp(body.shorts?.hitItemGap ?? DEFAULT_OVERLAY_SETTINGS.shorts.hitItemGap, 0, 32),
       hitItemHeight: clamp(body.shorts?.hitItemHeight ?? DEFAULT_OVERLAY_SETTINGS.shorts.hitItemHeight, 0, 80),
+      waitingItemGap: clamp(body.shorts?.waitingItemGap ?? DEFAULT_OVERLAY_SETTINGS.shorts.waitingItemGap, 0, 32),
       zones,
       newOrder: {
         first: {
