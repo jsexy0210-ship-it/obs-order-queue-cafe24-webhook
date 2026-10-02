@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     const result = await reconcileCafe24Orders({ startDate: kstDate(7), endDate: kstDate(0) });
     return NextResponse.json({ ok: result.failedCount === 0, result }, { status: result.failedCount ? 207 : 200 });
   } catch (error) {
-    console.error("[cafe24 reconciliation] failed", error instanceof Error ? error.message : "unknown");
-    return NextResponse.json({ error: "reconciliation_failed" }, { status: 502 });
+    const reason = error instanceof Error ? error.message : "unknown";
+    console.error("[cafe24 reconciliation] failed", reason);
+    return NextResponse.json({ error: "reconciliation_failed", reason }, { status: 502 });
   }
 }

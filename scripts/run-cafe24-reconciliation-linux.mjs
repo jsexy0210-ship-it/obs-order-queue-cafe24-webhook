@@ -18,7 +18,10 @@ const response = await fetch("http://127.0.0.1:3001/api/internal/cafe24-reconcil
   headers: { "x-mango-reconciliation-token": token },
 });
 const payload = await response.json().catch(() => null);
-if (!response.ok || !payload?.result) throw new Error(`Cafe24 reconciliation failed (HTTP ${response.status}).`);
+if (!response.ok || !payload?.result) {
+  const reason = typeof payload?.reason === "string" ? `: ${payload.reason}` : "";
+  throw new Error(`Cafe24 reconciliation failed (HTTP ${response.status})${reason}.`);
+}
 
 const result = payload.result;
 console.log(
