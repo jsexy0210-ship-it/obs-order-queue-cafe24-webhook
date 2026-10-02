@@ -103,6 +103,23 @@ export function getOrderRanking(limit = 10): OrderRankingRow[] {
   }));
 }
 
+let overlayIdentityRefreshAt = 0;
+let overlayIdentityRefresh: Promise<void> | null = null;
+
+/** 공개 오버레이는 현재 순위만 조회하되, 누락된 주문 회원 ID는 드물게 보완합니다. */
+export async function getOverlayOrderRanking(limit = 3): Promise<OrderRankingRow[]> {
+  if (Date.now() - overlayIdentityRefreshAt >= 30_000) {
+    if (!overlayIdentityRefresh) {
+      overlayIdentityRefreshAt = Date.now();
+      overlayIdentityRefresh = hydrateMissingRankingMemberIds().finally(() => {
+        overlayIdentityRefresh = null;
+      });
+    }
+    await overlayIdentityRefresh;
+  }
+  return getOrderRanking(limit);
+}
+
 /** 최근 결제 주문의 회원 ID로 카페24의 현재 회원등급을 조회합니다. */
 export async function getOrderRankingWithGrades(limit = 10): Promise<OrderRankingRow[]> {
   await hydrateMissingRankingMemberIds();
