@@ -402,6 +402,24 @@
   color: #b4233a;
 }
 
+:global([data-theme="light"]) .mobileMenuButton {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #162033;
+}
+
+:global([data-theme="light"]) .mobileMenu {
+  border-color: #d7e0ea;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(27, 39, 59, 0.16);
+}
+
+:global([data-theme="light"]) .mobileMenu a,
+:global([data-theme="light"]) .mobileMenu button {
+  border-color: #d7e0ea;
+  color: #162033;
+}
+
 @media (max-width: 900px) {
   .page {
     padding: 24px 16px 44px;

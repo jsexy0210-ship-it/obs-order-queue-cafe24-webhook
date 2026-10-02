@@ -3622,3 +3622,155 @@
   max-inline-size: 372px;
   flex: 1 1 372px !important;
 }
+
+/* 홈 주문 카드의 다크 전용 글자색은 공통 라이트 규칙보다 뒤에 있어
+ * 라이트 모드에서 다시 흰색으로 덮였다. 미리보기 영역을 제외하고
+ * 실제 관리 화면의 읽기 전용 텍스트를 이곳에서 최종 보정한다. */
+.page[data-theme="light"] .statusCard {
+  border-color: #d7e0ea;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(27, 39, 59, 0.07);
+}
+
+.page[data-theme="light"] .statusLabel,
+.page[data-theme="light"] .statusCard small,
+.page[data-theme="light"] .queueHistoryCount,
+.page[data-theme="light"] .queueHistoryEmpty,
+.page[data-theme="light"] .openingEmpty,
+.page[data-theme="light"] .completedOpeningHeader h3,
+.page[data-theme="light"] .completedOpeningHeader span,
+.page[data-theme="light"] .completedOpeningEmpty,
+.page[data-theme="light"] .completedOpeningTime,
+.page[data-theme="light"] .cancelledOrderId {
+  color: #526276;
+}
+
+.page[data-theme="light"] .statusCard strong,
+.page[data-theme="light"] .openingBuyerLine strong,
+.page[data-theme="light"] .orderIdentityMain strong,
+.page[data-theme="light"] .openingProduct,
+.page[data-theme="light"] .openingProductName,
+.page[data-theme="light"] .hitItemText b,
+.page[data-theme="light"] .hitItemText em,
+.page[data-theme="light"] .manualOrderHistoryHeader h3,
+.page[data-theme="light"] .manualOrderHistoryList strong {
+  color: #162033;
+}
+
+.page[data-theme="light"] .statusLive {
+  border-color: #8bceaa;
+  background: #edf9f1;
+}
+
+.page[data-theme="light"] .statusLive strong,
+.page[data-theme="light"] .paidBadge,
+.page[data-theme="light"] .completedOpeningBadge {
+  color: #176b40;
+}
+
+.page[data-theme="light"] .queueHistoryButton {
+  border-color: #c9b8ff;
+  background: #f1edff;
+  color: #51339e;
+}
+
+.page[data-theme="light"] .queueHistoryButton:hover {
+  border-color: #8e70e8;
+  background: #e5ddff;
+  color: #3f2781;
+}
+
+.page[data-theme="light"] .sectionCount,
+.page[data-theme="light"] .memberGradeBadge {
+  border-color: #c7b9f4;
+  background: #f0edff;
+  color: #51339e;
+}
+
+.page[data-theme="light"] .openingHero {
+  border-color: #d5c9f6;
+  background: #fbfaff;
+}
+
+.page[data-theme="light"] .openingEmpty {
+  border-color: #cfc4ed;
+  background: #f8f6ff;
+}
+
+.page[data-theme="light"] .openingProduct b {
+  color: #517313;
+}
+
+.page[data-theme="light"] .openingProduct .orderAmount,
+.page[data-theme="light"] .orderAmount,
+.page[data-theme="light"] .manualOrderHistoryList b {
+  color: #157247;
+}
+
+.page[data-theme="light"] .paymentBadge {
+  border-color: #a8ccec;
+  background: #eaf4ff;
+  color: #18558c;
+}
+
+.page[data-theme="light"] .paymentBadge[data-kind="bank"] {
+  border-color: #91d9ca;
+  background: #e6f8f4;
+  color: #12665a;
+}
+
+.page[data-theme="light"] .paymentBadge[data-kind="card-point"] {
+  border-color: #c6b7f1;
+  background: #f1edff;
+  color: #5438a8;
+}
+
+.page[data-theme="light"] .paymentBadge[data-kind="bank-point"] {
+  border-color: #efcf7b;
+  background: #fff7df;
+  color: #805800;
+}
+
+.page[data-theme="light"] .unpaidBadge {
+  border-color: #f1bd89;
+  background: #fff0e3;
+  color: #9a3e08;
+}
+
+.page[data-theme="light"] .cancelStatusBadge {
+  border-color: #efb1ba;
+  background: #ffedf0;
+  color: #ad2638;
+}
+
+.page[data-theme="light"] .cancelStatusBadge[data-refunded="true"] {
+  border-color: #c6b7f1;
+  background: #f1edff;
+  color: #5438a8;
+}
+
+.page[data-theme="light"] .manualOrderHistoryList time,
+.page[data-theme="light"] .manualOrderHistoryList span,
+.page[data-theme="light"] .manualOrderHistoryEmpty {
+  color: #526276;
+}
+
+.page[data-theme="light"] .toast {
+  border-color: #88cda3;
+  background: #edf9f1;
+}
+
+.page[data-theme="light"] .toast strong {
+  color: #176b40;
+}
+
+.page[data-theme="light"] .toast span {
+  color: #284536;
+  opacity: 1;
+}
+
+.page[data-theme="light"] .modalCard:not(.overlayEditorModal) {
+  border-color: #d6dee9;
+  background: #ffffff;
+  color: #162033;
+}
