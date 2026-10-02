@@ -419,6 +419,10 @@
   font-weight: 800;
 }
 
+.openingEmptyMessage {
+  background: var(--opening-empty-background);
+}
+
 .emptyQueueMessage { width: 100%; }
 
 .nowProduct {
