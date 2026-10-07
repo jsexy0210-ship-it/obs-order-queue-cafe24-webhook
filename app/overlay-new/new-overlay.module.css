@@ -35,12 +35,17 @@
 .panelHeader small, .liveHeader small, .currentHeader span, .flowLabel { display: block; color: #bfffe1; font-size: clamp(7px, 1.7cqw, 15px); font-weight: 900; letter-spacing: .08em; }
 .panelHeader strong { display: block; overflow: hidden; color: #fff; font-size: clamp(10px, 2.3cqw, 21px); font-weight: 950; white-space: nowrap; text-overflow: ellipsis; }
 .panelHeader > b { color: #fff4a0; font-size: clamp(9px, 2.1cqw, 19px); white-space: nowrap; }
-.queueList { display: grid; gap: clamp(3px, .7cqw, 7px); margin: 0; padding: clamp(5px, 1.2cqw, 11px); list-style: none; }
-.queueList li { display: grid; grid-template-columns: 1.7em minmax(0, .7fr) minmax(0, 1.1fr); align-items: center; gap: clamp(4px, .8cqw, 8px); min-height: clamp(21px, 5cqw, 43px); padding: 0 clamp(4px, 1cqw, 9px); border: 1px solid rgba(97, 255, 190, .35); border-radius: clamp(4px, .8cqw, 7px); background: rgba(1, 13, 17, .58); }
-.queueList li.queueLead { border-color: rgba(255, 225, 89, .9); background: linear-gradient(90deg, rgba(119, 83, 8, .74), rgba(15, 58, 47, .66)); box-shadow: 0 0 9px rgba(255, 216, 75, .26); }
-.queueList em { display: grid; place-items: center; width: 1.45em; aspect-ratio: 1; border-radius: 50%; background: #23c980; color: #032519; font-size: clamp(7px, 1.7cqw, 15px); font-style: normal; font-weight: 1000; }
-.queueList span, .queueList b { overflow: hidden; font-size: clamp(8px, 1.8cqw, 17px); font-weight: 900; white-space: nowrap; text-overflow: ellipsis; }.queueList span { color: #f4fbff; }.queueList b { color: #fff2a0; }
-.queueList .emptyRow { display: grid; grid-template-columns: minmax(0, 1fr); grid-column: 1 / -1; place-items: center; min-height: clamp(36px, 8cqw, 66px); color: #d6eee7; font-size: clamp(9px, 2cqw, 18px); text-align: center; }
+.rankingList { display: grid; gap: clamp(3px, .7cqw, 7px); padding: clamp(5px, 1.2cqw, 11px); }
+.rankingRow { display: grid; grid-template-columns: 1.7em minmax(0, .7fr) minmax(0, 1.1fr); align-items: center; gap: clamp(4px, .8cqw, 8px); min-height: clamp(21px, 5cqw, 43px); padding: 0 clamp(4px, 1cqw, 9px); border: 1px solid rgba(97, 255, 190, .35); border-radius: clamp(4px, .8cqw, 7px); background: rgba(1, 13, 17, .58); }
+.rankingRow.queueLead { border-color: rgba(255, 225, 89, .9); background: linear-gradient(90deg, rgba(119, 83, 8, .74), rgba(15, 58, 47, .66)); box-shadow: 0 0 9px rgba(255, 216, 75, .26); }
+.rankingRow em { display: grid; place-items: center; width: 1.45em; aspect-ratio: 1; border-radius: 50%; background: #23c980; color: #032519; font-size: clamp(7px, 1.7cqw, 15px); font-style: normal; font-weight: 1000; }
+.rankingRow.queueLead em { background: #ffe16a; color: #58400b; box-shadow: 0 0 10px rgba(255, 225, 89, .7); }
+.rankingRow span, .rankingRow b { overflow: hidden; font-size: clamp(8px, 1.8cqw, 17px); font-weight: 900; white-space: nowrap; text-overflow: ellipsis; }.rankingRow span { color: #f4fbff; }.rankingRow b { color: #fff2a0; }
+.emptyRow { display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; min-height: clamp(36px, 8cqw, 66px); color: #d6eee7; font-size: clamp(9px, 2cqw, 18px); text-align: center; }
+.rankingFlowViewport { height: clamp(26px, 5.7cqw, 50px); overflow: hidden; }
+.rankingFlowTrack { display: grid; width: 100%; }
+.rankingFlowGroup { display: grid; gap: clamp(3px, .7cqw, 7px); padding-bottom: clamp(3px, .7cqw, 7px); }
+.rankingFlowActive { animation: rankingFlow 9s linear infinite; will-change: transform; }
 
 .livePanel { top: 2.7%; right: 3.6%; width: 42%; min-height: 13%; padding: clamp(9px, 2cqw, 18px); box-sizing: border-box; border-color: rgba(255, 221, 95, .88); background: radial-gradient(circle at 80% 14%, rgba(255, 213, 92, .35), transparent 38%), linear-gradient(135deg, rgba(4, 67, 57, .95), rgba(5, 39, 46, .88)); }
 .liveHeader { position: relative; z-index: 1; display: grid; grid-template-columns: auto 1fr; column-gap: clamp(5px, 1.1cqw, 10px); align-items: center; }.liveHeader .liveDot { grid-row: 1 / 3; width: clamp(8px, 1.9cqw, 17px); aspect-ratio: 1; border-radius: 50%; background: #ffeb83; box-shadow: 0 0 0 4px rgba(255, 235, 131, .12), 0 0 17px #ffcb4e; animation: pulse 1.15s ease-in-out infinite; }.liveHeader small { color: #ddffc8; }.liveHeader strong { display: block; margin-top: 2px; color: #fff; font-size: clamp(10px, 2.5cqw, 23px); font-weight: 1000; line-height: 1.05; }.livePanel p { position: relative; z-index: 1; margin: clamp(8px, 1.5cqw, 14px) 0 0; color: #f5ffd8; font-size: clamp(7px, 1.55cqw, 14px); font-weight: 800; line-height: 1.35; }.liveShine { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 36%, rgba(255, 255, 255, .35) 48%, transparent 62%); background-size: 220% 100%; animation: liveSweep 3.6s ease-in-out infinite; }
@@ -55,5 +60,6 @@
 @keyframes liveSweep { 0%, 25% { background-position: 130% 0; } 62%, 100% { background-position: -130% 0; } }
 @keyframes flowGlow { to { transform: translateX(100%); } }
 @keyframes orderFlow { to { transform: translateX(-50%); } }
+@keyframes rankingFlow { to { transform: translateY(-50%); } }
 
-@media (prefers-reduced-motion: reduce) { .sparkField i, .panel::after, .liveHeader .liveDot, .liveShine, .flowPanel::before, .flowTrack { animation-duration: 1ms; animation-iteration-count: 1; } }
+@media (prefers-reduced-motion: reduce) { .sparkField i, .panel::after, .liveHeader .liveDot, .liveShine, .flowPanel::before, .flowTrack, .rankingFlowActive { animation-duration: 1ms; animation-iteration-count: 1; } }

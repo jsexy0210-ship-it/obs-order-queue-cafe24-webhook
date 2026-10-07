@@ -29,6 +29,8 @@ export default function NewOverlayFrame({ preview = false }: Props) {
   const queue = [...(opening ? [opening] : []), ...waiting].slice(0, 4);
   const activeOrder = opening ?? waiting[0] ?? null;
   const flowOrders = queue.length > 0 ? queue : activeOrder ? [activeOrder] : [];
+  const champion = ranking[0] ?? null;
+  const challengers = ranking.slice(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,16 +61,32 @@ export default function NewOverlayFrame({ preview = false }: Props) {
           <div><small>HALL OF FAME</small><strong>명예의 전당</strong></div>
           <b>TOP 3</b>
         </header>
-        <ol className={styles.queueList}>
-          {ranking.map((row) => (
-            <li key={row.rank} className={row.rank === 1 ? styles.queueLead : undefined}>
-              <em>{row.rank}</em>
-              <span>{nickname(row.youtubeNickname)}</span>
-              <b>{row.orderCount}건</b>
-            </li>
-          ))}
-          {ranking.length === 0 && <li className={styles.emptyRow}>명예의 전당 집계 중</li>}
-        </ol>
+        <div className={styles.rankingList}>
+          {champion ? (
+            <div className={`${styles.rankingRow} ${styles.queueLead}`}>
+              <em>1</em>
+              <span>{nickname(champion.youtubeNickname)}</span>
+              <b>{champion.orderCount}건</b>
+            </div>
+          ) : <div className={styles.emptyRow}>명예의 전당 집계 중</div>}
+          {challengers.length > 0 && (
+            <div className={styles.rankingFlowViewport} aria-label="명예의 전당 2위 이하 순위">
+              <div className={`${styles.rankingFlowTrack} ${challengers.length > 1 ? styles.rankingFlowActive : ""}`}>
+                {(challengers.length > 1 ? [false, true] : [false]).map((copy) => (
+                  <div className={styles.rankingFlowGroup} key={copy ? "next-cycle" : "current-cycle"} aria-hidden={copy || undefined}>
+                    {challengers.map((row) => (
+                      <div className={styles.rankingRow} key={`${row.rank}-${copy ? "next" : "current"}`}>
+                        <em>{row.rank}</em>
+                        <span>{nickname(row.youtubeNickname)}</span>
+                        <b>{row.orderCount}건</b>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className={`${styles.panel} ${styles.livePanel}`}>
