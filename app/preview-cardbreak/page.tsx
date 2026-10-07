@@ -5,7 +5,7 @@ export default function PreviewCardBreak() {
   return (
     <main className={styles.previewStage}>
       <div className={styles.overlayFrame}>
-        <CardBreakFrame />
+        <CardBreakFrame previewMode />
       </div>
     </main>
   );

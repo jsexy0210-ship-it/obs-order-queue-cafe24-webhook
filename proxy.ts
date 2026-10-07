@@ -17,6 +17,7 @@ const PUBLIC_PATHS = new Set([
   "/api/overlay-stream",
   "/overlay-cardbreak",
   "/overlay-shorts",
+  "/overlay-new",
   "/overlay-vertical",
 ]);
 

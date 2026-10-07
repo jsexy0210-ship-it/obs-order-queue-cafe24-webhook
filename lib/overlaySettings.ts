@@ -2,7 +2,43 @@ export const SHORTS_ZONE_IDS = ["hit", "ranking", "current", "announcement"] as 
 
 export type ShortsZoneId = (typeof SHORTS_ZONE_IDS)[number];
 
+export type DeckAppearanceSettings = {
+  backgroundStart: string;
+  backgroundMiddle: string;
+  backgroundEnd: string;
+  titleStart: string;
+  titleEnd: string;
+  itemBackground: string;
+  borderColor: string;
+  titleColor: string;
+  textColor: string;
+  nicknameColor: string;
+  iconColor: string;
+  titleIcon: string;
+  openTitle: string;
+  waitingTitle: string;
+  badgeFirstColor: string;
+  badgeRepeatColor: string;
+  badgeVipColor: string;
+  opacity: number;
+  backgroundOpacity: number;
+  titleOpacity: number;
+  titleScale: number;
+  textScale: number;
+  glow: boolean;
+  shine: boolean;
+  textBurst: boolean;
+  cardFlip: boolean;
+  effectSeconds: number;
+  flowDirection: "up" | "down";
+  waitingSeconds: number;
+  itemGap: number;
+  itemHeight: number;
+};
+
 export type ShortsZoneSettings = {
+  /** 신규 카드덱에서만 사용하는 표시 설정입니다. */
+  deckAppearance?: Partial<DeckAppearanceSettings>;
   visible: boolean;
   title: string;
   /** {{nickname}}, {{product}}, {{quantity}}, {{card}}, {{count}} 토큰을 사용할 수 있습니다. */
@@ -57,6 +93,15 @@ export type NewOrderEffectSettings = {
   vip: NewOrderEffectCopy;
 };
 
+export type ShortsOverlaySettings = {
+  zones: Record<ShortsZoneId, ShortsZoneSettings>;
+  newOrder: NewOrderEffectSettings;
+  hitItemGap: number;
+  hitItemHeight: number;
+  waitingItemGap: number;
+  openingEmptyTransparency?: number;
+};
+
 export type OverlaySettings = {
   orderVisible: boolean;
   panelBackgroundVisible: boolean;
@@ -91,13 +136,9 @@ export type OverlaySettings = {
     timerText: string;
   };
   /** 실제 Shorts 영상(9:16) 안에서만 쓰는 새 오버레이 영역 설정입니다. */
-  shorts: {
-    zones: Record<ShortsZoneId, ShortsZoneSettings>;
-    newOrder: NewOrderEffectSettings;
-    hitItemGap: number;
-    hitItemHeight: number;
-    waitingItemGap: number;
-  };
+  shorts: ShortsOverlaySettings;
+  /** 기본 오버레이를 유지하면서 편집할 수 있는 독립 신규 오버레이 프로필입니다. */
+  newOverlay?: ShortsOverlaySettings;
 };
 
 const DEFAULT_NEW_ORDER_ZONE: ShortsZoneSettings = {
@@ -204,7 +245,7 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
       },
       ranking: {
         visible: true,
-        title: "VIP",
+        title: "명예의 전당",
         template: "순위 · 닉네임 · 총 주문 건수",
         x: 3,
         y: 21,
@@ -281,5 +322,90 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
       repeat: { durationSeconds: 1, zone: { ...DEFAULT_NEW_ORDER_ZONE } },
       vip: { durationSeconds: 1, zone: { ...DEFAULT_NEW_ORDER_ZONE } },
     },
+  },
+};
+
+const DEFAULT_DECK_APPEARANCE: DeckAppearanceSettings = {
+  backgroundStart: "#bb14ab", backgroundMiddle: "#5711b8", backgroundEnd: "#f01c77",
+  titleStart: "#d91cd0", titleEnd: "#ec278d", itemBackground: "#2f0c6e",
+  borderColor: "#ff44da", titleColor: "#fff2fd", textColor: "#ffffff", nicknameColor: "#ffffff", iconColor: "#ffd2f8",
+  titleIcon: "🏆", openTitle: "오픈", waitingTitle: "대기",
+  badgeFirstColor: "#ff5368", badgeRepeatColor: "#27d7ae", badgeVipColor: "#ffe786",
+  opacity: 100, backgroundOpacity: 98, titleOpacity: 100, titleScale: 100, textScale: 100,
+  glow: true, shine: true, textBurst: true, cardFlip: true, effectSeconds: 3,
+  flowDirection: "up", waitingSeconds: 40, itemGap: 4, itemHeight: 0,
+};
+
+export function getDeckAppearance(id: ShortsZoneId, zone: ShortsZoneSettings): DeckAppearanceSettings {
+  const defaults = id === "hit" ? {
+    ...DEFAULT_DECK_APPEARANCE,
+    backgroundStart: "#00a4d1", backgroundMiddle: "#0b41c9", backgroundEnd: "#6218ca",
+    titleStart: "#00bddd", titleEnd: "#7626db", itemBackground: "#082466",
+    borderColor: "#00d5ff", titleColor: "#f0fcff", iconColor: "#c3fbff", titleIcon: "💎", flowDirection: "down" as const,
+  } : id === "current" ? {
+    ...DEFAULT_DECK_APPEARANCE,
+    backgroundStart: "#00b887", backgroundMiddle: "#007ab4", backgroundEnd: "#3b42d3",
+    titleStart: "#30edb9", titleEnd: "#128fbf", itemBackground: "#052b37",
+    borderColor: "#62ffe0", titleColor: "#f2fff9", textColor: "#f2fff9", nicknameColor: "#f2fff9", iconColor: "#c5fff3",
+    titleIcon: "", backgroundOpacity: 97, flowDirection: "down" as const,
+    waitingSeconds: Math.min(120, zone.tickerDurationSeconds * 2),
+  } : DEFAULT_DECK_APPEARANCE;
+  return { ...defaults, ...zone.deckAppearance };
+}
+
+const defaultShorts = DEFAULT_OVERLAY_SETTINGS.shorts;
+const deckColors = {
+  accent: "#e73531",
+  borderColor: "#f4bd51",
+  titleBackgroundColor: "#7c1718",
+  backgroundColor: "#260b0c",
+};
+
+/** 영상의 레드·골드 카드 프레임용 독립 기본값. 기존 설정과 참조를 공유하지 않습니다. */
+export const DEFAULT_NEW_OVERLAY_SETTINGS: ShortsOverlaySettings = {
+  ...defaultShorts,
+  openingEmptyTransparency: 40,
+  zones: {
+    hit: {
+      ...defaultShorts.zones.hit,
+      x: 3,
+      y: 31,
+      width: 45,
+      height: 16,
+    },
+    ranking: {
+      ...defaultShorts.zones.ranking,
+      title: "명예의 전당",
+      x: 3,
+      y: 8,
+      width: 45,
+      height: 21,
+      tickerDurationSeconds: 1.2,
+    },
+    current: {
+      ...defaultShorts.zones.current,
+      x: 66,
+      y: 22,
+      width: 31,
+      height: 46,
+      tickerDurationSeconds: 8,
+      accent: deckColors.accent,
+      titleColor: "#fff1c2",
+      nicknameColor: "#fff1c2",
+      textColor: "#fff4d2",
+      openBorderColor: deckColors.borderColor,
+      waitingBorderColor: deckColors.borderColor,
+      titleBackgroundColor: deckColors.titleBackgroundColor,
+      backgroundColor: deckColors.backgroundColor,
+      borderColor: deckColors.borderColor,
+      backgroundOpacity: 94,
+      titleBackgroundOpacity: 96,
+    },
+    announcement: { ...defaultShorts.zones.announcement },
+  },
+  newOrder: {
+    first: { ...defaultShorts.newOrder.first, zone: { ...defaultShorts.newOrder.first.zone } },
+    repeat: { ...defaultShorts.newOrder.repeat, zone: { ...defaultShorts.newOrder.repeat.zone } },
+    vip: { ...defaultShorts.newOrder.vip, zone: { ...defaultShorts.newOrder.vip.zone } },
   },
 };
