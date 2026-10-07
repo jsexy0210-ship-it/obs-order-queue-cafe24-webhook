@@ -104,8 +104,8 @@ export default function AdminPage() {
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
   const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
-  const [overlayPreviewMode, setOverlayPreviewMode] = useState<"basic" | "new" | "animation">("basic");
-  const [selectedShortsZone, setSelectedShortsZone] = useState<ShortsZoneId>("hit");
+  const [overlayPreviewMode, setOverlayPreviewMode] = useState<"basic" | "new" | "animation">("new");
+  const [selectedShortsZone, setSelectedShortsZone] = useState<ShortsZoneId>("current");
   const [selectedNewOrderCopy, setSelectedNewOrderCopy] = useState<"first" | "repeat" | "vip">("first");
   const [shortsSettings, setShortsSettings] = useState<OverlaySettings>(DEFAULT_OVERLAY_SETTINGS);
   const [newOverlaySettings, setNewOverlaySettings] = useState<ShortsOverlaySettings>(DEFAULT_NEW_OVERLAY_SETTINGS);
@@ -468,7 +468,8 @@ export default function AdminPage() {
 
   function closeOverlayPreview() {
     setEditingOverlay(false);
-    setOverlayPreviewMode("basic");
+    setOverlayPreviewMode("new");
+    setSelectedShortsZone("current");
     setShowLegacyOverlayMenu(false);
     setShowOverlayPreview(false);
   }
@@ -1153,18 +1154,6 @@ export default function AdminPage() {
               <div className={styles.overlayModalActions}>
                 <div className={styles.overlayPreviewModes} role="tablist" aria-label="오버레이 미리보기 종류">
                   <button
-                    className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "basic" ? styles.overlayPreviewModeActive : ""}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={overlayPreviewMode === "basic"}
-                    onClick={() => {
-                      setOverlayPreviewMode("basic");
-                      setSelectedShortsZone("hit");
-                    }}
-                  >
-                    기본 오버레이
-                  </button>
-                  <button
                     className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "new" ? styles.overlayPreviewModeActive : ""}`}
                     type="button"
                     role="tab"
@@ -1175,6 +1164,18 @@ export default function AdminPage() {
                     }}
                   >
                     신규 오버레이
+                  </button>
+                  <button
+                    className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "basic" ? styles.overlayPreviewModeActive : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={overlayPreviewMode === "basic"}
+                    onClick={() => {
+                      setOverlayPreviewMode("basic");
+                      setSelectedShortsZone("hit");
+                    }}
+                  >
+                    기본 오버레이
                   </button>
                   <button
                     className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "animation" ? styles.overlayPreviewModeActive : ""}`}
