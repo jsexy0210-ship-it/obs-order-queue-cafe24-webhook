@@ -14,6 +14,22 @@ type Props = {
 
 type RankingRow = { rank: number; youtubeNickname: string | null; orderCount: number };
 type Interaction = { id: NewOverlayPanelId; mode: "move" | "resize"; startX: number; startY: number; panel: NewOverlayPanelSettings };
+type OverlayOrderSummary = { user_id: string; youtube_nickname: string | null; product: string; quantity: number };
+type OverlayHitSummary = { id: number; youtube_nickname: string | null; card: string };
+
+/** 로컬 편집 화면만 위한 샘플이며 production 번들에서는 사용하지 않습니다. */
+const LOCAL_OVERLAY_SAMPLES = process.env.NODE_ENV !== "production" ? {
+  ranking: [
+    { rank: 1, youtubeNickname: "망고컬렉터", orderCount: 28 },
+    { rank: 2, youtubeNickname: "포켓헌터", orderCount: 23 },
+    { rank: 3, youtubeNickname: "리자몽러버", orderCount: 19 },
+    { rank: 4, youtubeNickname: "카드브레이커", orderCount: 14 },
+    { rank: 5, youtubeNickname: "MangoLive", orderCount: 11 },
+  ] satisfies RankingRow[],
+  activeOrder: { user_id: "샘플고객", youtube_nickname: "망고시청자", product: "[샘플] 30주년 기념팩", quantity: 2 } satisfies OverlayOrderSummary,
+  nextOrder: { user_id: "샘플대기", youtube_nickname: "카드헌터", product: "[샘플] 메가 드림 ex", quantity: 1 } satisfies OverlayOrderSummary,
+  hitCards: [{ id: -1, youtube_nickname: "망고시청자", card: "[샘플] 리자몽 ex SAR" }] satisfies OverlayHitSummary[],
+} : null;
 
 function nickname(value: string | null | undefined) {
   return (value ?? "-").replace(/\([^)]*\)/g, "").trim() || "-";
@@ -30,10 +46,13 @@ export default function NewOverlayFrame({ preview = false, settingsOverride, edi
   const [ranking, setRanking] = useState<RankingRow[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [interaction, setInteraction] = useState<Interaction | null>(null);
-  const activeOrder = live.opening ?? live.waiting[0] ?? null;
-  const nextOrder = live.waiting[0] ?? null;
-  const champion = ranking[0] ?? null;
-  const challengers = ranking.slice(1);
+  const shouldUseLocalSamples = Boolean(LOCAL_OVERLAY_SAMPLES && (preview || (!live.opening && live.waiting.length === 0 && live.hitCards.length === 0 && ranking.length === 0)));
+  const activeOrder: OverlayOrderSummary | null = live.opening ?? live.waiting[0] ?? (shouldUseLocalSamples ? LOCAL_OVERLAY_SAMPLES?.activeOrder ?? null : null);
+  const nextOrder: OverlayOrderSummary | null = live.waiting[0] ?? (shouldUseLocalSamples ? LOCAL_OVERLAY_SAMPLES?.nextOrder ?? null : null);
+  const displayedHitCards: OverlayHitSummary[] = live.hitCards.length > 0 ? live.hitCards : (shouldUseLocalSamples ? LOCAL_OVERLAY_SAMPLES?.hitCards ?? [] : []);
+  const displayedRanking = ranking.length > 0 ? ranking : (shouldUseLocalSamples ? LOCAL_OVERLAY_SAMPLES?.ranking ?? [] : []);
+  const champion = displayedRanking[0] ?? null;
+  const challengers = displayedRanking.slice(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,10 +154,10 @@ export default function NewOverlayFrame({ preview = false, settingsOverride, edi
         </section>}
 
       {settings.newOverlay.panels.current.visible && <section className={panelClassName("current", styles.currentPanel)} style={panelStyle("current")} {...panelEvents("current")}>
-          <header className={styles.currentHeader}><span>{settings.newOverlay.panels.current.title}</span><b>{live.opening ? "오픈" : "대기"}</b></header>
+          <header className={styles.currentHeader}><span>{settings.newOverlay.panels.current.title}</span><b>{live.opening || shouldUseLocalSamples ? "오픈" : "대기"}</b></header>
           {activeOrder ? <div className={styles.currentBody}><div className={styles.nicknameTicker}><strong>{nickname(activeOrder.youtube_nickname) === "-" ? activeOrder.user_id : nickname(activeOrder.youtube_nickname)}</strong></div><b>{activeOrder.product}</b><span>× {activeOrder.quantity}</span></div> : <p className={styles.currentEmpty}>대기 중</p>}
-          <div className={styles.hitLine}><span>HIT</span><b>{live.hitCards[0] ? `◆ ${nickname(live.hitCards[0].youtube_nickname)} · ${live.hitCards[0].card}` : "오늘의 히트카드를 기다리는 중"}</b></div>
-          <div className={styles.waitingLine}><span>주문 대기</span><b>{nextOrder ? `${nickname(nextOrder.youtube_nickname) === "-" ? nextOrder.user_id : nickname(nextOrder.youtube_nickname)} · ${nextOrder.product}` : "대기 주문 없음"}</b><em>{live.waiting.length}건</em></div>
+          <div className={styles.hitLine}><span>HIT</span><b>{displayedHitCards[0] ? `◆ ${nickname(displayedHitCards[0].youtube_nickname)} · ${displayedHitCards[0].card}` : "오늘의 히트카드를 기다리는 중"}</b></div>
+          <div className={styles.waitingLine}><span>주문 대기</span><b>{nextOrder ? `${nickname(nextOrder.youtube_nickname) === "-" ? nextOrder.user_id : nickname(nextOrder.youtube_nickname)} · ${nextOrder.product}` : "대기 주문 없음"}</b><em>{shouldUseLocalSamples ? 1 : live.waiting.length}건</em></div>
           {editHandle("current")}
         </section>}
     </main>
