@@ -102,6 +102,7 @@ export default function AdminPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [siteMenuOpen, setSiteMenuOpen] = useState(false);
+  const [overlayMenuOpen, setOverlayMenuOpen] = useState(false);
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
   const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
@@ -457,7 +458,17 @@ export default function AdminPage() {
     setEditingOverlay(false);
     setOverlayPreviewMode("basic");
     setShowLegacyOverlayMenu(false);
+    setOverlayMenuOpen(false);
     setShowOverlayPreview(false);
+  }
+
+  function openOverlayPreview(mode: "new" | "basic" | "animation") {
+    setMobileMenuOpen(false);
+    setSiteMenuOpen(false);
+    setOverlayMenuOpen(false);
+    setEditingOverlay(false);
+    setOverlayPreviewMode(mode);
+    setShowOverlayPreview(true);
   }
 
   function updateShortsZone<K extends keyof OverlaySettings["shorts"]["zones"][ShortsZoneId]>(
@@ -572,6 +583,7 @@ export default function AdminPage() {
   function goToDashboard() {
     setMobileMenuOpen(false);
     setSiteMenuOpen(false);
+    setOverlayMenuOpen(false);
     setShowSettings(false);
     setShowHistory(false);
     setShowRanking(false);
@@ -860,12 +872,28 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
-              <button className={styles.historyButton} onClick={() => {
-                setMobileMenuOpen(false);
-                setShowOverlayPreview(true);
-              }}>
-                📺 오버레이
-              </button>
+              <div className={styles.siteMenu}>
+                <button
+                  className={`${styles.historyButton} ${styles.siteMenuToggle}`}
+                  type="button"
+                  aria-expanded={overlayMenuOpen}
+                  aria-controls="admin-overlay-menu"
+                  onClick={() => {
+                    setSiteMenuOpen(false);
+                    setOverlayMenuOpen((open) => !open);
+                  }}
+                >
+                  <span>📺 오버레이</span>
+                  <span className={styles.siteMenuCaret} aria-hidden="true">{overlayMenuOpen ? "▴" : "▾"}</span>
+                </button>
+                {overlayMenuOpen && (
+                  <div id="admin-overlay-menu" className={styles.siteMenuPanel} role="menu" aria-label="오버레이 선택">
+                    <button type="button" role="menuitem" onClick={() => openOverlayPreview("new")}>신규 오버레이</button>
+                    <button type="button" role="menuitem" onClick={() => openOverlayPreview("basic")}>기본 오버레이</button>
+                    <button type="button" role="menuitem" onClick={() => openOverlayPreview("animation")}>주문알림 설정</button>
+                  </div>
+                )}
+              </div>
               <button className={styles.historyButton} onClick={() => {
                 setMobileMenuOpen(false);
                 setShowRanking(true);

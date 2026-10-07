@@ -19,16 +19,11 @@ function nickname(value: string | null | undefined) {
   return (value ?? "-").replace(/\([^)]*\)/g, "").trim() || "-";
 }
 
-function orderLabel(order: Pick<LiveOrder, "youtube_nickname" | "user_id" | "product" | "quantity">) {
-  return `${nickname(order.youtube_nickname) === "-" ? order.user_id : nickname(order.youtube_nickname)} · ${order.product} ×${order.quantity}`;
-}
-
 export default function NewOverlayFrame({ preview = false }: Props) {
   const { opening, waiting, hitCards } = useLiveCardBreak();
   const [ranking, setRanking] = useState<RankingRow[]>([]);
-  const queue = [...(opening ? [opening] : []), ...waiting].slice(0, 4);
   const activeOrder = opening ?? waiting[0] ?? null;
-  const flowOrders = queue.length > 0 ? queue : activeOrder ? [activeOrder] : [];
+  const nextOrder = waiting[0] ?? null;
   const champion = ranking[0] ?? null;
   const challengers = ranking.slice(1);
 
@@ -115,15 +110,10 @@ export default function NewOverlayFrame({ preview = false }: Props) {
           <span>HIT</span>
           <b>{hitCards[0] ? `◆ ${nickname(hitCards[0].youtube_nickname)} · ${hitCards[0].card}` : "오늘의 히트카드를 기다리는 중"}</b>
         </div>
-      </section>
-
-      <section className={styles.flowPanel} aria-label="대기 주문 흐름">
-        <span className={styles.flowLabel}>NEXT</span>
-        <div className={styles.flowViewport}>
-          <div className={styles.flowTrack}>
-            {[...flowOrders, ...flowOrders].map((order, index) => <b key={`${order.id}-${index}`}>{orderLabel(order)} <i>✦</i></b>)}
-            {flowOrders.length === 0 && <b>새 주문을 기다리고 있습니다 <i>✦</i></b>}
-          </div>
+        <div className={styles.waitingLine}>
+          <span>주문 대기</span>
+          <b>{nextOrder ? `${nickname(nextOrder.youtube_nickname) === "-" ? nextOrder.user_id : nickname(nextOrder.youtube_nickname)} · ${nextOrder.product}` : "대기 주문 없음"}</b>
+          <em>{waiting.length}건</em>
         </div>
       </section>
     </main>

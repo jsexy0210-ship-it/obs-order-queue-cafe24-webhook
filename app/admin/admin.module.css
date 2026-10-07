@@ -67,17 +67,24 @@
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
 }
 
-.siteMenuPanel a {
+.siteMenuPanel a,
+.siteMenuPanel button {
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
+  background: transparent;
   color: #fff;
+  cursor: pointer;
   font-size: 13px;
   font-weight: 700;
+  text-align: left;
   text-decoration: none;
 }
 
-.siteMenuPanel a:hover {
+.siteMenuPanel a:hover,
+.siteMenuPanel button:hover {
   border-color: rgba(125, 220, 255, 0.5);
   background: rgba(40, 183, 255, 0.12);
 }
