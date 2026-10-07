@@ -528,7 +528,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                     <div className={styles.deckCardLayout}>
                       <section key={openingOrder?.id ?? "empty-opening"} className={`${styles.deckOpenCard} ${openingOrder ? styles.deckOpenCardActive : styles.deckOpenCardEmpty}`}>
                         <header className={styles.deckCardHeader}>
-                          <b className={styles.deckCardTitle}><span className={styles.deckTitleIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" /><path d="m10 7 7 5-7 5V7Z" fill="currentColor" /></svg></span>{deckAppearance.openTitle}</b>
+                          <b className={styles.deckCardTitle}><span className={styles.deckTitleIcon} aria-hidden="true">🃏</span>{deckAppearance.openTitle}</b>
                           <span className={styles.deckLiveBadge}>{openingOrder ? "진행 중" : "대기"}</span>
                         </header>
                         {openingOrder ? <>
@@ -542,7 +542,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                         </> : <p className={styles.deckEmptyMessage}>현재 오픈 중인 주문이 없습니다.</p>}
                       </section>
                       <section className={styles.deckWaitingCard}>
-                        <header className={styles.deckWaitingHeader}><b className={styles.deckCardTitle}><span className={styles.deckTitleIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" /><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>{deckAppearance.waitingTitle}</b><em>{waitingOrders.length}건</em></header>
+                        <header className={styles.deckWaitingHeader}><b className={styles.deckCardTitle}><span className={styles.deckTitleIcon} aria-hidden="true">🎴</span>{deckAppearance.waitingTitle}</b><em>{waitingOrders.length}건</em></header>
                         {waitingOrders.length === 0 ? <p className={styles.deckEmptyMessage}>대기 중인 주문이 없습니다.</p> : (
                           <div className={styles.deckWaitingViewport}>
                             <div className={`${styles.deckWaitingRows} ${waitingOrders.length >= 3 ? styles.deckWaitingRowsScrolling : ""}`}>
