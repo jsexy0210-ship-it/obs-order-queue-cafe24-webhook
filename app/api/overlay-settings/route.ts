@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOverlaySettings, saveOverlaySettings } from "@/lib/store";
-import { DEFAULT_OVERLAY_SETTINGS, NEW_OVERLAY_PANEL_IDS, SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
+import { DEFAULT_OVERLAY_SETTINGS, NEW_OVERLAY_PANEL_IDS, SHORTS_ZONE_IDS, type NewOverlayBorderEffect, type NewOverlayTextEffect, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 
 export const runtime = "nodejs";
 
@@ -12,6 +12,10 @@ const text = (value: unknown, fallback: string, max = 160) =>
   typeof value === "string" ? value.slice(0, max) : fallback;
 const motion = (value: unknown, fallback: OverlaySettings["shorts"]["zones"][ShortsZoneId]["motion"]) =>
   value === "none" || value === "fade" || value === "slide-up" || value === "left-to-right" || value === "card-turn" ? value : fallback;
+const newOverlayBorderEffect = (value: unknown, fallback: NewOverlayBorderEffect): NewOverlayBorderEffect =>
+  value === "none" || value === "shine" || value === "pulse" ? value : fallback;
+const newOverlayTextEffect = (value: unknown, fallback: NewOverlayTextEffect): NewOverlayTextEffect =>
+  value === "none" || value === "glow" || value === "pulse" || value === "flow" ? value : fallback;
 
 export async function GET() {
   return NextResponse.json(getOverlaySettings());
@@ -69,10 +73,21 @@ export async function PUT(req: NextRequest) {
     const width = clamp(source?.width ?? fallback.width, 18, 96);
     const height = clamp(source?.height ?? fallback.height, 8, 60);
     return [id, {
+      visible: source?.visible !== false,
+      title: text(source?.title, fallback.title, 60),
       x: clamp(source?.x ?? fallback.x, 0, 100 - width),
       y: clamp(source?.y ?? fallback.y, 0, 94 - height),
       width,
       height,
+      backgroundColor: color(source?.backgroundColor, fallback.backgroundColor),
+      backgroundOpacity: clamp(source?.backgroundOpacity ?? fallback.backgroundOpacity, 0, 100),
+      titleBackgroundColor: color(source?.titleBackgroundColor, fallback.titleBackgroundColor),
+      borderColor: color(source?.borderColor, fallback.borderColor),
+      titleColor: color(source?.titleColor, fallback.titleColor),
+      textColor: color(source?.textColor, fallback.textColor),
+      borderEffect: newOverlayBorderEffect(source?.borderEffect, fallback.borderEffect),
+      textEffect: newOverlayTextEffect(source?.textEffect, fallback.textEffect),
+      effectDurationSeconds: clamp(source?.effectDurationSeconds ?? fallback.effectDurationSeconds, 1.5, 15),
     }];
   })) as OverlaySettings["newOverlay"]["panels"];
 

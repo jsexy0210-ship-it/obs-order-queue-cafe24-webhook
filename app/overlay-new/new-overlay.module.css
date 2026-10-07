@@ -12,7 +12,10 @@
 
 .previewShell {
   aspect-ratio: 9 / 16;
-  background: transparent;
+  background-color: #222831;
+  background-image: linear-gradient(45deg, #2c3440 25%, transparent 25%), linear-gradient(-45deg, #2c3440 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2c3440 75%), linear-gradient(-45deg, transparent 75%, #2c3440 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
 }
 
 .liveShell { width: 100vw; height: 100vh; background: transparent; pointer-events: none; }
@@ -49,18 +52,33 @@
 @keyframes liveSweep { 0%, 25% { background-position: 130% 0; } 62%, 100% { background-position: -130% 0; } }
 @keyframes rankingFlow { to { transform: translateY(-50%); } }
 
-/* 신규 템플릿은 참조 영상처럼 네 장의 카드만 투명 배경 위에 배치합니다. */
+/* 관리자 미리보기는 기본 오버레이와 같은 체크 배경이며, 실제 OBS 출력은 liveShell의 투명 배경만 사용합니다. */
 .rankingPanel, .livePanel, .schedulePanel, .currentPanel { min-height: 0; box-sizing: border-box; }
+.panel { border-color: var(--panel-border-color); background: color-mix(in srgb, var(--panel-background-color) calc(var(--panel-background-opacity) * 100%), transparent); }
+.panelHeader, .currentHeader { background: color-mix(in srgb, var(--panel-title-background-color) 90%, transparent); }
 .livePanel { padding: clamp(6px, 1.4cqw, 14px); }
 .currentPanel { min-height: 0; }
-.schedulePanel { display: grid; align-content: center; gap: clamp(2px, .45cqw, 5px); padding: clamp(5px, 1.1cqw, 10px); border-color: rgba(104, 255, 191, .82); background: linear-gradient(135deg, rgba(4, 97, 69, .94), rgba(3, 42, 36, .89)); }
-.schedulePanel small { color: #d6ffe6; font-size: clamp(6px, 1.35cqw, 12px); font-weight: 950; letter-spacing: .08em; }
-.schedulePanel strong { color: #fff4a0; font-size: clamp(8px, 1.9cqw, 17px); font-weight: 1000; line-height: 1; }
-.schedulePanel time { color: #ffffff; font-size: clamp(7px, 1.55cqw, 14px); font-weight: 850; }
+.schedulePanel { display: grid; align-content: center; gap: clamp(2px, .45cqw, 5px); padding: clamp(5px, 1.1cqw, 10px); }
+.schedulePanel small { color: var(--panel-title-color); font-size: clamp(6px, 1.35cqw, 12px); font-weight: 950; letter-spacing: .08em; }
+.schedulePanel strong { color: var(--panel-title-color); font-size: clamp(8px, 1.9cqw, 17px); font-weight: 1000; line-height: 1; }
+.schedulePanel time { color: var(--panel-text-color); font-size: clamp(7px, 1.55cqw, 14px); font-weight: 850; }
+.panelHeader small, .panelHeader strong, .panelHeader > b, .currentHeader span, .currentHeader b { color: var(--panel-title-color); }
+.rankingPanel .rankingRow span, .rankingPanel .rankingRow b, .livePanel p, .currentPanel .currentBody strong, .currentPanel .currentBody b, .currentPanel .currentBody span, .currentPanel .hitLine b, .currentPanel .waitingLine b { color: var(--panel-text-color); }
+.currentPanel .hitLine span, .currentPanel .waitingLine span, .currentPanel .waitingLine em { color: var(--panel-title-color); }
 .nicknameTicker { min-width: 0; overflow: hidden; }
 .nicknameTicker strong { display: inline-block; min-width: 100%; white-space: nowrap; animation: nicknameFlow 7s ease-in-out infinite alternate; }
+.borderEffectNone::after { animation: none; opacity: 0; }
+.borderEffectShine::after { animation: panelShine var(--border-effect-duration, 4.6s) ease-in-out infinite; }
+.borderEffectPulse { animation: cardBorderPulse var(--border-effect-duration, 4.6s) ease-in-out infinite; }
+.textEffectGlow :is(strong, b, p, time, .rankingRow span) { animation: textGlow var(--text-effect-duration, 4.6s) ease-in-out infinite; }
+.textEffectPulse :is(strong, b, p, time, .rankingRow span) { animation: textPulse var(--text-effect-duration, 4.6s) ease-in-out infinite; }
+.textEffectFlow .panelHeader strong, .textEffectFlow .liveHeader strong, .textEffectFlow .schedulePanel strong, .textEffectFlow .currentHeader span, .textEffectFlow .currentBody b { background: linear-gradient(90deg, var(--panel-text-color) 22%, #fff7bd 46%, var(--panel-text-color) 68%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: textFlow var(--text-effect-duration, 4.6s) linear infinite; }
 .editablePanel { overflow: visible; outline: 1px dashed rgba(255,255,255,.9); outline-offset: 2px; cursor: move; }
 .resizeHandle { position: absolute; z-index: 5; right: -6px; bottom: -6px; width: 12px; height: 12px; border: 1px solid #fff; border-radius: 50%; background: #ffd34f; box-shadow: 0 1px 4px rgba(0,0,0,.72); cursor: nwse-resize; pointer-events: auto; }
 @keyframes nicknameFlow { from { transform: translateX(0); } to { transform: translateX(-34%); } }
+@keyframes cardBorderPulse { 0%, 100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--panel-border-color) 26%, transparent), 0 0 12px color-mix(in srgb, var(--panel-border-color) 26%, transparent), 0 12px 28px rgba(0, 0, 0, .38); } 50% { box-shadow: inset 0 0 0 1px var(--panel-border-color), 0 0 26px color-mix(in srgb, var(--panel-border-color) 86%, transparent), 0 12px 28px rgba(0, 0, 0, .38); } }
+@keyframes textGlow { 0%, 100% { text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 0 transparent; } 50% { text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 11px color-mix(in srgb, var(--panel-text-color) 86%, transparent); } }
+@keyframes textPulse { 0%, 100% { opacity: .76; } 50% { opacity: 1; } }
+@keyframes textFlow { from { background-position: 115% 0; } to { background-position: -115% 0; } }
 
-@media (prefers-reduced-motion: reduce) { .panel::after, .liveHeader .liveDot, .liveShine, .rankingFlowActive { animation-duration: 1ms; animation-iteration-count: 1; } }
+@media (prefers-reduced-motion: reduce) { .panel::after, .liveHeader .liveDot, .liveShine, .rankingFlowActive, .borderEffectPulse, .textEffectGlow :is(strong, b, p, time, .rankingRow span), .textEffectPulse :is(strong, b, p, time, .rankingRow span), .textEffectFlow :is(strong, b, p, time, .rankingRow span) { animation-duration: 1ms; animation-iteration-count: 1; } }

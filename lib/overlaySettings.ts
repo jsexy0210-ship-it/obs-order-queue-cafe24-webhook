@@ -6,11 +6,25 @@ export const NEW_OVERLAY_PANEL_IDS = ["ranking", "live", "schedule", "current"] 
 
 export type NewOverlayPanelId = (typeof NEW_OVERLAY_PANEL_IDS)[number];
 
+export type NewOverlayBorderEffect = "none" | "shine" | "pulse";
+export type NewOverlayTextEffect = "none" | "glow" | "pulse" | "flow";
+
 export type NewOverlayPanelSettings = {
+  visible: boolean;
+  title: string;
   x: number;
   y: number;
   width: number;
   height: number;
+  backgroundColor: string;
+  backgroundOpacity: number;
+  titleBackgroundColor: string;
+  borderColor: string;
+  titleColor: string;
+  textColor: string;
+  borderEffect: NewOverlayBorderEffect;
+  textEffect: NewOverlayTextEffect;
+  effectDurationSeconds: number;
 };
 
 export type ShortsZoneSettings = {
@@ -297,10 +311,10 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
   },
   newOverlay: {
     panels: {
-      ranking: { x: 3, y: 3, width: 47, height: 21 },
-      live: { x: 53, y: 3, width: 44, height: 10 },
-      schedule: { x: 53, y: 14, width: 24, height: 8 },
-      current: { x: 79, y: 14, width: 18, height: 18 },
+      ranking: { visible: true, title: "명예의 전당", x: 3, y: 3, width: 47, height: 21, backgroundColor: "#062e25", backgroundOpacity: 94, titleBackgroundColor: "#0a6c54", borderColor: "#31e9ae", titleColor: "#fff6b1", textColor: "#ffffff", borderEffect: "shine", textEffect: "glow", effectDurationSeconds: 4.6 },
+      live: { visible: true, title: "MANGO TCG LIVE", x: 53, y: 3, width: 44, height: 10, backgroundColor: "#064235", backgroundOpacity: 94, titleBackgroundColor: "#0b6a55", borderColor: "#5bffc3", titleColor: "#ffffff", textColor: "#efffe8", borderEffect: "shine", textEffect: "glow", effectDurationSeconds: 4.6 },
+      schedule: { visible: true, title: "MANGO TCG", x: 53, y: 14, width: 24, height: 8, backgroundColor: "#07513d", backgroundOpacity: 94, titleBackgroundColor: "#07513d", borderColor: "#65ffc1", titleColor: "#fff3a0", textColor: "#ffffff", borderEffect: "shine", textEffect: "glow", effectDurationSeconds: 4.6 },
+      current: { visible: true, title: "현재 오픈 주문", x: 79, y: 14, width: 18, height: 18, backgroundColor: "#5c2c08", backgroundOpacity: 94, titleBackgroundColor: "#df780d", borderColor: "#ffbd4e", titleColor: "#fff8d1", textColor: "#ffffff", borderEffect: "shine", textEffect: "flow", effectDurationSeconds: 4.6 },
     },
     shineDurationSeconds: 4.6,
     rankingFlowSeconds: 9,

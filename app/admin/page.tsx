@@ -1252,16 +1252,35 @@ export default function AdminPage() {
                 </div>
                 <fieldset className={styles.shortsZoneControl}>
                   <legend>{NEW_OVERLAY_PANEL_LABELS[selectedNewOverlayPanel]} 카드 설정</legend>
+                  <label className={styles.zoneEnabledToggle}>
+                    <span>사용여부</span>
+                    <input type="checkbox" checked={selectedNewOverlayPanelSettings.visible} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "visible", event.target.checked)} />
+                    <span className={styles.toggleTrack} aria-hidden="true"><i /></span>
+                    <output>{selectedNewOverlayPanelSettings.visible ? "On" : "Off"}</output>
+                  </label>
                   <div className={styles.zoneFormGrid}>
+                    <label className={styles.wideFormField}>카드 제목<input maxLength={60} value={selectedNewOverlayPanelSettings.title} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "title", event.target.value)} /></label>
                     <label>좌측 위치(%)<input type="number" min="0" max="82" step="0.1" value={selectedNewOverlayPanelSettings.x} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "x", Number(event.target.value) || 0)} /></label>
                     <label>상단 위치(%)<input type="number" min="0" max="86" step="0.1" value={selectedNewOverlayPanelSettings.y} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "y", Number(event.target.value) || 0)} /></label>
                     <label>가로 크기(%)<input type="number" min="18" max="96" step="0.1" value={selectedNewOverlayPanelSettings.width} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "width", Number(event.target.value) || 18)} /></label>
                     <label>세로 크기(%)<input type="number" min="8" max="60" step="0.1" value={selectedNewOverlayPanelSettings.height} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "height", Number(event.target.value) || 8)} /></label>
-                    <label className={styles.wideFormField}>반짝임 주기(초)<input type="number" min="2" max="12" step="0.1" value={shortsSettings.newOverlay.shineDurationSeconds} onChange={(event) => setShortsSettings((current) => ({ ...current, newOverlay: { ...current.newOverlay, shineDurationSeconds: Number(event.target.value) || 2 } }))} /><small>작을수록 더 자주 반짝입니다.</small></label>
+                    <label className={`${styles.opacityControl} ${styles.wideFormField}`}>카드 배경 불투명도
+                      <span><input type="range" min="0" max="100" value={selectedNewOverlayPanelSettings.backgroundOpacity} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "backgroundOpacity", Number(event.target.value))} /><output>{selectedNewOverlayPanelSettings.backgroundOpacity}%</output></span>
+                    </label>
+                    <div className={`${styles.colorControlGrid} ${styles.wideFormField}`}>
+                      <label>카드 배경<input type="color" value={selectedNewOverlayPanelSettings.backgroundColor} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "backgroundColor", event.target.value)} /></label>
+                      <label>제목 배경<input type="color" value={selectedNewOverlayPanelSettings.titleBackgroundColor} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "titleBackgroundColor", event.target.value)} /></label>
+                      <label>테두리 색상<input type="color" value={selectedNewOverlayPanelSettings.borderColor} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "borderColor", event.target.value)} /></label>
+                      <label>제목 색상<input type="color" value={selectedNewOverlayPanelSettings.titleColor} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "titleColor", event.target.value)} /></label>
+                      <label>본문 색상<input type="color" value={selectedNewOverlayPanelSettings.textColor} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "textColor", event.target.value)} /></label>
+                    </div>
+                    <label>테두리 효과<select value={selectedNewOverlayPanelSettings.borderEffect} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "borderEffect", event.target.value as typeof selectedNewOverlayPanelSettings.borderEffect)}><option value="none">없음</option><option value="shine">빛 흐름</option><option value="pulse">발광 펄스</option></select></label>
+                    <label>텍스트 효과<select value={selectedNewOverlayPanelSettings.textEffect} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "textEffect", event.target.value as typeof selectedNewOverlayPanelSettings.textEffect)}><option value="none">없음</option><option value="glow">광택</option><option value="pulse">점멸</option><option value="flow">흐름</option></select></label>
+                    <label className={styles.wideFormField}>효과 속도(초)<input type="number" min="1.5" max="15" step="0.1" value={selectedNewOverlayPanelSettings.effectDurationSeconds} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "effectDurationSeconds", Number(event.target.value) || 1.5)} /><small>작을수록 테두리와 글자 효과가 빠릅니다.</small></label>
                     <label className={styles.wideFormField}>명예의 전당 순환 속도(초)<input type="number" min="4" max="30" step="0.1" value={shortsSettings.newOverlay.rankingFlowSeconds} onChange={(event) => setShortsSettings((current) => ({ ...current, newOverlay: { ...current.newOverlay, rankingFlowSeconds: Number(event.target.value) || 4 } }))} /><small>1위는 고정, 2위부터 부드럽게 순환합니다.</small></label>
                   </div>
                 </fieldset>
-                <p className={styles.templateHint}>미리보기 안의 카드를 드래그해 위치를 바꾸고, 우측 하단 원형 핸들로 크기를 조절할 수 있습니다. 배경은 항상 투명입니다.</p>
+                <p className={styles.templateHint}>미리보기는 기본 오버레이와 같은 체크 배경입니다. 실제 OBS 주소에서는 배경 없이 켜진 카드만 출력됩니다. 카드는 드래그와 우측 하단 원형 핸들로도 조절할 수 있습니다.</p>
               </div>
             )}
             {editingOverlay && overlayPreviewMode !== "new" && (
