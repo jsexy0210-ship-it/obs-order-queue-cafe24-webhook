@@ -8,7 +8,7 @@ import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import ShortsOverlayFrame from "@/app/overlay-shorts/ShortsOverlayFrame";
 import NewOverlayFrame from "@/app/overlay-new/NewOverlayFrame";
-import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
+import { DEFAULT_OVERLAY_SETTINGS, NEW_OVERLAY_PANEL_IDS, type NewOverlayPanelId, type NewOverlayPanelSettings, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 import RewardSettingsPanel from "./RewardSettingsPanel";
 import RewardLedgerModal from "./RewardLedgerModal";
 import OrderDashboard, { DashboardRangePicker, type DashboardRange } from "./OrderDashboard";
@@ -18,6 +18,12 @@ import styles from "./admin.module.css";
 const DEFAULT_TIMER_SECONDS = 60;
 const BASIC_SHORTS_ZONE_IDS: ShortsZoneId[] = ["ranking", "hit", "current"];
 const ORDER_ANIMATION_ZONE_IDS: ShortsZoneId[] = ["announcement"];
+const NEW_OVERLAY_PANEL_LABELS: Record<NewOverlayPanelId, string> = {
+  ranking: "명예의 전당",
+  live: "라이브 안내",
+  schedule: "방송 시간",
+  current: "현재 주문",
+};
 const WAITING_PAGE_SIZE = 3;
 const CANCELLED_ORDER_PAGE_SIZE = 3;
 const HIT_PAGE_SIZE = 5;
@@ -108,6 +114,7 @@ export default function AdminPage() {
   const [editingOverlay, setEditingOverlay] = useState(false);
   const [overlayPreviewMode, setOverlayPreviewMode] = useState<"new" | "basic" | "animation">("basic");
   const [selectedShortsZone, setSelectedShortsZone] = useState<ShortsZoneId>("hit");
+  const [selectedNewOverlayPanel, setSelectedNewOverlayPanel] = useState<NewOverlayPanelId>("ranking");
   const [selectedNewOrderCopy, setSelectedNewOrderCopy] = useState<"first" | "repeat" | "vip">("first");
   const [shortsSettings, setShortsSettings] = useState<OverlaySettings>(DEFAULT_OVERLAY_SETTINGS);
   const [savingShortsSettings, setSavingShortsSettings] = useState(false);
@@ -156,6 +163,7 @@ export default function AdminPage() {
     ? selectedShortsZone
     : editableShortsZoneIds[0];
   const selectedNewOrderSettings = shortsSettings.shorts.newOrder[selectedNewOrderCopy];
+  const selectedNewOverlayPanelSettings = shortsSettings.newOverlay.panels[selectedNewOverlayPanel];
   const selectedShortsZoneSettings = overlayPreviewMode === "animation"
     ? selectedNewOrderSettings.zone
     : shortsSettings.shorts.zones[selectedShortsZoneId];
@@ -532,6 +540,23 @@ export default function AdminPage() {
             ...current.shorts.newOrder[selectedNewOrderCopy],
             [key]: value,
           },
+        },
+      },
+    }));
+  }
+
+  function updateNewOverlayPanel<K extends keyof NewOverlayPanelSettings>(
+    id: NewOverlayPanelId,
+    key: K,
+    value: NewOverlayPanelSettings[K]
+  ) {
+    setShortsSettings((current) => ({
+      ...current,
+      newOverlay: {
+        ...current.newOverlay,
+        panels: {
+          ...current.newOverlay.panels,
+          [id]: { ...current.newOverlay.panels[id], [key]: value },
         },
       },
     }));
@@ -1160,6 +1185,7 @@ export default function AdminPage() {
                     onClick={() => {
                       setEditingOverlay(false);
                       setOverlayPreviewMode("new");
+                      setSelectedNewOverlayPanel("ranking");
                     }}
                   >
                     신규 오버레이
@@ -1189,13 +1215,13 @@ export default function AdminPage() {
                     주문알림 설정
                   </button>
                 </div>
-                {overlayPreviewMode !== "new" && <button
+                <button
                     className={`${styles.modalActionButton} ${editingOverlay ? styles.modalActionActive : ""}`}
                     onClick={() => setEditingOverlay((value) => !value)}
                   >
                     {editingOverlay ? "편집 취소" : "편집"}
-                  </button>}
-                {editingOverlay && overlayPreviewMode !== "new" && (
+                  </button>
+                {editingOverlay && (
                   <>
                     <button
                       className={`${styles.modalActionButton} ${styles.saveActionButton}`}
@@ -1208,6 +1234,36 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
+            {editingOverlay && overlayPreviewMode === "new" && (
+              <div className={styles.shortsEditor} aria-label="신규 오버레이 영역 설정">
+                <div className={styles.zonePicker} role="tablist" aria-label="편집할 신규 오버레이 카드">
+                  {NEW_OVERLAY_PANEL_IDS.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selectedNewOverlayPanel === id}
+                      className={`${styles.zonePickerButton} ${selectedNewOverlayPanel === id ? styles.zonePickerButtonActive : ""}`}
+                      onClick={() => setSelectedNewOverlayPanel(id)}
+                    >
+                      {NEW_OVERLAY_PANEL_LABELS[id]}
+                    </button>
+                  ))}
+                </div>
+                <fieldset className={styles.shortsZoneControl}>
+                  <legend>{NEW_OVERLAY_PANEL_LABELS[selectedNewOverlayPanel]} 카드 설정</legend>
+                  <div className={styles.zoneFormGrid}>
+                    <label>좌측 위치(%)<input type="number" min="0" max="82" step="0.1" value={selectedNewOverlayPanelSettings.x} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "x", Number(event.target.value) || 0)} /></label>
+                    <label>상단 위치(%)<input type="number" min="0" max="86" step="0.1" value={selectedNewOverlayPanelSettings.y} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "y", Number(event.target.value) || 0)} /></label>
+                    <label>가로 크기(%)<input type="number" min="18" max="96" step="0.1" value={selectedNewOverlayPanelSettings.width} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "width", Number(event.target.value) || 18)} /></label>
+                    <label>세로 크기(%)<input type="number" min="8" max="60" step="0.1" value={selectedNewOverlayPanelSettings.height} onChange={(event) => updateNewOverlayPanel(selectedNewOverlayPanel, "height", Number(event.target.value) || 8)} /></label>
+                    <label className={styles.wideFormField}>반짝임 주기(초)<input type="number" min="2" max="12" step="0.1" value={shortsSettings.newOverlay.shineDurationSeconds} onChange={(event) => setShortsSettings((current) => ({ ...current, newOverlay: { ...current.newOverlay, shineDurationSeconds: Number(event.target.value) || 2 } }))} /><small>작을수록 더 자주 반짝입니다.</small></label>
+                    <label className={styles.wideFormField}>명예의 전당 순환 속도(초)<input type="number" min="4" max="30" step="0.1" value={shortsSettings.newOverlay.rankingFlowSeconds} onChange={(event) => setShortsSettings((current) => ({ ...current, newOverlay: { ...current.newOverlay, rankingFlowSeconds: Number(event.target.value) || 4 } }))} /><small>1위는 고정, 2위부터 부드럽게 순환합니다.</small></label>
+                  </div>
+                </fieldset>
+                <p className={styles.templateHint}>미리보기 안의 카드를 드래그해 위치를 바꾸고, 우측 하단 원형 핸들로 크기를 조절할 수 있습니다. 배경은 항상 투명입니다.</p>
+              </div>
+            )}
             {editingOverlay && overlayPreviewMode !== "new" && (
               <div className={styles.shortsEditor} aria-label="쇼츠 오버레이 영역 설정">
                 {overlayPreviewMode === "basic" && (
@@ -1282,7 +1338,13 @@ export default function AdminPage() {
               </div>
             )}
             <div className={styles.overlayPreviewCanvas}>
-              {overlayPreviewMode === "new" ? <NewOverlayFrame preview /> : <ShortsOverlayFrame
+              {overlayPreviewMode === "new" ? <NewOverlayFrame preview settingsOverride={shortsSettings} editing={editingOverlay} onPanelChange={(id, patch) => setShortsSettings((current) => ({
+                ...current,
+                newOverlay: {
+                  ...current.newOverlay,
+                  panels: { ...current.newOverlay.panels, [id]: { ...current.newOverlay.panels[id], ...patch } },
+                },
+              }))} /> : <ShortsOverlayFrame
                 settingsOverride={shortsSettings}
                 editing={editingOverlay}
                 preview

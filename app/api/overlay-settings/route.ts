@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOverlaySettings, saveOverlaySettings } from "@/lib/store";
-import { DEFAULT_OVERLAY_SETTINGS, SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
+import { DEFAULT_OVERLAY_SETTINGS, NEW_OVERLAY_PANEL_IDS, SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 
 export const runtime = "nodejs";
 
@@ -63,6 +63,18 @@ export async function PUT(req: NextRequest) {
     id,
     sanitizeZone(body.shorts?.zones?.[id], DEFAULT_OVERLAY_SETTINGS.shorts.zones[id]),
   ])) as OverlaySettings["shorts"]["zones"];
+  const newOverlayPanels = Object.fromEntries(NEW_OVERLAY_PANEL_IDS.map((id) => {
+    const fallback = DEFAULT_OVERLAY_SETTINGS.newOverlay.panels[id];
+    const source = body.newOverlay?.panels?.[id];
+    const width = clamp(source?.width ?? fallback.width, 18, 96);
+    const height = clamp(source?.height ?? fallback.height, 8, 60);
+    return [id, {
+      x: clamp(source?.x ?? fallback.x, 0, 100 - width),
+      y: clamp(source?.y ?? fallback.y, 0, 94 - height),
+      width,
+      height,
+    }];
+  })) as OverlaySettings["newOverlay"]["panels"];
 
   const settings: OverlaySettings = {
     orderVisible: body.orderVisible !== false,
@@ -103,6 +115,11 @@ export async function PUT(req: NextRequest) {
       queueProductText: color(body.colors?.queueProductText, DEFAULT_OVERLAY_SETTINGS.colors.queueProductText),
       quantityText: color(body.colors?.quantityText, DEFAULT_OVERLAY_SETTINGS.colors.quantityText),
       timerText: color(body.colors?.timerText, DEFAULT_OVERLAY_SETTINGS.colors.timerText),
+    },
+    newOverlay: {
+      panels: newOverlayPanels,
+      shineDurationSeconds: clamp(body.newOverlay?.shineDurationSeconds ?? DEFAULT_OVERLAY_SETTINGS.newOverlay.shineDurationSeconds, 2, 12),
+      rankingFlowSeconds: clamp(body.newOverlay?.rankingFlowSeconds ?? DEFAULT_OVERLAY_SETTINGS.newOverlay.rankingFlowSeconds, 4, 30),
     },
     shorts: {
       hitItemGap: clamp(body.shorts?.hitItemGap ?? DEFAULT_OVERLAY_SETTINGS.shorts.hitItemGap, 0, 32),

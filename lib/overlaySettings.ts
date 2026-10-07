@@ -2,6 +2,17 @@ export const SHORTS_ZONE_IDS = ["hit", "ranking", "current", "announcement"] as 
 
 export type ShortsZoneId = (typeof SHORTS_ZONE_IDS)[number];
 
+export const NEW_OVERLAY_PANEL_IDS = ["ranking", "live", "schedule", "current"] as const;
+
+export type NewOverlayPanelId = (typeof NEW_OVERLAY_PANEL_IDS)[number];
+
+export type NewOverlayPanelSettings = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type ShortsZoneSettings = {
   visible: boolean;
   title: string;
@@ -95,6 +106,12 @@ export type OverlaySettings = {
     newOrder: NewOrderEffectSettings;
     hitItemGap: number;
     hitItemHeight: number;
+  };
+  /** 신규 방송형 오버레이의 카드 위치·크기와 연출 속도입니다. */
+  newOverlay: {
+    panels: Record<NewOverlayPanelId, NewOverlayPanelSettings>;
+    shineDurationSeconds: number;
+    rankingFlowSeconds: number;
   };
 };
 
@@ -277,5 +294,15 @@ export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
       repeat: { durationSeconds: 1, zone: { ...DEFAULT_NEW_ORDER_ZONE } },
       vip: { durationSeconds: 1, zone: { ...DEFAULT_NEW_ORDER_ZONE } },
     },
+  },
+  newOverlay: {
+    panels: {
+      ranking: { x: 3, y: 3, width: 47, height: 21 },
+      live: { x: 53, y: 3, width: 44, height: 10 },
+      schedule: { x: 53, y: 14, width: 24, height: 8 },
+      current: { x: 79, y: 14, width: 18, height: 18 },
+    },
+    shineDurationSeconds: 4.6,
+    rankingFlowSeconds: 9,
   },
 };

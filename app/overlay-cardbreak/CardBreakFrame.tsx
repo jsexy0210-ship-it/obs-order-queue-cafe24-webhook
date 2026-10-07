@@ -280,6 +280,7 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
       widths: widthsRef.current,
       position: positionRef.current,
       colors: colorsRef.current,
+      newOverlay: overlaySettings.newOverlay,
       shorts: overlaySettings.shorts,
     };
     setSaving(true);

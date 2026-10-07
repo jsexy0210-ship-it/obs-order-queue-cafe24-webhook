@@ -1,29 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { type LiveOrder, useLiveCardBreak } from "@/app/useLiveCardBreak";
+import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useLiveCardBreak } from "@/app/useLiveCardBreak";
+import { type NewOverlayPanelId, type NewOverlayPanelSettings, type OverlaySettings } from "@/lib/overlaySettings";
 import styles from "./new-overlay.module.css";
 
 type Props = {
-  /** 관리자 화면에서는 9:16 비율로만 새 템플릿을 확인합니다. */
   preview?: boolean;
+  settingsOverride?: OverlaySettings;
+  editing?: boolean;
+  onPanelChange?: (id: NewOverlayPanelId, patch: Partial<NewOverlayPanelSettings>) => void;
 };
 
-type RankingRow = {
-  rank: number;
-  youtubeNickname: string | null;
-  orderCount: number;
-};
+type RankingRow = { rank: number; youtubeNickname: string | null; orderCount: number };
+type Interaction = { id: NewOverlayPanelId; mode: "move" | "resize"; startX: number; startY: number; panel: NewOverlayPanelSettings };
 
 function nickname(value: string | null | undefined) {
   return (value ?? "-").replace(/\([^)]*\)/g, "").trim() || "-";
 }
 
-export default function NewOverlayFrame({ preview = false }: Props) {
-  const { opening, waiting, hitCards } = useLiveCardBreak();
+function nowLabel(value: Date) {
+  return new Intl.DateTimeFormat("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
+    .format(value).replace(/\. /g, ".").replace(/\.$/, "");
+}
+
+export default function NewOverlayFrame({ preview = false, settingsOverride, editing = false, onPanelChange }: Props) {
+  const live = useLiveCardBreak();
+  const settings = settingsOverride ?? live.overlaySettings;
   const [ranking, setRanking] = useState<RankingRow[]>([]);
-  const activeOrder = opening ?? waiting[0] ?? null;
-  const nextOrder = waiting[0] ?? null;
+  const [now, setNow] = useState(() => new Date());
+  const [interaction, setInteraction] = useState<Interaction | null>(null);
+  const activeOrder = live.opening ?? live.waiting[0] ?? null;
+  const nextOrder = live.waiting[0] ?? null;
   const champion = ranking[0] ?? null;
   const challengers = ranking.slice(1);
 
@@ -32,89 +40,92 @@ export default function NewOverlayFrame({ preview = false }: Props) {
     const loadRanking = () => {
       fetch("/api/overlay-ranking", { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("ranking failed")))
-        .then((data: { ranking?: RankingRow[] }) => {
-          if (!cancelled) setRanking((data.ranking ?? []).slice(0, 3));
-        })
-        .catch(() => {
-          if (!cancelled) setRanking([]);
-        });
+        .then((data: { ranking?: RankingRow[] }) => { if (!cancelled) setRanking((data.ranking ?? []).slice(0, 5)); })
+        .catch(() => { if (!cancelled) setRanking([]); });
     };
     loadRanking();
     const timer = window.setInterval(loadRanking, 30_000);
     return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+  const panelStyle = (id: NewOverlayPanelId) => {
+    const panel = settings.newOverlay.panels[id];
+    return {
+      left: `${panel.x}%`, top: `${panel.y}%`, width: `${panel.width}%`, height: `${panel.height}%`,
+      "--shine-duration": `${settings.newOverlay.shineDurationSeconds}s`,
+      "--ranking-flow-duration": `${settings.newOverlay.rankingFlowSeconds}s`,
+    } as CSSProperties;
+  };
+
+  function startInteraction(id: NewOverlayPanelId, mode: Interaction["mode"], event: ReactPointerEvent<HTMLElement>) {
+    if (!editing || !onPanelChange) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setInteraction({ id, mode, startX: event.clientX, startY: event.clientY, panel: { ...settings.newOverlay.panels[id] } });
+    const panelElement = event.currentTarget.closest("section");
+    if (panelElement instanceof HTMLElement) panelElement.setPointerCapture(event.pointerId);
+  }
+
+  function moveInteraction(event: ReactPointerEvent<HTMLElement>) {
+    const stage = event.currentTarget.parentElement?.getBoundingClientRect();
+    if (!interaction || !stage || !onPanelChange) return;
+    const dx = ((event.clientX - interaction.startX) / stage.width) * 100;
+    const dy = ((event.clientY - interaction.startY) / stage.height) * 100;
+    let { x, y, width, height } = interaction.panel;
+    if (interaction.mode === "move") { x += dx; y += dy; } else { width += dx; height += dy; }
+    width = clamp(width, 18, 96);
+    height = clamp(height, 8, 60);
+    x = clamp(x, 0, 100 - width);
+    y = clamp(y, 0, 94 - height);
+    onPanelChange(interaction.id, { x, y, width, height });
+  }
+
+  function endInteraction(event: ReactPointerEvent<HTMLElement>) {
+    if (!interaction) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    setInteraction(null);
+  }
+
+  const editHandle = (id: NewOverlayPanelId) => editing && <span className={styles.resizeHandle} aria-label={`${id} 카드 크기 조절`} onPointerDown={(event) => startInteraction(id, "resize", event)} />;
+  const panelEvents = (id: NewOverlayPanelId) => ({
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => startInteraction(id, "move", event),
+    onPointerMove: moveInteraction,
+    onPointerUp: endInteraction,
+    onPointerCancel: endInteraction,
+  });
+
   return (
     <main className={`${styles.shell} ${preview ? styles.previewShell : styles.liveShell}`} aria-label="망고TCG 신규 라이브 오버레이">
-      <div className={styles.sparkField} aria-hidden="true">
-        {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
-      </div>
-
-      <section className={`${styles.panel} ${styles.queuePanel}`}>
-        <header className={styles.panelHeader}>
-          <span className={styles.crown}>♛</span>
-          <div><small>HALL OF FAME</small><strong>명예의 전당</strong></div>
-          <b>TOP 3</b>
-        </header>
+      <section className={`${styles.panel} ${styles.rankingPanel} ${editing ? styles.editablePanel : ""}`} style={panelStyle("ranking")} {...panelEvents("ranking")}>
+        <header className={styles.panelHeader}><span className={styles.crown}>♛</span><div><small>XP 받기</small><strong>명예의 전당</strong></div><b>TOP 5</b></header>
         <div className={styles.rankingList}>
-          {champion ? (
-            <div className={`${styles.rankingRow} ${styles.queueLead}`}>
-              <em>1</em>
-              <span>{nickname(champion.youtubeNickname)}</span>
-              <b>{champion.orderCount}건</b>
-            </div>
-          ) : <div className={styles.emptyRow}>명예의 전당 집계 중</div>}
-          {challengers.length > 0 && (
-            <div className={styles.rankingFlowViewport} aria-label="명예의 전당 2위 이하 순위">
-              <div className={`${styles.rankingFlowTrack} ${challengers.length > 1 ? styles.rankingFlowActive : ""}`}>
-                {(challengers.length > 1 ? [false, true] : [false]).map((copy) => (
-                  <div className={styles.rankingFlowGroup} key={copy ? "next-cycle" : "current-cycle"} aria-hidden={copy || undefined}>
-                    {challengers.map((row) => (
-                      <div className={styles.rankingRow} key={`${row.rank}-${copy ? "next" : "current"}`}>
-                        <em>{row.rank}</em>
-                        <span>{nickname(row.youtubeNickname)}</span>
-                        <b>{row.orderCount}건</b>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {champion ? <div className={`${styles.rankingRow} ${styles.rankOne}`}><em>1</em><span>{nickname(champion.youtubeNickname)}</span><b>{champion.orderCount}건</b></div> : <div className={styles.emptyRow}>명예의 전당 집계 중</div>}
+          {challengers.length > 0 && <div className={styles.rankingFlowViewport} aria-label="명예의 전당 2위 이하 순위"><div className={`${styles.rankingFlowTrack} ${challengers.length > 1 ? styles.rankingFlowActive : ""}`}>{(challengers.length > 1 ? [false, true] : [false]).map((copy) => <div className={styles.rankingFlowGroup} key={copy ? "next-cycle" : "current-cycle"} aria-hidden={copy || undefined}>{challengers.map((row) => <div className={styles.rankingRow} key={`${row.rank}-${copy ? "next" : "current"}`}><em>{row.rank}</em><span>{nickname(row.youtubeNickname)}</span><b>{row.orderCount}건</b></div>)}</div>)}</div></div>}
         </div>
+        {editHandle("ranking")}
       </section>
 
-      <section className={`${styles.panel} ${styles.livePanel}`}>
-        <header className={styles.liveHeader}>
-          <span className={styles.liveDot} />
-          <small>MANGO TCG LIVE</small>
-          <strong>실시간 카드브레이크</strong>
-        </header>
-        <div className={styles.liveShine} aria-hidden="true" />
-        <p>빛나는 순간을 실시간으로 함께합니다</p>
+      <section className={`${styles.panel} ${styles.livePanel} ${editing ? styles.editablePanel : ""}`} style={panelStyle("live")} {...panelEvents("live")}>
+        <header className={styles.liveHeader}><span className={styles.liveDot} /><small>MANGO TCG LIVE</small><strong>실시간 카드브레이크 진행</strong></header>
+        <div className={styles.liveShine} aria-hidden="true" /><p>오늘의 카드 오픈 현황을 실시간으로 보여드립니다</p>{editHandle("live")}
       </section>
 
-      <section className={`${styles.panel} ${styles.currentPanel}`}>
-        <header className={styles.currentHeader}>
-          <span>NOW OPENING</span>
-          <b>{opening ? "진행 중" : "대기 중"}</b>
-        </header>
-        {activeOrder ? (
-          <div className={styles.currentBody}>
-            <strong>{nickname(activeOrder.youtube_nickname) === "-" ? activeOrder.user_id : nickname(activeOrder.youtube_nickname)}</strong>
-            <b>{activeOrder.product}</b>
-            <span>× {activeOrder.quantity}</span>
-          </div>
-        ) : <p className={styles.currentEmpty}>현재 오픈 주문을 기다리고 있습니다</p>}
-        <div className={styles.hitLine}>
-          <span>HIT</span>
-          <b>{hitCards[0] ? `◆ ${nickname(hitCards[0].youtube_nickname)} · ${hitCards[0].card}` : "오늘의 히트카드를 기다리는 중"}</b>
-        </div>
-        <div className={styles.waitingLine}>
-          <span>주문 대기</span>
-          <b>{nextOrder ? `${nickname(nextOrder.youtube_nickname) === "-" ? nextOrder.user_id : nickname(nextOrder.youtube_nickname)} · ${nextOrder.product}` : "대기 주문 없음"}</b>
-          <em>{waiting.length}건</em>
-        </div>
+      <section className={`${styles.panel} ${styles.schedulePanel} ${editing ? styles.editablePanel : ""}`} style={panelStyle("schedule")} {...panelEvents("schedule")}>
+        <small>LIVE NOW</small><strong>MANGO TCG</strong><time>{nowLabel(now)}</time>{editHandle("schedule")}
+      </section>
+
+      <section className={`${styles.panel} ${styles.currentPanel} ${editing ? styles.editablePanel : ""}`} style={panelStyle("current")} {...panelEvents("current")}>
+        <header className={styles.currentHeader}><span>현재 오픈 주문</span><b>{live.opening ? "오픈" : "대기"}</b></header>
+        {activeOrder ? <div className={styles.currentBody}><div className={styles.nicknameTicker}><strong>{nickname(activeOrder.youtube_nickname) === "-" ? activeOrder.user_id : nickname(activeOrder.youtube_nickname)}</strong></div><b>{activeOrder.product}</b><span>× {activeOrder.quantity}</span></div> : <p className={styles.currentEmpty}>대기 중</p>}
+        <div className={styles.hitLine}><span>HIT</span><b>{live.hitCards[0] ? `◆ ${nickname(live.hitCards[0].youtube_nickname)} · ${live.hitCards[0].card}` : "오늘의 히트카드를 기다리는 중"}</b></div>
+        <div className={styles.waitingLine}><span>주문 대기</span><b>{nextOrder ? `${nickname(nextOrder.youtube_nickname) === "-" ? nextOrder.user_id : nickname(nextOrder.youtube_nickname)} · ${nextOrder.product}` : "대기 주문 없음"}</b><em>{live.waiting.length}건</em></div>
+        {editHandle("current")}
       </section>
     </main>
   );

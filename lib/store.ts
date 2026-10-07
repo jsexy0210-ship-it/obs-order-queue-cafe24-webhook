@@ -175,6 +175,18 @@ export function getOverlaySettings(): OverlaySettings {
       widths: { ...DEFAULT_OVERLAY_SETTINGS.widths, ...saved.widths },
       position: { ...DEFAULT_OVERLAY_SETTINGS.position, ...saved.position },
       colors: { ...DEFAULT_OVERLAY_SETTINGS.colors, ...saved.colors },
+      newOverlay: {
+        ...DEFAULT_OVERLAY_SETTINGS.newOverlay,
+        ...saved.newOverlay,
+        panels: {
+          ...DEFAULT_OVERLAY_SETTINGS.newOverlay.panels,
+          ...saved.newOverlay?.panels,
+          ranking: { ...DEFAULT_OVERLAY_SETTINGS.newOverlay.panels.ranking, ...saved.newOverlay?.panels?.ranking },
+          live: { ...DEFAULT_OVERLAY_SETTINGS.newOverlay.panels.live, ...saved.newOverlay?.panels?.live },
+          schedule: { ...DEFAULT_OVERLAY_SETTINGS.newOverlay.panels.schedule, ...saved.newOverlay?.panels?.schedule },
+          current: { ...DEFAULT_OVERLAY_SETTINGS.newOverlay.panels.current, ...saved.newOverlay?.panels?.current },
+        },
+      },
       shorts: {
         ...DEFAULT_OVERLAY_SETTINGS.shorts,
         ...saved.shorts,
