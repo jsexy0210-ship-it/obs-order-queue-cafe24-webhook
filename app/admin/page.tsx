@@ -7,6 +7,7 @@ import { useAdminLiveCardBreak } from "./useAdminLiveCardBreak";
 import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import ShortsOverlayFrame from "@/app/overlay-shorts/ShortsOverlayFrame";
+import NewOverlayFrame from "@/app/overlay-new/NewOverlayFrame";
 import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 import RewardSettingsPanel from "./RewardSettingsPanel";
 import RewardLedgerModal from "./RewardLedgerModal";
@@ -104,7 +105,7 @@ export default function AdminPage() {
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
   const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
-  const [overlayPreviewMode, setOverlayPreviewMode] = useState<"basic" | "animation">("basic");
+  const [overlayPreviewMode, setOverlayPreviewMode] = useState<"new" | "basic" | "animation">("basic");
   const [selectedShortsZone, setSelectedShortsZone] = useState<ShortsZoneId>("hit");
   const [selectedNewOrderCopy, setSelectedNewOrderCopy] = useState<"first" | "repeat" | "vip">("first");
   const [shortsSettings, setShortsSettings] = useState<OverlaySettings>(DEFAULT_OVERLAY_SETTINGS);
@@ -1124,6 +1125,18 @@ export default function AdminPage() {
               <div className={styles.overlayModalActions}>
                 <div className={styles.overlayPreviewModes} role="tablist" aria-label="오버레이 미리보기 종류">
                   <button
+                    className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "new" ? styles.overlayPreviewModeActive : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={overlayPreviewMode === "new"}
+                    onClick={() => {
+                      setEditingOverlay(false);
+                      setOverlayPreviewMode("new");
+                    }}
+                  >
+                    신규 오버레이
+                  </button>
+                  <button
                     className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "basic" ? styles.overlayPreviewModeActive : ""}`}
                     type="button"
                     role="tab"
@@ -1148,13 +1161,13 @@ export default function AdminPage() {
                     주문알림 설정
                   </button>
                 </div>
-                <button
-                  className={`${styles.modalActionButton} ${editingOverlay ? styles.modalActionActive : ""}`}
-                  onClick={() => setEditingOverlay((value) => !value)}
-                >
-                  {editingOverlay ? "편집 취소" : "편집"}
-                </button>
-                {editingOverlay && (
+                {overlayPreviewMode !== "new" && <button
+                    className={`${styles.modalActionButton} ${editingOverlay ? styles.modalActionActive : ""}`}
+                    onClick={() => setEditingOverlay((value) => !value)}
+                  >
+                    {editingOverlay ? "편집 취소" : "편집"}
+                  </button>}
+                {editingOverlay && overlayPreviewMode !== "new" && (
                   <>
                     <button
                       className={`${styles.modalActionButton} ${styles.saveActionButton}`}
@@ -1167,7 +1180,7 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
-            {editingOverlay && (
+            {editingOverlay && overlayPreviewMode !== "new" && (
               <div className={styles.shortsEditor} aria-label="쇼츠 오버레이 영역 설정">
                 {overlayPreviewMode === "basic" && (
                   <div className={styles.zonePicker} role="tablist" aria-label="편집할 오버레이 영역">
@@ -1241,7 +1254,7 @@ export default function AdminPage() {
               </div>
             )}
             <div className={styles.overlayPreviewCanvas}>
-              <ShortsOverlayFrame
+              {overlayPreviewMode === "new" ? <NewOverlayFrame preview /> : <ShortsOverlayFrame
                 settingsOverride={shortsSettings}
                 editing={editingOverlay}
                 preview
@@ -1267,7 +1280,7 @@ export default function AdminPage() {
                       zones: { ...current.shorts.zones, [id]: { ...current.shorts.zones[id], ...patch } },
                     },
                   })}
-              />
+              />}
             </div>
           </div>
         </section>
