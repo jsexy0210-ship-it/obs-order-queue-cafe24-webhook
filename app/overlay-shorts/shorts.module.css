@@ -240,7 +240,8 @@
 .deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader, .deckCardHeader, .deckWaitingHeader) { background: linear-gradient(100deg, color-mix(in srgb, var(--deck-title-start) var(--deck-title-alpha), transparent), color-mix(in srgb, var(--deck-title-end) var(--deck-title-alpha), transparent)); color: var(--deck-title-color); border-color: var(--deck-border-color); text-shadow: 0 1px 3px rgba(0,0,0,.5), 0 0 6px rgba(var(--deck-theme-rgb),.6); }
 .deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader) { font-size: calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale)); }
 .deckVariant .zoneDeck.zoneCurrent { grid-template-rows: minmax(0, 1fr); min-height: calc(clamp(18px, 5.3cqw, 42px) * var(--deck-title-scale) * 2.3 + clamp(8px, 2.1cqw, 16px) * 2.7 + 116px); }
-.deckVariant .zoneDeck.zoneCurrent .zoneBody { height: auto; }
+.deckVariant .zoneDeck.zoneCurrent .zoneBody { display: flex; height: auto; }
+.deckVariant .zoneDeck.zoneCurrent .deckCardLayout { flex: 1; height: auto; }
 .deckVariant .deckCardLayout:has(.deckOpenCardEmpty) { grid-template-rows: repeat(2, minmax(0, 1fr)); }
 .deckVariant :is(.deckOpenCard, .deckWaitingCard) { padding-block: clamp(4px, .7cqw, 7px); gap: 4px; }
 .deckVariant :is(.deckCardHeader, .deckWaitingHeader) { padding-block: 3px; }
@@ -274,9 +275,9 @@
 .deckVariant .deckWaitingProduct { color: var(--deck-text-color); font-size: calc(clamp(12px, 4.96cqw, 28.8px) * var(--deck-text-scale)); }
 .deckVariant .deckWaitingRowsScrolling { animation-duration: var(--deck-waiting-duration); animation-direction: var(--deck-up-direction); }
 .deckVariant :is(.deckEmptyMessage, .deckWaitingCard > .deckEmptyMessage) { color: var(--deck-text-color) !important; }
-.deckVariant .currentOrderBadgeFirst { background: linear-gradient(135deg, var(--deck-badge-first-color), color-mix(in srgb, var(--deck-badge-first-color) 70%, black)) !important; border-color: var(--deck-badge-first-color); }
-.deckVariant .currentOrderBadgeRepeat { background: linear-gradient(135deg, var(--deck-badge-repeat-color), color-mix(in srgb, var(--deck-badge-repeat-color) 70%, black)) !important; border-color: var(--deck-badge-repeat-color); }
-.deckVariant .currentOrderBadgeVip { background: linear-gradient(135deg, var(--deck-badge-vip-color), color-mix(in srgb, var(--deck-badge-vip-color) 70%, black)) !important; border-color: var(--deck-badge-vip-color); }
+.deckVariant .currentOrderBadgeFirst { background: linear-gradient(135deg, var(--deck-badge-first-color), #831843) !important; border-color: var(--deck-badge-first-color); }
+.deckVariant .currentOrderBadgeRepeat { background: linear-gradient(135deg, var(--deck-badge-repeat-color), #b53a11) !important; border-color: var(--deck-badge-repeat-color); }
+.deckVariant .currentOrderBadgeVip { background: linear-gradient(135deg, var(--deck-badge-vip-color), #3b1787) !important; border-color: var(--deck-badge-vip-color); }
 .deckVariant :is(.zoneDeck, .zoneDeckHit)::after, .deckVariant .deckOpenCard::after { animation-duration: var(--deck-effect-duration); }
 .deckVariant .deckShineOff::after, .deckVariant .deckShineOff .deckOpenCard::after { display: none; }
 .deckVariant .deckTextBurstOff :is(.hitRows span, .hallOfFameFirst > b, .hallOfFameFirst > em) { animation: none; }

@@ -348,9 +348,17 @@ export function getDeckAppearance(id: ShortsZoneId, zone: ShortsZoneSettings): D
     titleStart: "#30edb9", titleEnd: "#128fbf", itemBackground: "#052b37",
     borderColor: "#62ffe0", titleColor: "#f2fff9", textColor: "#f2fff9", nicknameColor: "#f2fff9", iconColor: "#c5fff3",
     titleIcon: "", backgroundOpacity: 97, flowDirection: "down" as const,
+    badgeFirstColor: "#f43f5e", badgeRepeatColor: "#ffad33", badgeVipColor: "#af70ff",
     waitingSeconds: Math.min(120, zone.tickerDurationSeconds * 2),
   } : DEFAULT_DECK_APPEARANCE;
-  return { ...defaults, ...zone.deckAppearance };
+  const appearance = { ...defaults, ...zone.deckAppearance };
+  // 저장된 이전 기본색도 신규 주문 카드의 대비 높은 배색에 맞춥니다.
+  return id === "current" ? {
+    ...appearance,
+    badgeFirstColor: appearance.badgeFirstColor.toLowerCase() === "#ff5368" ? defaults.badgeFirstColor : appearance.badgeFirstColor,
+    badgeRepeatColor: appearance.badgeRepeatColor.toLowerCase() === "#27d7ae" ? defaults.badgeRepeatColor : appearance.badgeRepeatColor,
+    badgeVipColor: appearance.badgeVipColor.toLowerCase() === "#ffe786" ? defaults.badgeVipColor : appearance.badgeVipColor,
+  } : appearance;
 }
 
 const defaultShorts = DEFAULT_OVERLAY_SETTINGS.shorts;
