@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { broadcastUpdate } from "./events";
-import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "./overlaySettings";
+import { DEFAULT_NEW_OVERLAY_SETTINGS, DEFAULT_OVERLAY_SETTINGS, type OverlaySettings } from "./overlaySettings";
 
 export type OrderStatus = "waiting" | "opening" | "done" | "cancelled";
 
@@ -168,6 +168,34 @@ export function getOverlaySettings(): OverlaySettings {
         },
       },
     };
+    const savedNewOverlay = saved.newOverlay;
+    const newOverlay = {
+      ...DEFAULT_NEW_OVERLAY_SETTINGS,
+      ...savedNewOverlay,
+      zones: {
+        hit: { ...DEFAULT_NEW_OVERLAY_SETTINGS.zones.hit, ...savedNewOverlay?.zones?.hit },
+        ranking: { ...DEFAULT_NEW_OVERLAY_SETTINGS.zones.ranking, ...savedNewOverlay?.zones?.ranking },
+        current: { ...DEFAULT_NEW_OVERLAY_SETTINGS.zones.current, ...savedNewOverlay?.zones?.current },
+        announcement: { ...DEFAULT_NEW_OVERLAY_SETTINGS.zones.announcement, ...savedNewOverlay?.zones?.announcement },
+      },
+      newOrder: {
+        first: {
+          ...DEFAULT_NEW_OVERLAY_SETTINGS.newOrder.first,
+          ...savedNewOverlay?.newOrder?.first,
+          zone: { ...DEFAULT_NEW_OVERLAY_SETTINGS.newOrder.first.zone, ...savedNewOverlay?.newOrder?.first?.zone },
+        },
+        repeat: {
+          ...DEFAULT_NEW_OVERLAY_SETTINGS.newOrder.repeat,
+          ...savedNewOverlay?.newOrder?.repeat,
+          zone: { ...DEFAULT_NEW_OVERLAY_SETTINGS.newOrder.repeat.zone, ...savedNewOverlay?.newOrder?.repeat?.zone },
+        },
+        vip: {
+          ...DEFAULT_NEW_OVERLAY_SETTINGS.newOrder.vip,
+          ...savedNewOverlay?.newOrder?.vip,
+          zone: { ...DEFAULT_NEW_OVERLAY_SETTINGS.newOrder.vip.zone, ...savedNewOverlay?.newOrder?.vip?.zone },
+        },
+      },
+    };
     return {
       ...DEFAULT_OVERLAY_SETTINGS,
       ...saved,
@@ -187,6 +215,7 @@ export function getOverlaySettings(): OverlaySettings {
           announcement: { ...DEFAULT_OVERLAY_SETTINGS.shorts.zones.announcement, ...announcementZone },
         },
       },
+      newOverlay,
     } as OverlaySettings;
   } catch {
     return DEFAULT_OVERLAY_SETTINGS;

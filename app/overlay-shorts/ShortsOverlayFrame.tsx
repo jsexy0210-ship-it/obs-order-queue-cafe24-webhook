@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
-import { SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
+import { DEFAULT_NEW_OVERLAY_SETTINGS, getDeckAppearance, SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 import styles from "./shorts.module.css";
 
 type Props = {
   settingsOverride?: OverlaySettings;
+  variant?: "basic" | "deck";
   editing?: boolean;
   /** 관리 화면에서는 실제 방송 비율의 독립된 미리보기 캔버스를 사용합니다. */
   preview?: boolean;
@@ -16,6 +17,9 @@ type Props = {
   showAnimationPreview?: boolean;
   /** 관리 화면에서 선택한 주문 유형의 문구와 효과를 즉시 미리봅니다. */
   previewOrderKind?: NewOrderEffectKind;
+  /** 신규 덱 미리보기는 관리자 주문 목록의 실제 항목을 사용합니다. */
+  previewOpeningOrder?: LiveOrder | null;
+  previewWaitingOrders?: LiveOrder[];
   onZoneChange?: (id: ShortsZoneId, patch: Partial<OverlaySettings["shorts"]["zones"][ShortsZoneId]>) => void;
 };
 
@@ -34,7 +38,7 @@ type NewOrderEffect = { order: EffectOrder; kind: NewOrderEffectKind };
 
 const zoneLabels: Record<ShortsZoneId, string> = {
   hit: "HIT&RGB",
-  ranking: "VIP",
+  ranking: "명예의 전당",
   current: "오픈 대기",
   announcement: "신규 주문 연출",
 };
@@ -69,8 +73,8 @@ function rankingIcon(rank: number) {
   return rank === 1 ? "1" : rank === 2 ? "2" : "3";
 }
 
-function CurrentOrderProduct({ product, quantity }: Pick<LiveOrder, "product" | "quantity">) {
-  const label = `${product} · ×${quantity}`;
+function CurrentOrderProduct({ product, quantity, forceScroll = false, durationSeconds, quantitySeparator = " · ×" }: Pick<LiveOrder, "product" | "quantity"> & { forceScroll?: boolean; durationSeconds?: number; quantitySeparator?: string }) {
+  const label = `${product}${quantitySeparator}${quantity}`;
   const viewportRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [overflowing, setOverflowing] = useState(false);
@@ -83,8 +87,38 @@ function CurrentOrderProduct({ product, quantity }: Pick<LiveOrder, "product" | 
     const measure = () => {
       const isOverflowing = text.scrollWidth > viewport.clientWidth + 1;
       setOverflowing((current) => current === isOverflowing ? current : isOverflowing);
-      const nextDuration = Math.max(6, Math.min(30, text.scrollWidth / 30));
+      const nextDuration = durationSeconds ?? Math.max(6, Math.min(30, text.scrollWidth / 30));
       setDuration((current) => Math.abs(current - nextDuration) < .5 ? current : nextDuration);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    observer.observe(text);
+    return () => observer.disconnect();
+  }, [label, durationSeconds]);
+
+  const shouldScroll = forceScroll || overflowing;
+
+  return <em ref={viewportRef} className={`${styles.currentOrderProduct} ${shouldScroll ? styles.currentOrderProductScrolling : ""}`} style={{ "--product-ticker-duration": `${duration}s` } as CSSProperties}>
+    <span className={styles.currentOrderProductTrack}>
+      <span ref={textRef} className={styles.currentOrderProductText}>{label}</span>
+      {shouldScroll && <span className={styles.currentOrderProductText} aria-hidden="true">{label}</span>}
+    </span>
+  </em>;
+}
+
+function OpeningOrderNickname({ label, durationSeconds }: { label: string; durationSeconds: number }) {
+  const viewportRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const text = textRef.current;
+    if (!viewport || !text) return;
+    const measure = () => {
+      const next = text.scrollWidth > viewport.clientWidth + 1;
+      setOverflowing((current) => current === next ? current : next);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -93,15 +127,14 @@ function CurrentOrderProduct({ product, quantity }: Pick<LiveOrder, "product" | 
     return () => observer.disconnect();
   }, [label]);
 
-  return <em ref={viewportRef} className={`${styles.currentOrderProduct} ${overflowing ? styles.currentOrderProductScrolling : ""}`} style={{ "--product-ticker-duration": `${duration}s` } as CSSProperties}>
-    <span className={styles.currentOrderProductTrack}>
-      <span ref={textRef} className={styles.currentOrderProductText}>{label}</span>
-      {overflowing && <span className={styles.currentOrderProductText} aria-hidden="true">{label}</span>}
+  return <span ref={viewportRef} className={`${styles.deckOpeningNickname} ${overflowing ? styles.deckOpeningNicknameScrolling : ""}`} style={{ "--nickname-ticker-duration": `${durationSeconds}s` } as CSSProperties}>
+    <span className={styles.deckOpeningNicknameTrack}>
+      <span className={styles.deckOpeningNicknameItem}><span ref={textRef}>{label}</span></span>
+      {overflowing && <span className={styles.deckOpeningNicknameItem} aria-hidden="true"><span>{label}</span></span>}
     </span>
-  </em>;
+  </span>;
 }
-
-export default function ShortsOverlayFrame({ settingsOverride, editing = false, preview = false, zoneIds = SHORTS_ZONE_IDS, showAnimationPreview = false, previewOrderKind = "repeat", onZoneChange }: Props) {
+export default function ShortsOverlayFrame({ settingsOverride, variant = "basic", editing = false, preview = false, zoneIds = SHORTS_ZONE_IDS, showAnimationPreview = false, previewOrderKind = "repeat", previewOpeningOrder, previewWaitingOrders, onZoneChange }: Props) {
   const live = useLiveCardBreak();
   const [ranking, setRanking] = useState<RankingRow[]>([]);
   const [newOrderEffect, setNewOrderEffect] = useState<NewOrderEffect | null>(null);
@@ -110,11 +143,16 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   const stageRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<Interaction | null>(null);
   const seenOrderIds = useRef<Set<number> | null>(null);
-  const settings = settingsOverride ?? live.overlaySettings;
-  const actualActiveOrder = live.opening ?? live.waiting[0] ?? null;
+  const newOverlayProfile = live.overlaySettings.newOverlay ?? DEFAULT_NEW_OVERLAY_SETTINGS;
+  const settings = settingsOverride ?? (variant === "deck" ? {
+    ...live.overlaySettings,
+    shorts: newOverlayProfile,
+    openingEmptyTransparency: newOverlayProfile.openingEmptyTransparency ?? 40,
+  } : live.overlaySettings);
+  const openingOrder = preview && variant === "deck" && previewOpeningOrder !== undefined ? previewOpeningOrder : live.opening;
+  const waitingOrders = preview && variant === "deck" && previewWaitingOrders !== undefined ? previewWaitingOrders : live.waiting;
+  const actualActiveOrder = openingOrder ?? waitingOrders[0] ?? null;
   const activeOrder = actualActiveOrder;
-  const openingOrder = live.opening;
-  const waitingOrders = live.waiting;
   const displayedHitCards = live.hitCards;
   const visibleHitCards = displayedHitCards;
   const shouldScrollHitCards = visibleHitCards.length >= 4;
@@ -136,10 +174,10 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
     const loadRanking = () => {
       if (loading) return;
       loading = true;
-      fetch("/api/overlay-ranking", { cache: "no-store" })
+      fetch(`/api/overlay-ranking${variant === "deck" ? "?limit=10" : ""}`, { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("ranking failed")))
         .then((data: { ranking?: RankingRow[] }) => {
-          if (!cancelled) setRanking((data.ranking ?? []).slice(0, 3));
+          if (!cancelled) setRanking((data.ranking ?? []).slice(0, variant === "deck" ? 9 : 3));
         })
         .catch(() => {
           if (!cancelled) setRanking([]);
@@ -155,7 +193,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, []);
+  }, [variant]);
 
   // 관리 화면의 신규 주문 효과는 최신 실제 주문으로 미리봅니다.
   useEffect(() => {
@@ -339,10 +377,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
   }
 
   return (
-    <div className={`${styles.shortsShell} ${!preview && !editing ? styles.liveShell : ""}`} aria-label={editing || preview ? "YouTube Shorts 실제 비율 미리보기" : "망고TCG 라이브 오버레이"}>
-      {editing && <div className={styles.youtubeTop} aria-label="YouTube 상단 앱 UI 잠금 영역">
-        <span>←</span><b>@MangoTCG</b><span className={styles.subscribe}>구독</span><span>•••</span>
-      </div>}
+    <div className={`${styles.shortsShell} ${variant === "deck" ? styles.deckVariant : ""} ${!preview && !editing ? styles.liveShell : ""}`} aria-label={editing || preview ? "YouTube Shorts 실제 비율 미리보기" : "망고TCG 라이브 오버레이"}>
       <div className={styles.videoStage} ref={stageRef}>
         {zoneIds.map((id) => {
           const orderEffectSettings = displayedOrderEffect
@@ -362,7 +397,38 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
             : configuredZone;
           if (!zone.visible) return null;
           if (id === "announcement" && !displayedOrderEffect) return null;
+          const deckAppearance = getDeckAppearance(id, zone);
+          const deckRgb = deckAppearance.borderColor.slice(1).match(/.{2}/g)?.map((part) => parseInt(part, 16)).join(", ") ?? "98, 255, 224";
           const style = {
+            ...(variant === "deck" ? {
+              opacity: deckAppearance.opacity / 100,
+              "--deck-theme-rgb": deckRgb,
+              "--deck-background-start": deckAppearance.backgroundStart,
+              "--deck-background-middle": deckAppearance.backgroundMiddle,
+              "--deck-background-end": deckAppearance.backgroundEnd,
+              "--deck-title-start": deckAppearance.titleStart,
+              "--deck-title-end": deckAppearance.titleEnd,
+              "--deck-item-background": deckAppearance.itemBackground,
+              "--deck-border-color": deckAppearance.borderColor,
+              "--deck-title-color": deckAppearance.titleColor,
+              "--deck-text-color": deckAppearance.textColor,
+              "--deck-nickname-color": deckAppearance.nicknameColor,
+              "--deck-icon-color": deckAppearance.iconColor,
+              "--deck-badge-first-color": deckAppearance.badgeFirstColor,
+              "--deck-badge-repeat-color": deckAppearance.badgeRepeatColor,
+              "--deck-badge-vip-color": deckAppearance.badgeVipColor,
+              "--deck-background-alpha": `${deckAppearance.backgroundOpacity}%`,
+              "--deck-title-alpha": `${deckAppearance.titleOpacity}%`,
+              "--deck-title-scale": String(deckAppearance.titleScale / 100),
+              "--deck-text-scale": String(deckAppearance.textScale / 100),
+              "--deck-effect-duration": `${deckAppearance.effectSeconds}s`,
+              "--deck-flip-duration": `${zone.motionDurationSeconds}s`,
+              "--deck-up-direction": deckAppearance.flowDirection === "up" ? "normal" : "reverse",
+              "--deck-down-direction": deckAppearance.flowDirection === "down" ? "normal" : "reverse",
+              "--deck-waiting-duration": `${deckAppearance.waitingSeconds}s`,
+              "--deck-item-gap": `${deckAppearance.itemGap}px`,
+              "--deck-item-height": `${deckAppearance.itemHeight}px`,
+            } : {}),
             left: `${zone.x}%`, top: `${zone.y}%`, width: `${zone.width}%`, height: `${zone.height}%`,
             zIndex: zone.zIndex,
             "--zone-accent": zone.accent,
@@ -391,8 +457,11 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
             "--hit-ticker-duration": `${zone.tickerDurationSeconds}s`,
             "--hit-item-gap": `${settings.shorts.hitItemGap}px`,
             "--hit-item-height": settings.shorts.hitItemHeight > 0 ? `${settings.shorts.hitItemHeight}px` : "auto",
-            "--waiting-ticker-duration": `${zone.tickerDurationSeconds}s`,
+            "--waiting-ticker-duration": `${zone.tickerDurationSeconds * (variant === "deck" ? 2 : 1)}s`,
             "--waiting-item-gap": `${settings.shorts.waitingItemGap}px`,
+            "--opening-empty-opacity": variant === "deck"
+              ? String((100 - settings.openingEmptyTransparency) / 100)
+              : ".82",
             "--motion-duration": `${zone.motionDurationSeconds}s`,
           } as CSSProperties;
           const value = id === "current"
@@ -401,16 +470,34 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
           return (
             <section
               key={id}
-              className={`${styles.zone} ${styles[`zone${id[0].toUpperCase()}${id.slice(1)}`]} ${id === "announcement" ? styles.zoneToast : ""} ${id === "announcement" && displayedOrderEffect?.kind === "vip" ? styles.rankOneEffect : ""} ${editing ? styles.editableZone : ""} ${id === "announcement" ? styles[`motion${zone.motion.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase()).replace(/^./, (letter) => letter.toUpperCase())}`] ?? "" : ""}`}
+              className={`${variant === "deck" ? `${!deckAppearance.glow ? styles.deckGlowOff : ""} ${!deckAppearance.shine ? styles.deckShineOff : ""} ${!deckAppearance.textBurst ? styles.deckTextBurstOff : ""} ${!deckAppearance.cardFlip ? styles.deckFlipOff : ""}` : ""} ${styles.zone} ${styles[`zone${id[0].toUpperCase()}${id.slice(1)}`]} ${variant === "deck" && id === "current" ? styles.zoneDeck : ""} ${variant === "deck" && id === "ranking" ? styles.zoneDeck : ""} ${variant === "deck" && id === "hit" ? styles.zoneDeckHit : ""} ${id === "announcement" ? styles.zoneToast : ""} ${id === "announcement" && displayedOrderEffect?.kind === "vip" ? styles.rankOneEffect : ""} ${editing ? styles.editableZone : ""} ${id === "announcement" ? styles[`motion${zone.motion.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase()).replace(/^./, (letter) => letter.toUpperCase())}`] ?? "" : ""}`}
               style={style}
               onPointerDown={id === "announcement" ? undefined : (event) => startInteraction(id, "move", event)}
               onPointerMove={moveInteraction}
               onPointerUp={endInteraction}
               onPointerCancel={endInteraction}
             >
-              {id !== "announcement" && <strong>{zone.title || zoneLabels[id]}</strong>}
+              {id !== "announcement" && !(variant === "deck" && id === "ranking") && <strong>{variant === "deck" && id === "hit" && deckAppearance.titleIcon && <span className={styles.deckTitleIcon} aria-hidden="true">{deckAppearance.titleIcon === "💎" ? <svg viewBox="0 0 24 24" fill="none"><path d="M6 3h12l5 6-11 13L1 9l5-6Z" fill="currentColor" fillOpacity=".25" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M1 9h22M6 3l6 19 6-19M6 3l6 6 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></svg> : deckAppearance.titleIcon}</span>}{zone.title || zoneLabels[id]}</strong>}
               {id === "ranking" ? (
-                <div className={styles.rankingTicker} aria-label="VIP 주문 랭킹 상위 3명">
+                variant === "deck" ? (
+                  <div className={styles.hallOfFameBoard} aria-label="명예의 전당 순위">
+                    <header className={styles.hallOfFameHeader}>{deckAppearance.titleIcon && <span className={styles.hallOfFameTitleIcon} aria-hidden="true">{deckAppearance.titleIcon}</span>}<strong>{zone.title === "VIP" ? "명예의 전당" : zone.title || zoneLabels[id]}</strong></header>
+                    {displayedRanking[0] ? <div className={styles.hallOfFameFirst}>
+                      <b data-rank="1" aria-label="1위"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l4 4 5-7 5 7 4-4-3 14H6L3 6Z" fill="currentColor" /><path d="M6 22h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg><i>1</i></b>
+                      <em data-text={nickname(displayedRanking[0].youtubeNickname)}><span>{nickname(displayedRanking[0].youtubeNickname)}</span></em>
+                    </div> : <p className={styles.hallOfFameEmpty}>랭킹을 불러오는 중입니다</p>}
+                    {displayedRanking.length > 1 && <div className={styles.hallOfFameViewport}>
+                      <div className={styles.hallOfFameTrack}>
+                        {[false, true].map((clone) => <div className={styles.hallOfFameRows} key={clone ? "next-cycle" : "current-cycle"} aria-hidden={clone || undefined}>
+                          {displayedRanking.slice(1, 10).map((row) => <div className={styles.hallOfFameRotation} key={`${row.rank}-${clone ? "next" : "current"}`}>
+                            <b data-rank={row.rank} style={{ "--rank-icon-strength": `${100 - (row.rank - 2) * 8}%` } as CSSProperties}><i>{row.rank}</i></b>
+                            <em>{nickname(row.youtubeNickname)}</em>
+                          </div>)}
+                        </div>)}
+                      </div>
+                    </div>}
+                  </div>
+                ) : <div className={styles.rankingTicker} aria-label="VIP 주문 랭킹 상위 3명">
                   <div className={styles.rankingTickerTrack}>
                     {[...displayedRanking, ...displayedRanking].map((row, index) => (
                       <span className={styles.rankingTickerItem} key={`${row.rank}-${index}`}>
@@ -430,19 +517,51 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                             {renderedHitCards.map((hit) => {
                               const hitNickname = nickname(hit.youtube_nickname);
                               const label = `◆ ${hitNickname} · ${hit.card}`;
-                              return <p key={`${hit.id}-${copy ? "next" : "current"}`}><span style={textFit(label, 24)}>{label}</span></p>;
+                              return <p key={`${hit.id}-${copy ? "next" : "current"}`}><span data-text={variant === "deck" ? label : undefined} style={textFit(label, 24)}>{label}</span></p>;
                             })}
                           </div>
                         ))}
                         {displayedHitCards.length === 0 && <p className={styles.emptyState}>등록된 히트카드 없음</p>}
                       </div>
                     </div>
+                  ) : id === "current" && variant === "deck" ? (
+                    <div className={styles.deckCardLayout}>
+                      <section key={openingOrder?.id ?? "empty-opening"} className={`${styles.deckOpenCard} ${openingOrder ? styles.deckOpenCardActive : styles.deckOpenCardEmpty}`}>
+                        <header className={styles.deckCardHeader}>
+                          <b>{deckAppearance.openTitle}</b>
+                          <span className={styles.deckLiveBadge}>{openingOrder ? "진행 중" : "대기"}</span>
+                        </header>
+                        {openingOrder ? <>
+                          <div className={styles.deckOpeningIdentity}>
+                            {nickname(openingOrder.youtube_nickname) !== "-" && currentOrderBadge(openingOrder)}
+                            <OpeningOrderNickname label={nickname(openingOrder.youtube_nickname)} durationSeconds={zone.tickerDurationSeconds} />
+                          </div>
+                          <div className={styles.deckProductCard}>
+                            <CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} />
+                          </div>
+                        </> : <p className={styles.deckEmptyMessage}>현재 오픈 중인 주문이 없습니다.</p>}
+                      </section>
+                      <section className={styles.deckWaitingCard}>
+                        <header className={styles.deckWaitingHeader}><b>{deckAppearance.waitingTitle}</b><em>{waitingOrders.length}건</em></header>
+                        {waitingOrders.length === 0 ? <p className={styles.deckEmptyMessage}>대기 중인 주문이 없습니다.</p> : (
+                          <div className={styles.deckWaitingViewport}>
+                            <div className={`${styles.deckWaitingRows} ${waitingOrders.length >= 3 ? styles.deckWaitingRowsScrolling : ""}`}>
+                              {(waitingOrders.length >= 3 ? [false, true] : [false]).map((copy) => (
+                                <div className={styles.deckWaitingGroup} key={copy ? "deck-next-cycle" : "deck-current-cycle"} aria-hidden={copy || undefined}>
+                                  {waitingOrders.map((order) => <p key={`${order.id}-${copy ? "next" : "current"}`}><span className={styles.deckWaitingIdentity}>{nickname(order.youtube_nickname) !== "-" && currentOrderBadge(order)}<span>{nickname(order.youtube_nickname)}</span></span><span className={styles.deckWaitingProduct}>{order.product} x {order.quantity}</span></p>)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </section>
+                    </div>
                   ) : id === "current" ? (
                     <div className={styles.currentOrderColumns}>
                       <section className={`${styles.currentOrderColumn} ${styles.openingOrderColumn}`}>
                         <b className={styles.currentOrderHeading}>오픈</b>
                         {openingOrder ? (
-                          <p className={`${styles.completedOrderRow} ${nickname(openingOrder.youtube_nickname) === "-" ? styles.orderWithoutNickname : ""}`}>{nickname(openingOrder.youtube_nickname) !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(openingOrder)}<i style={textFit(nickname(openingOrder.youtube_nickname), 14)}>{nickname(openingOrder.youtube_nickname)}</i></span>}<CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} /></p>
+                          <p key={openingOrder.id} className={`${styles.completedOrderRow} ${variant === "deck" ? styles.deckOpeningCard : ""} ${nickname(openingOrder.youtube_nickname) === "-" ? styles.orderWithoutNickname : ""}`}>{nickname(openingOrder.youtube_nickname) !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(openingOrder)}<i style={textFit(nickname(openingOrder.youtube_nickname), 14)}>{nickname(openingOrder.youtube_nickname)}</i></span>}<CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} /></p>
                         ) : <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>-</p>}
                       </section>
                       <section className={`${styles.currentOrderColumn} ${styles.waitingOrderColumn}`}>
@@ -453,7 +572,7 @@ export default function ShortsOverlayFrame({ settingsOverride, editing = false, 
                               <div className={styles.waitingOrderRowsGroup} key={copy ? "next-cycle" : "current-cycle"} aria-hidden={copy || undefined}>
                                 {waitingOrders.map((order) => {
                                   const orderNickname = nickname(order.youtube_nickname);
-                                  return <p key={`${order.id}-${copy ? "next" : "current"}`} className={orderNickname === "-" ? styles.orderWithoutNickname : ""}>{orderNickname !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(order)}<i style={textFit(orderNickname, 13)}>{orderNickname}</i></span>}<CurrentOrderProduct product={order.product} quantity={order.quantity} /></p>;
+                                  return <p key={`${order.id}-${copy ? "next" : "current"}`} className={`${orderNickname === "-" ? styles.orderWithoutNickname : ""} ${variant === "deck" ? styles.deckWaitingCard : ""}`}>{orderNickname !== "-" && <span className={styles.currentOrderIdentity}>{currentOrderBadge(order)}<i style={textFit(orderNickname, 13)}>{orderNickname}</i></span>}<CurrentOrderProduct product={order.product} quantity={order.quantity} /></p>;
                                 })}
                                 {waitingOrders.length === 0 && <p className={`${styles.emptyState} ${styles.emptyOrderState}`}>-</p>}
                               </div>

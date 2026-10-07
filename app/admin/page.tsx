@@ -7,7 +7,7 @@ import { useAdminLiveCardBreak } from "./useAdminLiveCardBreak";
 import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import ShortsOverlayFrame from "@/app/overlay-shorts/ShortsOverlayFrame";
-import { DEFAULT_OVERLAY_SETTINGS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
+import { DEFAULT_NEW_OVERLAY_SETTINGS, DEFAULT_OVERLAY_SETTINGS, getDeckAppearance, type DeckAppearanceSettings, type OverlaySettings, type ShortsOverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 import RewardSettingsPanel from "./RewardSettingsPanel";
 import RewardLedgerModal from "./RewardLedgerModal";
 import OrderDashboard, { DashboardRangePicker, type DashboardRange } from "./OrderDashboard";
@@ -104,10 +104,11 @@ export default function AdminPage() {
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
   const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
-  const [overlayPreviewMode, setOverlayPreviewMode] = useState<"basic" | "animation">("basic");
+  const [overlayPreviewMode, setOverlayPreviewMode] = useState<"basic" | "new" | "animation">("basic");
   const [selectedShortsZone, setSelectedShortsZone] = useState<ShortsZoneId>("hit");
   const [selectedNewOrderCopy, setSelectedNewOrderCopy] = useState<"first" | "repeat" | "vip">("first");
   const [shortsSettings, setShortsSettings] = useState<OverlaySettings>(DEFAULT_OVERLAY_SETTINGS);
+  const [newOverlaySettings, setNewOverlaySettings] = useState<ShortsOverlaySettings>(DEFAULT_NEW_OVERLAY_SETTINGS);
   const [savingShortsSettings, setSavingShortsSettings] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [orderAlertsEnabled, setOrderAlertsEnabled] = useState(false);
@@ -149,14 +150,16 @@ export default function AdminPage() {
         ? { title: "무통장 입금 전 · 오늘 이력", empty: "오늘 접수된 무통장 입금 전 주문이 없습니다.", orders: todayPendingPayments }
         : null;
 
-  const editableShortsZoneIds = overlayPreviewMode === "basic" ? BASIC_SHORTS_ZONE_IDS : ORDER_ANIMATION_ZONE_IDS;
+  const editableShortsZoneIds = overlayPreviewMode === "animation" ? ORDER_ANIMATION_ZONE_IDS : BASIC_SHORTS_ZONE_IDS;
   const selectedShortsZoneId = editableShortsZoneIds.includes(selectedShortsZone)
     ? selectedShortsZone
     : editableShortsZoneIds[0];
   const selectedNewOrderSettings = shortsSettings.shorts.newOrder[selectedNewOrderCopy];
+  const activeShortsProfile = overlayPreviewMode === "new" ? newOverlaySettings : shortsSettings.shorts;
   const selectedShortsZoneSettings = overlayPreviewMode === "animation"
     ? selectedNewOrderSettings.zone
-    : shortsSettings.shorts.zones[selectedShortsZoneId];
+    : activeShortsProfile.zones[selectedShortsZoneId];
+  const selectedDeckAppearance = getDeckAppearance(selectedShortsZoneId, selectedShortsZoneSettings);
 
   const seenOrderStates = useRef<Map<number, "pending" | "paid"> | null>(null);
   const alertedOrderStates = useRef<Map<number, "pending" | "paid"> | null>(null);
@@ -192,6 +195,17 @@ export default function AdminPage() {
         },
       },
     }));
+  }, [editingOverlay, overlaySettings]);
+
+  useEffect(() => {
+    if (!editingOverlay) {
+      const saved = overlaySettings.newOverlay ?? DEFAULT_NEW_OVERLAY_SETTINGS;
+      const legacyRanking = saved.zones.ranking.title === "VIP";
+      setNewOverlaySettings(legacyRanking ? {
+        ...saved,
+        zones: { ...saved.zones, ranking: { ...saved.zones.ranking, title: "명예의 전당", tickerDurationSeconds: saved.zones.ranking.tickerDurationSeconds === 20 ? 1.2 : saved.zones.ranking.tickerDurationSeconds } },
+      } : saved);
+    }
   }, [editingOverlay, overlaySettings]);
 
   useEffect(() => {
@@ -459,6 +473,13 @@ export default function AdminPage() {
     setShowOverlayPreview(false);
   }
 
+  function updateDeckAppearance<K extends keyof DeckAppearanceSettings>(key: K, value: DeckAppearanceSettings[K]) {
+    setNewOverlaySettings((current) => {
+      const zone = current.zones[selectedShortsZoneId];
+      return { ...current, zones: { ...current.zones, [selectedShortsZoneId]: { ...zone, deckAppearance: { ...getDeckAppearance(selectedShortsZoneId, zone), [key]: value } } } };
+    });
+  }
+
   function updateShortsZone<K extends keyof OverlaySettings["shorts"]["zones"][ShortsZoneId]>(
     id: ShortsZoneId,
     key: K,
@@ -491,6 +512,13 @@ export default function AdminPage() {
             },
           },
         },
+      }));
+      return;
+    }
+    if (overlayPreviewMode === "new") {
+      setNewOverlaySettings((current) => ({
+        ...current,
+        zones: { ...current.zones, [id]: { ...current.zones[id], [key]: value } },
       }));
       return;
     }
@@ -528,6 +556,7 @@ export default function AdminPage() {
   async function saveShortsSettings() {
     const unifiedSettings: OverlaySettings = {
       ...shortsSettings,
+      newOverlay: newOverlaySettings,
       shorts: {
         ...shortsSettings.shorts,
         newOrder: {
@@ -1136,6 +1165,18 @@ export default function AdminPage() {
                     기본 오버레이
                   </button>
                   <button
+                    className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "new" ? styles.overlayPreviewModeActive : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={overlayPreviewMode === "new"}
+                    onClick={() => {
+                      setOverlayPreviewMode("new");
+                      setSelectedShortsZone("current");
+                    }}
+                  >
+                    신규 오버레이
+                  </button>
+                  <button
                     className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "animation" ? styles.overlayPreviewModeActive : ""}`}
                     type="button"
                     role="tab"
@@ -1169,7 +1210,7 @@ export default function AdminPage() {
             </div>
             {editingOverlay && (
               <div className={styles.shortsEditor} aria-label="쇼츠 오버레이 영역 설정">
-                {overlayPreviewMode === "basic" && (
+                {overlayPreviewMode !== "animation" && (
                   <div className={styles.zonePicker} role="tablist" aria-label="편집할 오버레이 영역">
                     {editableShortsZoneIds.map((id) => (
                       <button
@@ -1180,22 +1221,22 @@ export default function AdminPage() {
                         className={`${styles.zonePickerButton} ${selectedShortsZoneId === id ? styles.zonePickerButtonActive : ""}`}
                         onClick={() => setSelectedShortsZone(id)}
                       >
-                        {shortsSettings.shorts.zones[id].title || id}
+                        {overlayPreviewMode === "new" && id === "ranking" && activeShortsProfile.zones[id].title === "VIP" ? "명예의 전당" : activeShortsProfile.zones[id].title || id}
                       </button>
                     ))}
                   </div>
                 )}
                 <fieldset className={styles.shortsZoneControl}>
-                  <legend>{overlayPreviewMode === "animation" ? "주문알림 설정" : `${selectedShortsZoneSettings.title || selectedShortsZoneId} 설정`}</legend>
+                  <legend>{overlayPreviewMode === "animation" ? "주문알림 설정" : `${overlayPreviewMode === "new" && selectedShortsZoneId === "ranking" && selectedShortsZoneSettings.title === "VIP" ? "명예의 전당" : selectedShortsZoneSettings.title || selectedShortsZoneId} 설정`}</legend>
                   <label className={styles.zoneEnabledToggle}>
                     <span>사용여부</span>
                     <input type="checkbox" checked={selectedShortsZoneSettings.visible} onChange={(event) => updateShortsZone(selectedShortsZoneId, "visible", event.target.checked)} />
                     <span className={styles.toggleTrack} aria-hidden="true"><i /></span>
                     <output>{selectedShortsZoneSettings.visible ? "On" : "Off"}</output>
                   </label>
-                  {overlayPreviewMode === "basic" && <label className={`${styles.opacityControl} ${styles.wideFormField}`}>
+                  {overlayPreviewMode !== "animation" && <label className={`${styles.opacityControl} ${styles.wideFormField}`}>
                     오픈 주문 없음 배경 투명도
-                    <span><input type="range" min="0" max="100" value={shortsSettings.openingEmptyTransparency} onChange={(event) => setShortsSettings((current) => ({ ...current, openingEmptyTransparency: Number(event.target.value) }))} /><output>{shortsSettings.openingEmptyTransparency}%</output></span>
+                    <span><input type="range" min="0" max="100" value={overlayPreviewMode === "new" ? newOverlaySettings.openingEmptyTransparency ?? 40 : shortsSettings.openingEmptyTransparency} onChange={(event) => overlayPreviewMode === "new" ? setNewOverlaySettings((current) => ({ ...current, openingEmptyTransparency: Number(event.target.value) })) : setShortsSettings((current) => ({ ...current, openingEmptyTransparency: Number(event.target.value) }))} /><output>{overlayPreviewMode === "new" ? newOverlaySettings.openingEmptyTransparency ?? 40 : shortsSettings.openingEmptyTransparency}%</output></span>
                   </label>}
                   {overlayPreviewMode === "animation" && (
                     <div className={styles.newOrderCopySection}>
@@ -1213,36 +1254,55 @@ export default function AdminPage() {
                     </div>
                   )}
                   <div className={styles.zoneFormGrid}>
-                    {overlayPreviewMode === "basic" && <label>제목<input value={selectedShortsZoneSettings.title} onChange={(event) => updateShortsZone(selectedShortsZoneId, "title", event.target.value)} /></label>}
-                    {selectedShortsZoneId === "current" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>제목 색상은 진행현황·오픈·대기·건수에 함께 적용됩니다. 닉네임과 상품명은 각각 공통 색상으로 설정합니다.</p>}
-                    {selectedShortsZoneId === "ranking" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>순위, 유튜브 닉네임, 총 주문 건수가 자동으로 표시됩니다.</p>}
+                    {overlayPreviewMode !== "animation" && !(overlayPreviewMode === "new" && selectedShortsZoneId === "current") && <label>제목<input value={selectedShortsZoneSettings.title} onChange={(event) => updateShortsZone(selectedShortsZoneId, "title", event.target.value)} /></label>}
+                    {selectedShortsZoneId === "current" && overlayPreviewMode !== "new" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>제목 색상은 진행현황·오픈·대기·건수에 함께 적용됩니다. 닉네임과 상품명은 각각 공통 색상으로 설정합니다.</p>}
+                    {selectedShortsZoneId === "ranking" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>순위와 유튜브 닉네임이 자동으로 표시됩니다.</p>}
                     {selectedShortsZoneId === "announcement" && <p className={`${styles.zoneAutoCopy} ${styles.wideFormField}`}>첫주문, 신규 주문, VIP 주문의 노출 시간·위치·크기·색상·모션을 각각 설정할 수 있습니다.</p>}
-                    {(selectedShortsZoneId === "ranking" || selectedShortsZoneId === "hit" || selectedShortsZoneId === "current") && <label className={styles.wideFormField}>{selectedShortsZoneId === "hit" ? "HIT 흐름 속도(초)" : selectedShortsZoneId === "current" ? "대기 목록 흐름 속도(초)" : "VIP 흐름 속도(초)"}<input type="number" min="5" max="60" value={selectedShortsZoneSettings.tickerDurationSeconds} onChange={(event) => updateShortsZone(selectedShortsZoneId, "tickerDurationSeconds", Number(event.target.value))} /><small>{selectedShortsZoneId === "current" ? "대기 주문 3건부터 적용합니다. 작을수록 빠르게 흐릅니다." : "작을수록 빠르게 흐릅니다."}</small></label>}
+                    {(selectedShortsZoneId === "ranking" || selectedShortsZoneId === "hit" || selectedShortsZoneId === "current") && <label className={styles.wideFormField}>{selectedShortsZoneId === "hit" ? "HIT 흐름 속도(초)" : selectedShortsZoneId === "current" ? overlayPreviewMode === "new" ? "덱 텍스트 순환 속도(초)" : "대기 목록 흐름 속도(초)" : overlayPreviewMode === "new" ? "명예의 전당 순환 속도(초)" : "VIP 흐름 속도(초)"}<input type="number" min={overlayPreviewMode === "new" && selectedShortsZoneId === "ranking" ? "1" : "5"} max="60" step={overlayPreviewMode === "new" && selectedShortsZoneId === "ranking" ? "0.1" : "1"} value={selectedShortsZoneSettings.tickerDurationSeconds} onChange={(event) => updateShortsZone(selectedShortsZoneId, "tickerDurationSeconds", Math.max(overlayPreviewMode === "new" && selectedShortsZoneId === "ranking" ? 1 : 5, Number(event.target.value)))} /><small>{overlayPreviewMode === "new" && selectedShortsZoneId === "ranking" ? "1위는 고정되고 2~10위가 설정한 방향으로 순환합니다. 초가 짧을수록 빠릅니다." : selectedShortsZoneId === "current" && overlayPreviewMode === "new" ? "닉네임은 영역을 넘을 때 흐르고, 상품명은 한 바퀴 반복됩니다. 작을수록 빠릅니다." : selectedShortsZoneId === "current" ? "대기 주문 3건부터 적용합니다. 작을수록 빠르게 흐릅니다." : "작을수록 빠르게 흐릅니다."}</small></label>}
                     {selectedShortsZoneId === "current" && overlayPreviewMode === "basic" && <>
-                      <label>대기 항목 간격(px)<input type="number" min="0" max="32" value={shortsSettings.shorts.waitingItemGap} onChange={(event) => setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, waitingItemGap: Math.min(32, Math.max(0, Number(event.target.value) || 0)) } }))} /></label>
+                      <label>대기 항목 간격(px)<input type="number" min="0" max="32" value={activeShortsProfile.waitingItemGap} onChange={(event) => setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, waitingItemGap: Math.min(32, Math.max(0, Number(event.target.value) || 0)) } }))} /></label>
                       <label>오픈 대기 너비(%)<input type="number" min="8" max="100" value={selectedShortsZoneSettings.width} onChange={(event) => updateShortsZone(selectedShortsZoneId, "width", Math.min(100, Math.max(8, Number(event.target.value) || 8)))} /></label>
                       <label>오픈 대기 높이(%)<input type="number" min="3" max="70" value={selectedShortsZoneSettings.height} onChange={(event) => updateShortsZone(selectedShortsZoneId, "height", Math.min(70, Math.max(3, Number(event.target.value) || 3)))} /></label>
                     </>}
-                    {selectedShortsZoneId === "hit" && overlayPreviewMode === "basic" && <>
-                      <label>항목 간격(px)<input type="number" min="0" max="32" value={shortsSettings.shorts.hitItemGap} onChange={(event) => setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, hitItemGap: Math.min(32, Math.max(0, Number(event.target.value) || 0)) } }))} /></label>
-                      <label>항목 높이(px)<input type="number" min="0" max="80" value={shortsSettings.shorts.hitItemHeight} onChange={(event) => setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, hitItemHeight: Math.min(80, Math.max(0, Number(event.target.value) || 0)) } }))} /><small>0은 내용에 맞춤</small></label>
+                    {selectedShortsZoneId === "hit" && overlayPreviewMode !== "animation" && <>
+                      <label>항목 간격(px)<input type="number" min="0" max="32" value={activeShortsProfile.hitItemGap} onChange={(event) => overlayPreviewMode === "new" ? setNewOverlaySettings((current) => ({ ...current, hitItemGap: Math.min(32, Math.max(0, Number(event.target.value) || 0)) })) : setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, hitItemGap: Math.min(32, Math.max(0, Number(event.target.value) || 0)) } }))} /></label>
+                      <label>항목 높이(px)<input type="number" min="0" max="80" value={activeShortsProfile.hitItemHeight} onChange={(event) => overlayPreviewMode === "new" ? setNewOverlaySettings((current) => ({ ...current, hitItemHeight: Math.min(80, Math.max(0, Number(event.target.value) || 0)) })) : setShortsSettings((current) => ({ ...current, shorts: { ...current.shorts, hitItemHeight: Math.min(80, Math.max(0, Number(event.target.value) || 0)) } }))} /><small>0은 내용에 맞춤</small></label>
                     </>}
                     <label className={`${styles.opacityControl} ${styles.wideFormField}`}>{overlayPreviewMode === "animation" ? "토스트 배경 불투명도" : "카드 배경 불투명도"}
-                      <span><input type="range" min="0" max="100" value={selectedShortsZoneSettings.backgroundOpacity} onChange={(event) => updateShortsZone(selectedShortsZoneId, "backgroundOpacity", Number(event.target.value))} /><output>{selectedShortsZoneSettings.backgroundOpacity}%</output></span>
+                      <span><input type="range" min="0" max="100" value={overlayPreviewMode === "new" ? selectedDeckAppearance.backgroundOpacity : selectedShortsZoneSettings.backgroundOpacity} onChange={(event) => overlayPreviewMode === "new" ? updateDeckAppearance("backgroundOpacity", Number(event.target.value)) : updateShortsZone(selectedShortsZoneId, "backgroundOpacity", Number(event.target.value))} /><output>{overlayPreviewMode === "new" ? selectedDeckAppearance.backgroundOpacity : selectedShortsZoneSettings.backgroundOpacity}%</output></span>
                     </label>
-                    {overlayPreviewMode === "basic" && <label className={`${styles.opacityControl} ${styles.wideFormField}`}>제목 배경 불투명도
-                      <span><input type="range" min="0" max="100" value={selectedShortsZoneSettings.titleBackgroundOpacity} onChange={(event) => updateShortsZone(selectedShortsZoneId, "titleBackgroundOpacity", Number(event.target.value))} /><output>{selectedShortsZoneSettings.titleBackgroundOpacity}%</output></span>
+                    {overlayPreviewMode !== "animation" && <label className={`${styles.opacityControl} ${styles.wideFormField}`}>제목 배경 불투명도
+                      <span><input type="range" min="0" max="100" value={overlayPreviewMode === "new" ? selectedDeckAppearance.titleOpacity : selectedShortsZoneSettings.titleBackgroundOpacity} onChange={(event) => overlayPreviewMode === "new" ? updateDeckAppearance("titleOpacity", Number(event.target.value)) : updateShortsZone(selectedShortsZoneId, "titleBackgroundOpacity", Number(event.target.value))} /><output>{overlayPreviewMode === "new" ? selectedDeckAppearance.titleOpacity : selectedShortsZoneSettings.titleBackgroundOpacity}%</output></span>
                     </label>}
-                    <div className={`${styles.colorControlGrid} ${styles.wideFormField}`}>
-                      {overlayPreviewMode === "basic" && <label>카드 배경<input type="color" value={selectedShortsZoneSettings.backgroundColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "backgroundColor", event.target.value)} /></label>}
+                    {overlayPreviewMode === "new" && <>
+                      <label className={`${styles.opacityControl} ${styles.wideFormField}`}>이 카드 투명도<span><input type="range" min="0" max="100" value={100 - selectedDeckAppearance.opacity} onChange={(event) => updateDeckAppearance("opacity", 100 - Number(event.target.value))} /><output>{100 - selectedDeckAppearance.opacity}%</output></span></label>
+                      {selectedShortsZoneId !== "current" && <label>제목 아이콘<input maxLength={12} value={selectedDeckAppearance.titleIcon} onChange={(event) => updateDeckAppearance("titleIcon", event.target.value)} /></label>}
+                      {selectedShortsZoneId === "current" && <><label>오픈 제목<input maxLength={30} value={selectedDeckAppearance.openTitle} onChange={(event) => updateDeckAppearance("openTitle", event.target.value)} /></label><label>대기 제목<input maxLength={30} value={selectedDeckAppearance.waitingTitle} onChange={(event) => updateDeckAppearance("waitingTitle", event.target.value)} /></label></>}
+                      <label>제목 글자 크기(%)<input type="number" min="50" max="200" value={selectedDeckAppearance.titleScale} onChange={(event) => updateDeckAppearance("titleScale", Math.min(200, Math.max(50, Number(event.target.value) || 50)))} /></label>
+                      <label>본문 글자 크기(%)<input type="number" min="50" max="200" value={selectedDeckAppearance.textScale} onChange={(event) => updateDeckAppearance("textScale", Math.min(200, Math.max(50, Number(event.target.value) || 50)))} /></label>
+                      <label>목록 흐름 방향<select value={selectedDeckAppearance.flowDirection} onChange={(event) => updateDeckAppearance("flowDirection", event.target.value as "up" | "down")}><option value="up">아래에서 위로</option><option value="down">위에서 아래로</option></select></label>
+                      {selectedShortsZoneId === "current" && <label>대기 목록 순환 시간(초)<input type="number" min="1" max="120" value={selectedDeckAppearance.waitingSeconds} onChange={(event) => updateDeckAppearance("waitingSeconds", Math.min(120, Math.max(1, Number(event.target.value) || 1)))} /></label>}
+                      {selectedShortsZoneId !== "hit" && <><label>목록 항목 간격(px)<input type="number" min="0" max="32" value={selectedDeckAppearance.itemGap} onChange={(event) => updateDeckAppearance("itemGap", Math.min(32, Math.max(0, Number(event.target.value) || 0)))} /></label><label>목록 항목 높이(px)<input type="number" min="0" max="100" value={selectedDeckAppearance.itemHeight} onChange={(event) => updateDeckAppearance("itemHeight", Math.min(100, Math.max(0, Number(event.target.value) || 0)))} /><small>0은 내용에 맞춤</small></label></>}
+                      <label>효과 반복 시간(초)<input type="number" min="1" max="10" step="0.1" value={selectedDeckAppearance.effectSeconds} onChange={(event) => updateDeckAppearance("effectSeconds", Math.min(10, Math.max(1, Number(event.target.value) || 1)))} /></label>
+                      {([ ["glow", "테두리 발광"], ["shine", "빛 스윕"], ["textBurst", "글씨 돌출·빛 확산"] ] as const).filter(([key]) => selectedShortsZoneId !== "current" || key !== "textBurst").map(([key, label]) => <label key={key} className={styles.zoneEnabledToggle}><span>{label}</span><input type="checkbox" checked={selectedDeckAppearance[key]} onChange={(event) => updateDeckAppearance(key, event.target.checked)} /><span className={styles.toggleTrack} aria-hidden="true"><i /></span><output>{selectedDeckAppearance[key] ? "On" : "Off"}</output></label>)}
+                      {selectedShortsZoneId === "current" && <label>오픈 카드 등장 시간(초)<input type="number" min="0.2" max="3" step="0.1" value={selectedShortsZoneSettings.motionDurationSeconds} onChange={(event) => updateShortsZone(selectedShortsZoneId, "motionDurationSeconds", Math.min(3, Math.max(.2, Number(event.target.value) || .2)))} /></label>}
+                      {selectedShortsZoneId === "current" && <label className={styles.zoneEnabledToggle}><span>오픈 카드 회전</span><input type="checkbox" checked={selectedDeckAppearance.cardFlip} onChange={(event) => updateDeckAppearance("cardFlip", event.target.checked)} /><span className={styles.toggleTrack} aria-hidden="true"><i /></span><output>{selectedDeckAppearance.cardFlip ? "On" : "Off"}</output></label>}
+                      {(["x", "y", "width", "height", "zIndex"] as const).map((key) => <label key={key}>{{ x: "좌측 위치(%)", y: "상단 위치(%)", width: "카드 너비(%)", height: "카드 높이(%)", zIndex: "겹침 순서" }[key]}<input type="number" min={key === "width" ? 8 : key === "height" ? 3 : key === "zIndex" ? 1 : 0} max={key === "height" ? 70 : key === "y" ? 94 : key === "zIndex" ? 20 : 100} value={selectedShortsZoneSettings[key]} onChange={(event) => updateShortsZone(selectedShortsZoneId, key, Math.min(key === "height" ? 70 : key === "y" ? 94 : key === "zIndex" ? 20 : 100, Math.max(key === "width" ? 8 : key === "height" ? 3 : key === "zIndex" ? 1 : 0, Number(event.target.value) || 0)))} /></label>)}
+                      <div className={`${styles.colorControlGrid} ${styles.wideFormField}`}>
+                        {([ ["backgroundStart", "그라데이션 시작"], ["backgroundMiddle", "그라데이션 중간"], ["backgroundEnd", "그라데이션 끝"], ["titleStart", "제목 배경 시작"], ["titleEnd", "제목 배경 끝"], ["itemBackground", "항목 배경"], ["borderColor", "테두리·발광 색상"], ["titleColor", "제목 글자"], ["textColor", "본문·상품 글자"], ["nicknameColor", "닉네임 글자"], ["iconColor", "아이콘 색상"] ] as const).map(([key, label]) => <label key={key}>{label}<input type="color" value={selectedDeckAppearance[key]} onInput={(event) => updateDeckAppearance(key, event.currentTarget.value)} onChange={(event) => updateDeckAppearance(key, event.target.value)} /></label>)}
+                        {selectedShortsZoneId === "current" && ([ ["badgeFirstColor", "첫주문 배지"], ["badgeRepeatColor", "신규 배지"], ["badgeVipColor", "VIP 배지"] ] as const).map(([key, label]) => <label key={key}>{label}<input type="color" value={selectedDeckAppearance[key]} onInput={(event) => updateDeckAppearance(key, event.currentTarget.value)} onChange={(event) => updateDeckAppearance(key, event.target.value)} /></label>)}
+                      </div>
+                    </>}
+                    {overlayPreviewMode !== "new" && <div className={`${styles.colorControlGrid} ${styles.wideFormField}`}>
+                      {overlayPreviewMode !== "animation" && <label>카드 배경<input type="color" value={selectedShortsZoneSettings.backgroundColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "backgroundColor", event.target.value)} /></label>}
                       <label>{overlayPreviewMode === "animation" ? "배지 글자" : "제목 색상"}<input type="color" value={selectedShortsZoneSettings.titleColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "titleColor", event.target.value)} /></label>
-                      {overlayPreviewMode === "basic" && <label>테두리 색상<input type="color" value={selectedShortsZoneSettings.borderColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "borderColor", event.target.value)} /></label>}
+                      {overlayPreviewMode !== "animation" && <label>테두리 색상<input type="color" value={selectedShortsZoneSettings.borderColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "borderColor", event.target.value)} /></label>}
                       {overlayPreviewMode === "animation" && <label>닉네임 글자<input type="color" value={selectedShortsZoneSettings.nicknameColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "nicknameColor", event.target.value)} /></label>}
-                      {overlayPreviewMode === "basic" && selectedShortsZoneId === "current" && <label>닉네임 색상<input type="color" value={selectedShortsZoneSettings.nicknameColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "nicknameColor", event.target.value)} /></label>}
+                      {overlayPreviewMode !== "animation" && selectedShortsZoneId === "current" && <label>닉네임 색상<input type="color" value={selectedShortsZoneSettings.nicknameColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "nicknameColor", event.target.value)} /></label>}
                       <label>{overlayPreviewMode === "animation" ? "배지 배경" : "제목 배경"}<input type="color" value={selectedShortsZoneSettings.titleBackgroundColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "titleBackgroundColor", event.target.value)} /></label>
                       <label>{overlayPreviewMode === "animation" ? "상품 글자" : selectedShortsZoneId === "current" ? "상품명 색상" : "본문 색상"}<input type="color" value={selectedShortsZoneSettings.textColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "textColor", event.target.value)} /></label>
                       {overlayPreviewMode === "animation" && <label>토스트 배경<input type="color" value={selectedShortsZoneSettings.textBackgroundColor} onChange={(event) => updateShortsZone(selectedShortsZoneId, "textBackgroundColor", event.target.value)} /></label>}
-                    </div>
+                    </div>}
                     {selectedShortsZoneId === "announcement" && <label className={styles.wideFormField}>모션<select value={selectedShortsZoneSettings.motion} onChange={(event) => updateShortsZone(selectedShortsZoneId, "motion", event.target.value as typeof selectedShortsZoneSettings.motion)}><option value="none">없음</option><option value="fade">페이드</option><option value="slide-up">아래에서 등장</option><option value="left-to-right">좌에서 우로 등장</option><option value="card-turn">카드 회전</option></select></label>}
                   </div>
                 </fieldset>
@@ -1251,13 +1311,18 @@ export default function AdminPage() {
             )}
             <div className={styles.overlayPreviewCanvas}>
               <ShortsOverlayFrame
-                settingsOverride={shortsSettings}
+                settingsOverride={overlayPreviewMode === "new" ? { ...shortsSettings, openingEmptyTransparency: newOverlaySettings.openingEmptyTransparency ?? 40, shorts: newOverlaySettings } : shortsSettings}
+                variant={overlayPreviewMode === "new" ? "deck" : "basic"}
                 editing={editingOverlay}
                 preview
-                zoneIds={overlayPreviewMode === "basic" ? BASIC_SHORTS_ZONE_IDS : ORDER_ANIMATION_ZONE_IDS}
+                previewOpeningOrder={overlayPreviewMode === "new" ? opening : undefined}
+                previewWaitingOrders={overlayPreviewMode === "new" ? waiting : undefined}
+                zoneIds={overlayPreviewMode === "animation" ? ORDER_ANIMATION_ZONE_IDS : BASIC_SHORTS_ZONE_IDS}
                 showAnimationPreview={overlayPreviewMode === "animation"}
                 previewOrderKind={selectedNewOrderCopy}
-                onZoneChange={(id, patch) => setShortsSettings((current) => overlayPreviewMode === "animation" && id === "announcement"
+                onZoneChange={(id, patch) => overlayPreviewMode === "new"
+                  ? setNewOverlaySettings((current) => ({ ...current, zones: { ...current.zones, [id]: { ...current.zones[id], ...patch } } }))
+                  : setShortsSettings((current) => overlayPreviewMode === "animation" && id === "announcement"
                   ? {
                     ...current,
                     shorts: {

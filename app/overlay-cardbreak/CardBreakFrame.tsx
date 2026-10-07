@@ -188,6 +188,7 @@ function readInitialOrderVisibility() {
 
 type CardBreakFrameProps = {
   showScaleControls?: boolean;
+  previewMode?: boolean;
   onSaved?: () => void;
   onEditorStateChange?: (state: {
     orderVisible: boolean;
@@ -207,7 +208,7 @@ export type CardBreakFrameHandle = {
 };
 
 const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(function CardBreakFrame(
-  { showScaleControls = false, onSaved, onEditorStateChange },
+  { showScaleControls = false, previewMode = false, onSaved, onEditorStateChange },
   ref
 ) {
   const { opening, waiting, hitCards, overlaySettings, loading } = useLiveCardBreak();
@@ -514,8 +515,12 @@ const CardBreakFrame = forwardRef<CardBreakFrameHandle, CardBreakFrameProps>(fun
     "--timer-text": colors.timerText,
   } as CSSProperties;
 
+  const frameStyle: CSSProperties = previewMode
+    ? { ...stageStyle, width: "200%", height: "200%", right: "auto", bottom: "auto", transform: "scale(0.5)", transformOrigin: "top left" }
+    : stageStyle;
+
   return (
-    <div className={styles.stage} style={stageStyle}>
+    <div className={styles.stage} style={frameStyle}>
       {loading && <GlobalLoadingOverlay />}
       {showScaleControls && (
         <div className={styles.scaleControls} aria-label="카드덱 크기 조절">

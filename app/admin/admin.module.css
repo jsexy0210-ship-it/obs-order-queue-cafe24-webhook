@@ -1848,6 +1848,7 @@
 
 }
 
+
 /* Settings, forms and modal content are defined later in this stylesheet.
  * Keep their light palette at the end so it cannot be replaced by a dark
  * component default further up the file. */
@@ -3777,4 +3778,15 @@
   border-color: #d6dee9;
   background: #ffffff;
   color: #162033;
+}
+
+/* 운영 화면처럼 첫 줄은 3개, 다음 줄은 취소·환불과 HIT&RGB를 가로로 나란히 둡니다. */
+@media (min-width: 901px) {
+  .operationsGrid {
+    grid-template-areas: "opening waiting pending" "tools tools tools";
+  }
+
+  .operationsSecondaryRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

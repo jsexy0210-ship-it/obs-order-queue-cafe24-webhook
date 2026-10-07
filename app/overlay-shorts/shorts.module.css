@@ -32,22 +32,6 @@
   background-image: none;
 }
 
-.youtubeTop {
-  height: calc(var(--phone-width) * .243);
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 14px;
-  box-sizing: border-box;
-  background: #020304;
-  font-size: clamp(10px, 2.6vw, 13px);
-}
-
-.youtubeTop > span:first-child { font-size: 22px; }
-.youtubeTop b { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.subscribe { padding: 7px 10px; border-radius: 999px; background: #fff; color: #111; font-weight: 900; }
-
 .videoStage {
   position: relative;
   aspect-ratio: 9 / 16;
@@ -107,7 +91,7 @@
 @keyframes currentOrderProductLoop { to { transform: translate3d(-50%, 0, 0); } }
 @keyframes waitingOrderLoop { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
 .emptyState { display: block !important; padding: clamp(6px, 1.5cqw, 12px); color: var(--zone-text-color, rgba(255,255,255,.92)) !important; font-size: clamp(13px, 3.6cqw, 26px) !important; font-weight: 900; line-height: 1.3; text-align: center; }
-.emptyOrderState { min-height: 32px; display: grid !important; place-items: center; border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 72%, transparent); background: rgba(12,16,24,.82); text-align: center; }
+.emptyOrderState { min-height: 32px; display: grid !important; place-items: center; border: 1px solid color-mix(in srgb, var(--zone-border-color, #28b7ff) 72%, transparent); background: rgba(12,16,24,var(--opening-empty-opacity,.6)); text-align: center; }
 .zoneToast { display: block; align-content: unset; text-align: left; border: 0; border-radius: 999px; background: transparent; box-shadow: none; }
 .zoneToast .zoneBody { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; margin: 0; padding: clamp(6px, 1.4cqw, 12px); box-sizing: border-box; border-radius: 999px; background: color-mix(in srgb, var(--zone-text-background-color, #04080e) calc(var(--zone-background-opacity, .9) * 100%), transparent); }
 .orderEffectBody { display: grid; grid-template-columns: auto minmax(0, .72fr) minmax(0, 1.8fr); align-items: center; justify-content: start; justify-items: start; gap: clamp(6px, 1.4cqw, 12px); width: 100%; height: 100%; min-width: 0; text-align: left; }
@@ -118,6 +102,33 @@
 .rankOneEffect { animation: rankOneBurst calc(var(--motion-duration, .7s) * 1.17) cubic-bezier(.2,.9,.2,1) both; }
 @keyframes rankOneBurst { 0% { opacity: 0; transform: scale(.68) rotate(-8deg); } 65% { opacity: 1; transform: scale(1.06) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
 .zoneRanking { display: grid; grid-template-columns: max-content minmax(0, 1fr); grid-template-rows: 1fr; align-items: center; align-content: center; gap: clamp(8px, 1.6cqw, 14px); padding: 0 clamp(8px, 1.8cqw, 16px); border-radius: 0; }
+.zoneDeck.zoneRanking { display: grid; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); gap: 0; padding: 0; border: 1px solid rgba(66,255,176,.9); border-radius: clamp(7px, 1.5cqw, 14px); background: linear-gradient(145deg, rgba(2,44,31,.96), rgba(3,20,19,.96)); box-shadow: 0 0 9px rgba(25,255,164,.6), inset 0 0 12px rgba(47,255,170,.12); }
+.hallOfFameTitleIcon { display: inline-block; flex: 0 0 auto; font-size: 1.15em; line-height: 1; filter: drop-shadow(0 0 5px rgba(255,215,80,.9)); }
+.hallOfFameBoard { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: clamp(4px, .8cqw, 8px); width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; padding-bottom: clamp(4px, 1cqw, 9px); }
+.hallOfFameHeader { display: flex; align-items: center; justify-content: center; gap: clamp(5px, 1cqw, 9px); min-width: 0; padding: clamp(5px, 1.5cqw, 12px); border: 0; border-bottom: clamp(2px, .3cqw, 4px) solid rgba(255,143,241,.9); border-radius: 0; background: linear-gradient(100deg, #d91cd0, #781eff 62%, #ec278d); color: #fff2fd; font-size: clamp(14px, 4cqw, 30px); font-weight: 950; letter-spacing: -.02em; line-height: 1.15; text-align: center; text-shadow: 0 1px 3px #350748, 0 0 7px rgba(255,134,238,.8); }
+.hallOfFameHeader strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hallOfFameFirst, .hallOfFameRotation { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(8px, 1.2cqw, 14px); min-width: 0; min-height: clamp(30px, 5.8cqw, 52px); overflow: hidden; padding: 0 clamp(7px, 1.2cqw, 12px); border: 1px solid rgba(255,209,99,.72); border-radius: clamp(4px, .8cqw, 8px); background: linear-gradient(90deg, rgba(117,77,12,.78), rgba(27,26,13,.86)); color: #fff4cf; font-size: clamp(16px, 3.5cqw, 28px); }
+.hallOfFameFirst { display: flex; justify-content: flex-start; margin-inline: clamp(4px, 1cqw, 9px); gap: clamp(6px, 1cqw, 10px); border-color: #ffb6f3; background: linear-gradient(105deg, #bf159d, #731cd2 58%, #db287b); color: #fff2fd; text-align: left; box-shadow: inset 0 0 12px rgba(255,159,237,.32), 0 0 8px rgba(255,68,218,.5); }
+.hallOfFameViewport { min-width: 0; min-height: 0; overflow: hidden; margin-inline: clamp(4px, 1cqw, 9px); }
+.hallOfFameTrack { display: flex; flex-direction: column; width: 100%; animation: hallOfFameDown var(--ranking-ticker-duration, 20s) linear infinite reverse; }
+.hallOfFameRows { display: grid; flex: 0 0 auto; gap: clamp(4px, .7cqw, 7px); width: 100%; padding-bottom: clamp(4px, .7cqw, 7px); }
+.hallOfFameRotation { min-height: clamp(20px, 3.6cqw, 32px); gap: clamp(5px, .8cqw, 9px); padding-inline: clamp(4px, .8cqw, 8px); border-color: rgba(255,143,241,.7); background: linear-gradient(100deg, rgba(135,24,173,.94), rgba(47,12,110,.96)); font-size: clamp(10px, 2cqw, 16px); }
+.hallOfFameFirst > b, .hallOfFameRotation > b { position: relative; display: grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; background: linear-gradient(145deg, #ffe780, #c88421); color: #ffd45a; font-size: 1.1em; filter: drop-shadow(0 1px 3px #000); }
+.hallOfFameFirst > b { flex: 0 0 auto; width: 1.15em; height: 1.15em; border-radius: 0; background: transparent; color: #ffd2f8; font-size: 1em; line-height: 1; filter: drop-shadow(0 0 3px #f86bdf) drop-shadow(0 0 7px #ac63ff); animation: rankOneTextPop 3s cubic-bezier(.18,.75,.25,1) infinite; }
+.hallOfFameRotation > b { background: linear-gradient(145deg, #ff9bea, #be24d8); color: #fff0fc; }
+.hallOfFameRotation > b[data-rank="2"] { background: linear-gradient(145deg, #e8f4f3, #748b8b); color: #fff; }
+.hallOfFameRotation > b[data-rank="3"] { background: linear-gradient(145deg, #efbc80, #935728); color: #fff0dd; }
+.hallOfFameFirst > b i, .hallOfFameRotation > b i { position: absolute; top: 51%; left: 50%; transform: translate(-50%,-50%); color: #17120a; font-size: .6em; font-style: normal; font-weight: 1000; text-shadow: 0 0 1px #fff; }
+.hallOfFameFirst > em, .hallOfFameRotation > em { min-width: 0; overflow: hidden; color: #fff; font-style: normal; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.hallOfFameFirst > b svg { display: block; width: 100%; height: 100%; }
+.hallOfFameFirst > b i { top: 65%; color: #65137b; font-size: .45em; text-shadow: none; }
+.hallOfFameFirst > em { position: relative; flex: 0 1 auto; overflow: visible; transform-origin: center; animation: rankOneTextPop 3s cubic-bezier(.18,.75,.25,1) infinite; }
+.hallOfFameFirst > em > span { display: block; overflow: hidden; text-overflow: ellipsis; }
+.hallOfFameFirst > em::after { position: absolute; inset: 0; pointer-events: none; content: attr(data-text); color: transparent; opacity: 0; -webkit-text-stroke: .7px #ffbaf5; text-shadow: 0 0 8px #ff57db, 0 0 18px #c786ff; transform-origin: center; animation: rankOneLightBurst 3s ease-out infinite; }
+@keyframes rankOneTextPop { 0%, 28%, 100% { transform: scale(1); text-shadow: 0 1px 3px #3b0855; } 5% { transform: scale(1.1); text-shadow: 0 0 3px #fff, 0 0 10px #ff80e9, 0 0 18px #ca8dff; } 11% { transform: scale(.99); text-shadow: -5px -2px 10px rgba(255,96,223,.8), 5px 2px 10px rgba(190,132,255,.8); } 17% { transform: scale(1.04); text-shadow: 0 0 4px #fff, 0 0 12px #ff80e9; } }
+@keyframes rankOneLightBurst { 0%, 3%, 28%, 100% { opacity: 0; transform: scale(1); filter: blur(0); } 5% { opacity: .95; transform: scale(1.02); filter: blur(0); } 23% { opacity: 0; transform: scale(1.3, 1.6); filter: blur(4px); } }
+.hallOfFameEmpty { align-self: center; margin: 0; color: rgba(235,255,246,.72); font-size: clamp(14px, 3cqw, 22px); text-align: center; }
+@keyframes hallOfFameDown { from { transform: translateY(-50%); } to { transform: translateY(0); } }
 .zoneRanking > strong { position: static; z-index: auto; justify-self: start; align-self: center; padding: 0; border-bottom: 0; transform: none; color: var(--zone-title-color, var(--zone-accent)); background: transparent; white-space: nowrap; }
 .rankingTicker { min-width: 0; width: 100%; height: 100%; overflow: hidden; }
 .rankingTickerTrack { width: max-content; min-width: max-content; height: 100%; display: flex; align-items: center; padding-left: 0; animation: rankingTicker var(--ranking-ticker-duration, 20s) linear infinite; }
@@ -145,6 +156,129 @@
 @keyframes slideUp { from { opacity: .1; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes leftToRight { from { opacity: .1; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes cardTurn { from { opacity: .1; transform: perspective(400px) rotateY(72deg) translateY(18px); } to { opacity: 1; transform: perspective(400px) rotateY(0) translateY(0); } }
+
+/* 신규 오버레이 영상의 레드·골드 덱 프레임과 카드 교체 효과 */
+.zoneDeck { isolation: isolate; border-width: clamp(2px, .7cqw, 6px); border-radius: clamp(8px, 2cqw, 20px); background: linear-gradient(145deg, color-mix(in srgb, var(--zone-background-color) calc(var(--zone-background-opacity) * 100%), transparent), rgba(21,5,7,.9)); box-shadow: 0 0 7px rgba(255,57,41,.9), 0 0 17px rgba(246,178,51,.82), 0 0 28px rgba(237,44,34,.55), inset 0 0 16px rgba(255,191,75,.3); animation: deckOuterPulse 2.7s ease-in-out infinite alternate; }
+.zoneDeckHit, .zoneDeck.zoneRanking { isolation: isolate; border: 1px solid rgba(var(--deck-theme-rgb),.95); border-radius: clamp(7px, 1.5cqw, 14px); background: var(--deck-theme-background); box-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.82), 0 0 17px rgba(var(--deck-theme-rgb),.55), inset 0 0 16px rgba(var(--deck-theme-rgb),.2); animation: hitDeckGlow 2.8s ease-in-out infinite alternate; }
+.zoneDeckHit { --deck-theme-rgb: 0, 213, 255; --deck-theme-background: linear-gradient(135deg, rgba(0,164,209,.98), rgba(11,65,201,.98) 52%, rgba(98,24,202,.98)); }
+.zoneDeck.zoneRanking { --deck-theme-rgb: 255, 68, 218; --deck-theme-background: linear-gradient(135deg, rgba(187,20,171,.98), rgba(87,17,184,.98) 52%, rgba(240,28,119,.98)); }
+.zoneDeckHit::after, .zoneDeck.zoneRanking::after { position: absolute; z-index: 0; inset: 0; pointer-events: none; content: ""; background: linear-gradient(118deg, transparent 15%, rgba(var(--deck-theme-rgb),.05) 36%, rgba(255,255,255,.26) 50%, rgba(var(--deck-theme-rgb),.05) 64%, transparent 85%); transform: translateX(-130%); animation: deckFrameShine 4.2s ease-in-out infinite; }
+.zoneDeckHit > strong, .zoneDeckHit > .zoneBody, .zoneDeck.zoneRanking > strong, .zoneDeck.zoneRanking > .hallOfFameBoard { position: relative; z-index: 1; }
+.zoneDeckHit > strong, .zoneDeck.zoneRanking > strong { color: #f0fcff; text-shadow: 0 1px 3px #082966, 0 0 6px rgba(155,244,255,.9); }
+.zoneDeckHit > strong { background: linear-gradient(100deg, #00bddd, #215bed 68%, #7626db); border-bottom-color: #88e9ff; text-align: center; }
+.zoneDeckHit .hitRows p:nth-child(4n + 2) { --hit-burst-delay: .45s; }
+.zoneDeckHit .hitRows p:nth-child(4n + 3) { --hit-burst-delay: .9s; }
+.zoneDeckHit .hitRows p:nth-child(4n + 4) { --hit-burst-delay: 1.35s; }
+.zoneDeckHit .hitRows span { position: relative; transform-origin: left center; animation: hitTextBurst 3s cubic-bezier(.18,.75,.25,1) var(--hit-burst-delay, 0s) infinite; }
+.zoneDeckHit .hitRows span::after { position: absolute; inset: 0; pointer-events: none; content: attr(data-text); color: transparent; opacity: 0; -webkit-text-stroke: .7px #c3fbff; text-shadow: 0 0 8px #00e5ff, 0 0 16px #ed6fff; transform-origin: left center; animation: hitTextBlast 3s ease-out var(--hit-burst-delay, 0s) infinite; }
+@keyframes hitTextBurst { 0%, 28%, 100% { transform: scale(1); text-shadow: 0 1px 3px #051235; } 5% { transform: scale(1.08); text-shadow: 0 0 3px #fff, 0 0 10px #00f0ff, 0 0 18px #ff79ed; } 11% { transform: scale(.99); text-shadow: -5px -3px 9px rgba(0,240,255,.7), 5px 3px 9px rgba(255,121,237,.7); } 17% { transform: scale(1.04); text-shadow: 0 0 4px #fff, 0 0 12px #00f0ff; } }
+@keyframes hitTextBlast { 0%, 3%, 28%, 100% { opacity: 0; transform: scale(1); } 5% { opacity: .95; transform: scale(1.02); } 20% { opacity: 0; transform: scale(1.25, 1.5); } }
+@media (prefers-reduced-motion: reduce) { .zoneDeckHit .hitRows span, .zoneDeckHit .hitRows span::after, .hallOfFameFirst > b, .hallOfFameFirst > em, .hallOfFameFirst > em::after { animation: none; } .zoneDeckHit .hitRows span::after, .hallOfFameFirst > em::after { display: none; } }
+@keyframes hitDeckGlow { from { box-shadow: 0 0 5px rgba(var(--deck-theme-rgb),.65), 0 0 12px rgba(var(--deck-theme-rgb),.38), inset 0 0 12px rgba(var(--deck-theme-rgb),.12); } to { box-shadow: 0 0 9px rgba(var(--deck-theme-rgb),.95), 0 0 22px rgba(var(--deck-theme-rgb),.7), inset 0 0 18px rgba(var(--deck-theme-rgb),.26); } }
+.zoneDeck::after { position: absolute; z-index: 0; inset: 0; pointer-events: none; content: ""; background: linear-gradient(112deg, transparent 20%, rgba(255,226,165,.05) 37%, rgba(255,232,180,.38) 50%, rgba(255,226,165,.05) 63%, transparent 80%); transform: translateX(-130%); animation: deckFrameShine 3.4s ease-in-out infinite; }
+.zoneDeck > strong, .zoneDeck > .zoneBody { position: relative; z-index: 1; }
+.zoneDeck > strong { display: none; }
+.zoneDeck .zoneBody { display: block; height: 100%; margin: clamp(4px, 1cqw, 8px); padding: 0; }
+.deckCardLayout { display: grid; grid-template-rows: minmax(0, 1.15fr) minmax(0, .88fr); gap: clamp(5px, 1.35cqw, 11px); width: 100%; height: 100%; min-height: 0; }
+.deckOpenCard { position: relative; display: grid; grid-template-rows: auto minmax(0, .85fr) minmax(0, 1fr); gap: clamp(4px, 1.1cqw, 9px); min-width: 0; min-height: 0; overflow: hidden; padding: clamp(5px, 1.35cqw, 11px); border: clamp(2px, .55cqw, 4px) solid #ffe18a; border-radius: clamp(7px, 1.8cqw, 17px); background: linear-gradient(145deg, rgba(120,18,18,.97), rgba(46,7,12,.97) 60%, rgba(91,30,13,.97)); box-shadow: 0 0 6px #ffdc77, 0 0 15px rgba(255,63,38,.82), inset 0 0 13px rgba(255,219,114,.35); }
+.deckOpenCardActive { transform-origin: center; animation: deckCardFlip .75s cubic-bezier(.18,.8,.2,1) both, deckCardPulse 2.1s ease-in-out .75s infinite alternate; }
+.deckOpenCard::after { position: absolute; inset: -20%; pointer-events: none; content: ""; background: linear-gradient(110deg, transparent 40%, rgba(255,245,199,.32) 50%, transparent 60%); transform: translateX(-120%); animation: deckFrameShine 3.6s ease-in-out infinite; }
+.deckCardHeader, .deckWaitingHeader { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 5px; min-width: 0; padding: clamp(3px, .9cqw, 7px) clamp(5px, 1.2cqw, 9px); border: 1px solid rgba(255,238,174,.82); border-radius: 999px; background: linear-gradient(90deg, #ffd765, #f9a632 58%, #ffcf58); color: #57100d; font-size: clamp(9px, 2.65cqw, 21px); font-weight: 1000; line-height: 1.15; text-shadow: 0 1px rgba(255,255,255,.55); box-shadow: 0 0 7px rgba(255,223,123,.8); }
+.deckCardHeader > b, .deckWaitingHeader > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deckCardHeader > span:not(.currentOrderBadge) { color: #743719; font-size: .76em; }
+.deckCardHeader .currentOrderBadge { min-width: 0; height: auto; padding: 3px 7px; border: 1px solid rgba(255,255,255,.72); background: linear-gradient(135deg,#fff4c4,#f5bd40); color: #6b1512; font-size: clamp(8px, 2cqw, 15px); box-shadow: 0 0 6px rgba(255,246,198,.9); }
+.deckOpeningIdentity { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: clamp(12px, 3cqw, 24px); min-width: 0; overflow: hidden; color: #fff5d0; font-size: clamp(22px, 7.5cqw, 48px); font-weight: 1000; line-height: 1.1; text-align: center; text-shadow: 0 0 7px #ffb841, 0 2px 2px #230307; white-space: nowrap; }
+.deckOpeningIdentity > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.deckOpeningNickname { display: block; min-width: 0; overflow: hidden; text-overflow: clip; }
+.deckOpeningNicknameTrack { display: flex; width: max-content; }
+.deckOpeningNicknameItem { display: block; flex: 0 0 auto; }
+.deckOpeningNicknameItem > span { display: block; white-space: nowrap; }
+.deckOpeningNicknameScrolling .deckOpeningNicknameTrack { animation: currentOrderProductLoop var(--nickname-ticker-duration, 20s) linear infinite; will-change: transform; }
+.deckOpeningNicknameScrolling .deckOpeningNicknameItem { padding-right: 24px; }
+.deckOpeningIdentity .currentOrderBadge { flex: 0 0 auto; min-width: 0; height: auto; padding: clamp(4px, 1cqw, 8px) clamp(7px, 1.6cqw, 13px); border: 1px solid currentColor; font-size: clamp(12px, 3cqw, 22px); }
+.deckProductCard { position: relative; z-index: 1; display: grid; grid-template-rows: minmax(0, 1fr); align-content: center; gap: 0; min-width: 0; min-height: 0; overflow: hidden; padding: clamp(4px, 1cqw, 8px); border: 1px solid #ffe28e; border-radius: clamp(5px, 1.4cqw, 13px); background: linear-gradient(130deg, rgba(25,3,8,.85), rgba(88,13,14,.78)); box-shadow: inset 0 0 9px rgba(255,186,69,.23); }
+.deckProductCard .currentOrderProduct { display: block; align-self: center; width: 100%; min-width: 0; color: #fff5d9; font-size: clamp(16px, 6.8cqw, 40px); font-style: normal; font-weight: 1000; text-align: center; text-shadow: 0 0 7px rgba(255,188,74,.9); }
+.deckProductCard .currentOrderProductTrack { display: flex; align-items: center; }
+.deckProductCard .currentOrderProductText { min-width: 100cqw; box-sizing: border-box; overflow: visible; text-align: center; text-overflow: clip; }
+.deckOpenCardEmpty { display: grid; grid-template-rows: auto 1fr; }
+.deckLiveBadge { color: #743719; font-size: .76em; }
+.deckVariant .currentOrderBadgeFirst { border-color: #ff8798; background: linear-gradient(135deg, #ff5368, #b51f43) !important; color: #fff5f6 !important; box-shadow: 0 0 7px rgba(255,75,103,.82); }
+.deckVariant .currentOrderBadgeRepeat { border-color: #72ffe0; background: linear-gradient(135deg, #27d7ae, #087a78) !important; color: #fff5f6 !important; box-shadow: 0 0 7px rgba(46,255,202,.78); }
+.deckVariant .currentOrderBadgeVip { border-color: #fff0a3; background: linear-gradient(135deg, #ffe786, #cb841d) !important; color: #fff5f6 !important; box-shadow: 0 0 7px rgba(255,218,96,.9); }
+.deckEmptyMessage { position: relative; z-index: 1; display: grid !important; place-items: center; min-height: 0; margin: 0; padding: 7px; color: #ffe4a0 !important; font-size: clamp(8px, 2.1cqw, 16px) !important; line-height: 1.35 !important; text-align: center; text-shadow: 0 1px 4px #000; }
+.deckWaitingCard { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(4px, 1cqw, 8px); min-width: 0; min-height: 0; overflow: hidden; padding: clamp(5px, 1.35cqw, 11px); border: 1px solid #d89a35; border-radius: clamp(7px, 1.8cqw, 17px); background: linear-gradient(145deg, rgba(71,37,12,.97), rgba(29,18,11,.97)); box-shadow: 0 0 9px rgba(235,158,42,.42), inset 0 0 10px rgba(255,192,76,.16); }
+.deckWaitingHeader { justify-content: space-between; width: 100%; padding-inline: 9px; background: linear-gradient(90deg,#ffe390,#efa83a); font-size: clamp(8px, 2.15cqw, 16px); }
+.deckWaitingHeader em { margin-left: 0; font-size: .85em; font-style: normal; }
+.deckWaitingCard > .deckEmptyMessage { color: #f7dfb0 !important; font-size: clamp(7px, 1.8cqw, 14px) !important; }
+.deckWaitingViewport { min-width: 0; min-height: 0; overflow: hidden; }
+.deckWaitingRows { width: 100%; }
+.deckWaitingRowsScrolling { animation: waitingOrderLoop var(--waiting-ticker-duration, 20s) linear infinite reverse; }
+.deckWaitingGroup { display: grid; gap: 4px; padding-bottom: 4px; }
+.deckWaitingGroup > p { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 3px; min-width: 0; padding: 5px 7px; border: 1px solid rgba(255,200,92,.56); border-radius: 6px; background: rgba(12,6,5,.4); text-align: left; }
+.deckWaitingIdentity { display: flex; align-items: center; justify-content: flex-start; gap: clamp(10px, 2cqw, 18px); min-width: 0; overflow: hidden; color: #fff4d2; font-size: clamp(8px, 2cqw, 14.4px); font-weight: 900; white-space: nowrap; }
+.deckWaitingIdentity > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.deckWaitingIdentity .currentOrderBadge { flex: 0 0 auto; font-size: clamp(8px, 2.08cqw, 14.4px); }
+.deckWaitingProduct { display: block; min-width: 0; overflow: hidden; color: #fff9e9; font-size: clamp(12px, 4.96cqw, 28.8px); font-style: normal; font-weight: 950; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes deckOuterPulse { from { box-shadow: 0 0 5px rgba(255,57,41,.72), 0 0 12px rgba(246,178,51,.62), inset 0 0 12px rgba(255,191,75,.2); } to { box-shadow: 0 0 10px rgba(255,86,48,1), 0 0 24px rgba(255,197,69,.95), inset 0 0 17px rgba(255,218,117,.34); } }
+@keyframes deckCardPulse { from { box-shadow: 0 0 4px #ffdc77, 0 0 10px rgba(255,63,38,.62), inset 0 0 10px rgba(255,219,114,.22); } to { box-shadow: 0 0 9px #fff0a8, 0 0 19px rgba(255,63,38,.95), inset 0 0 17px rgba(255,219,114,.4); } }
+@keyframes deckFrameShine { 0%, 60%, 100% { transform: translateX(-130%); } 82% { transform: translateX(130%); } }
+@keyframes deckCardFlip { 0% { opacity: .25; transform: perspective(650px) rotateY(-86deg) scale(.94); } 66% { opacity: 1; transform: perspective(650px) rotateY(9deg) scale(1.015); } 100% { opacity: 1; transform: perspective(650px) rotateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .zoneDeck, .zoneDeck::after, .deckOpenCardActive, .deckOpenCard::after { animation: none; } }
+
+/* 신규 카드덱은 모서리를 직각으로 통일하고 테두리마다 빛 번짐을 줍니다. */
+.deckVariant { --deck-edge-glow: rgba(255, 202, 102, .82); }
+.deckVariant :is(.zoneDeck, .zoneDeckHit) { border-radius: 0 !important; }
+.deckVariant :is(.deckOpenCard, .deckWaitingCard, .deckCardHeader, .deckWaitingHeader, .deckProductCard, .deckWaitingGroup > p, .hallOfFameFirst, .hallOfFameRotation, .hitRows p, .currentOrderHeading, .completedOrderRow, .waitingOrderRows p) { border-radius: clamp(6px, 1cqw, 12px) !important; }
+.deckVariant .currentOrderBadge { border-radius: 999px !important; text-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.8), 0 2px 2px rgba(0,0,0,.6); }
+.deckVariant :is(.deckOpenCard, .deckWaitingCard, .deckCardHeader, .deckWaitingHeader, .deckProductCard, .deckWaitingGroup > p, .hallOfFameFirst, .hallOfFameRotation, .hitRows p, .completedOrderRow, .waitingOrderRows p, .currentOrderBadge) { filter: drop-shadow(0 0 4px var(--deck-edge-glow)); }
+.deckVariant :is(.zoneDeckHit, .zoneDeck.zoneRanking) { --deck-edge-glow: rgba(var(--deck-theme-rgb), .88); }
+
+/* 신규 카드덱의 관리자 표시 설정입니다. */
+.deckVariant :is(.zoneDeck, .zoneDeckHit) { --deck-edge-glow: rgba(var(--deck-theme-rgb), .88); border-color: var(--deck-border-color); background: linear-gradient(135deg, color-mix(in srgb, var(--deck-background-start) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-middle) var(--deck-background-alpha), transparent) 52%, color-mix(in srgb, var(--deck-background-end) var(--deck-background-alpha), transparent)); animation-name: hitDeckGlow; animation-duration: var(--deck-effect-duration); }
+.deckVariant .zoneDeckHit > strong { display: flex; align-items: center; justify-content: center; gap: .4em; }
+.deckTitleIcon svg { display: block; width: 1em; height: 1em; filter: drop-shadow(0 0 4px currentColor); } .deckTitleIcon { flex: 0 0 auto; font-size: 1.15em; line-height: 1; color: var(--deck-icon-color); }
+.deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader, .deckCardHeader, .deckWaitingHeader) { background: linear-gradient(100deg, color-mix(in srgb, var(--deck-title-start) var(--deck-title-alpha), transparent), color-mix(in srgb, var(--deck-title-end) var(--deck-title-alpha), transparent)); color: var(--deck-title-color); border-color: var(--deck-border-color); text-shadow: 0 1px 3px rgba(0,0,0,.5), 0 0 6px rgba(var(--deck-theme-rgb),.6); }
+.deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader) { font-size: calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale)); }
+.deckVariant .deckCardHeader { font-size: calc(clamp(9px, 2.65cqw, 21px) * var(--deck-title-scale)); }
+.deckVariant .deckWaitingHeader { font-size: calc(clamp(8px, 2.15cqw, 16px) * var(--deck-title-scale)); }
+.deckVariant :is(.deckCardHeader > span, .deckLiveBadge, .deckWaitingHeader em) { color: var(--deck-title-color); }
+.deckVariant :is(.hallOfFameTitleIcon, .hallOfFameFirst > b) { color: var(--deck-icon-color); filter: drop-shadow(0 0 5px rgba(var(--deck-theme-rgb),.9)); }
+.deckVariant .hallOfFameFirst { background: linear-gradient(105deg, color-mix(in srgb, var(--deck-background-start) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-end) var(--deck-background-alpha), transparent)); border-color: var(--deck-border-color); font-size: calc(clamp(16px, 3.5cqw, 28px) * var(--deck-text-scale)); }
+.deckVariant :is(.hallOfFameFirst > em, .hallOfFameRotation > em) { color: var(--deck-nickname-color); }
+.deckVariant :is(.hallOfFameRotation, .zoneDeckHit .hitRows p, .deckProductCard, .deckWaitingGroup > p) { border-color: var(--deck-border-color); background: color-mix(in srgb, var(--deck-item-background) var(--deck-background-alpha), transparent); }
+.deckVariant .hallOfFameRotation { min-height: max(clamp(20px, 3.6cqw, 32px), var(--deck-item-height)); font-size: calc(clamp(10px, 2cqw, 16px) * var(--deck-text-scale)); }
+.deckVariant .hallOfFameRotation > b { width: 1.15em; height: 1.15em; background: linear-gradient(145deg, color-mix(in srgb, var(--deck-icon-color) var(--rank-icon-strength, 100%), transparent), color-mix(in srgb, var(--deck-border-color) var(--rank-icon-strength, 100%), transparent)); font-size: 1em; }
+.deckVariant .hallOfFameRotation > b i { color: var(--deck-text-color); font-size: .7em; text-shadow: 0 1px 2px #25052e; }
+.deckVariant .hallOfFameRows { gap: var(--deck-item-gap); padding-bottom: var(--deck-item-gap); }
+.deckVariant .hallOfFameTrack { animation-direction: var(--deck-down-direction); }
+.deckVariant .zoneDeckHit .hitRowsScrolling { gap: 0; animation-direction: var(--deck-up-direction); }
+.deckVariant .zoneDeckHit .hitRows span { color: var(--deck-text-color); font-size: calc(clamp(11px, calc(3.8cqw * var(--text-fit, 1)), 28px) * var(--deck-text-scale)); animation-duration: var(--deck-effect-duration); }
+.deckVariant :is(.zoneDeckHit .hitRows span::after, .hallOfFameFirst > b, .hallOfFameFirst > em, .hallOfFameFirst > em::after) { animation-duration: var(--deck-effect-duration); }
+.deckVariant :is(.hallOfFameFirst > em::after, .zoneDeckHit .hitRows span::after) { -webkit-text-stroke-color: var(--deck-icon-color); text-shadow: 0 0 8px rgba(var(--deck-theme-rgb),.9), 0 0 18px var(--deck-icon-color); }
+.deckVariant :is(.deckOpenCard, .deckWaitingCard) { border-color: var(--deck-border-color); background: linear-gradient(135deg, color-mix(in srgb, var(--deck-background-start) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-middle) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-end) var(--deck-background-alpha), transparent)); box-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.82), inset 0 0 13px rgba(var(--deck-theme-rgb),.35); }
+.deckVariant .deckWaitingCard { background: linear-gradient(135deg, color-mix(in srgb, var(--deck-background-middle) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-end) var(--deck-background-alpha), transparent)); }
+.deckVariant .deckOpenCardActive { animation: deckCardFlip var(--deck-flip-duration) cubic-bezier(.18,.8,.2,1) both, hitDeckGlow var(--deck-effect-duration) ease-in-out var(--deck-flip-duration) infinite alternate; }
+.deckVariant .deckOpeningIdentity { color: var(--deck-nickname-color); font-size: calc(clamp(22px, 7.5cqw, 48px) * var(--deck-text-scale)); text-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.8), 0 2px 2px rgba(0,0,0,.6); }
+.deckVariant .deckProductCard .currentOrderProduct { color: var(--deck-text-color); font-size: calc(clamp(16px, 6.8cqw, 40px) * var(--deck-text-scale)); text-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.8); }
+.deckVariant .deckWaitingGroup { gap: var(--deck-item-gap); padding-bottom: var(--deck-item-gap); }
+.deckVariant .deckWaitingGroup > p { min-height: var(--deck-item-height); }
+.deckVariant .deckWaitingIdentity { color: var(--deck-nickname-color); font-size: calc(clamp(8px, 2cqw, 14.4px) * var(--deck-text-scale)); }
+.deckVariant .deckWaitingProduct { color: var(--deck-text-color); font-size: calc(clamp(12px, 4.96cqw, 28.8px) * var(--deck-text-scale)); }
+.deckVariant .deckWaitingRowsScrolling { animation-duration: var(--deck-waiting-duration); animation-direction: var(--deck-up-direction); }
+.deckVariant :is(.deckEmptyMessage, .deckWaitingCard > .deckEmptyMessage) { color: var(--deck-text-color) !important; }
+.deckVariant .currentOrderBadgeFirst { background: linear-gradient(135deg, var(--deck-badge-first-color), color-mix(in srgb, var(--deck-badge-first-color) 70%, black)) !important; border-color: var(--deck-badge-first-color); }
+.deckVariant .currentOrderBadgeRepeat { background: linear-gradient(135deg, var(--deck-badge-repeat-color), color-mix(in srgb, var(--deck-badge-repeat-color) 70%, black)) !important; border-color: var(--deck-badge-repeat-color); }
+.deckVariant .currentOrderBadgeVip { background: linear-gradient(135deg, var(--deck-badge-vip-color), color-mix(in srgb, var(--deck-badge-vip-color) 70%, black)) !important; border-color: var(--deck-badge-vip-color); }
+.deckVariant :is(.zoneDeck, .zoneDeckHit)::after, .deckVariant .deckOpenCard::after { animation-duration: var(--deck-effect-duration); }
+.deckVariant .deckShineOff::after, .deckVariant .deckShineOff .deckOpenCard::after { display: none; }
+.deckVariant .deckTextBurstOff :is(.hitRows span, .hallOfFameFirst > b, .hallOfFameFirst > em) { animation: none; }
+.deckVariant .deckTextBurstOff :is(.hitRows span::after, .hallOfFameFirst > em::after) { display: none; }
+.deckVariant .deckFlipOff .deckOpenCardActive { animation: hitDeckGlow var(--deck-effect-duration) ease-in-out infinite alternate; }
+.deckVariant .deckGlowOff { animation: none; box-shadow: none; }
+.deckVariant .deckGlowOff :is(.deckOpenCard, .deckWaitingCard, .hallOfFameFirst, .hallOfFameRotation, .hitRows p, .deckCardHeader, .deckWaitingHeader, .deckProductCard, .deckWaitingGroup > p, .currentOrderBadge) { box-shadow: none; filter: none; }
+.deckVariant .deckGlowOff .deckOpenCardActive { animation: deckCardFlip var(--deck-flip-duration) cubic-bezier(.18,.8,.2,1) both; }
+.deckVariant .deckGlowOff.deckFlipOff .deckOpenCardActive { animation: none; }
+@media (prefers-reduced-motion: reduce) { .deckVariant :is(.zoneDeck, .zoneDeckHit, .deckOpenCardActive, .hallOfFameFirst > b, .hallOfFameFirst > em, .hitRows span) { animation: none; } }
 
 .commentsZone { position: absolute; inset: 72% 0 auto; height: 22%; z-index: 30; display: grid; align-content: center; gap: 5px; padding: 10px; box-sizing: border-box; border-top: 1px dashed rgba(255,255,255,.4); border-bottom: 1px dashed rgba(255,255,255,.4); background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.58)); color: rgba(255,255,255,.92); font-size: clamp(8px, 2vw, 10px); }
 .commentsZone b { color: #cbd5e1; font-size: 9px; }
