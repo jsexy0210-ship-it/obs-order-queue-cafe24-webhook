@@ -177,7 +177,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
       fetch(`/api/overlay-ranking${variant === "deck" ? "?limit=10" : ""}`, { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("ranking failed")))
         .then((data: { ranking?: RankingRow[] }) => {
-          if (!cancelled) setRanking((data.ranking ?? []).slice(0, variant === "deck" ? 9 : 3));
+          if (!cancelled) setRanking((data.ranking ?? []).slice(0, variant === "deck" ? 10 : 3));
         })
         .catch(() => {
           if (!cancelled) setRanking([]);
