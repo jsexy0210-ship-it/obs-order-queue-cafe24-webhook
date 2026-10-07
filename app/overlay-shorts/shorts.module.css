@@ -187,7 +187,7 @@
 .deckCardHeader > b, .deckWaitingHeader > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deckCardHeader > span:not(.currentOrderBadge) { color: #743719; font-size: .76em; }
 .deckCardHeader .currentOrderBadge { min-width: 0; height: auto; padding: 3px 7px; border: 1px solid rgba(255,255,255,.72); background: linear-gradient(135deg,#fff4c4,#f5bd40); color: #6b1512; font-size: clamp(8px, 2cqw, 15px); box-shadow: 0 0 6px rgba(255,246,198,.9); }
-.deckOpeningIdentity { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: clamp(12px, 3cqw, 24px); min-width: 0; overflow: hidden; color: #fff5d0; font-size: clamp(22px, 7.5cqw, 48px); font-weight: 1000; line-height: 1.1; text-align: center; text-shadow: 0 0 7px #ffb841, 0 2px 2px #230307; white-space: nowrap; }
+.deckOpeningIdentity { position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-start; gap: clamp(12px, 3cqw, 24px); min-width: 0; overflow: hidden; color: #fff5d0; font-size: clamp(22px, 7.5cqw, 48px); font-weight: 1000; line-height: 1.1; text-align: left; text-shadow: 0 0 7px #ffb841, 0 2px 2px #230307; white-space: nowrap; }
 .deckOpeningIdentity > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .deckOpeningNickname { display: block; min-width: 0; overflow: hidden; text-overflow: clip; }
 .deckOpeningNicknameTrack { display: flex; width: max-content; }
@@ -239,8 +239,15 @@
 .deckTitleIcon svg { display: block; width: 1em; height: 1em; filter: drop-shadow(0 0 4px currentColor); } .deckTitleIcon { flex: 0 0 auto; font-size: 1.15em; line-height: 1; color: var(--deck-icon-color); }
 .deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader, .deckCardHeader, .deckWaitingHeader) { background: linear-gradient(100deg, color-mix(in srgb, var(--deck-title-start) var(--deck-title-alpha), transparent), color-mix(in srgb, var(--deck-title-end) var(--deck-title-alpha), transparent)); color: var(--deck-title-color); border-color: var(--deck-border-color); text-shadow: 0 1px 3px rgba(0,0,0,.5), 0 0 6px rgba(var(--deck-theme-rgb),.6); }
 .deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader) { font-size: calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale)); }
-.deckVariant .deckCardHeader { font-size: calc(clamp(9px, 2.65cqw, 21px) * var(--deck-title-scale)); }
-.deckVariant .deckWaitingHeader { font-size: calc(clamp(8px, 2.15cqw, 16px) * var(--deck-title-scale)); }
+.deckVariant .zoneDeck.zoneCurrent { grid-template-rows: minmax(0, 1fr); }
+.deckVariant .zoneDeck.zoneCurrent .zoneBody { height: auto; }
+.deckVariant .deckCardLayout:has(.deckOpenCardEmpty) { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.deckVariant :is(.deckOpenCard, .deckWaitingCard) { padding-block: clamp(4px, .7cqw, 7px); gap: 4px; }
+.deckVariant :is(.deckCardHeader, .deckWaitingHeader) { padding-block: 3px; }
+.deckVariant .deckCardTitle { display: flex; align-items: center; gap: .35em; }
+.deckVariant .deckCardTitle .deckTitleIcon { font-size: 1em; }
+.deckVariant .deckCardHeader { font-size: calc(clamp(18px, 5.3cqw, 42px) * var(--deck-title-scale)); }
+.deckVariant .deckWaitingHeader { font-size: calc(clamp(18px, 5.3cqw, 42px) * var(--deck-title-scale)); }
 .deckVariant :is(.deckCardHeader > span, .deckLiveBadge, .deckWaitingHeader em) { color: var(--deck-title-color); }
 .deckVariant :is(.hallOfFameTitleIcon, .hallOfFameFirst > b) { color: var(--deck-icon-color); filter: drop-shadow(0 0 5px rgba(var(--deck-theme-rgb),.9)); }
 .deckVariant .hallOfFameFirst { background: linear-gradient(105deg, color-mix(in srgb, var(--deck-background-start) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-end) var(--deck-background-alpha), transparent)); border-color: var(--deck-border-color); font-size: calc(clamp(16px, 3.5cqw, 28px) * var(--deck-text-scale)); }
@@ -263,6 +270,7 @@
 .deckVariant .deckWaitingGroup { gap: var(--deck-item-gap); padding-bottom: var(--deck-item-gap); }
 .deckVariant .deckWaitingGroup > p { min-height: var(--deck-item-height); }
 .deckVariant .deckWaitingIdentity { color: var(--deck-nickname-color); font-size: calc(clamp(8px, 2cqw, 14.4px) * var(--deck-text-scale)); }
+.deckVariant .deckWaitingIdentity > .deckOpeningNickname { flex: 1 1 auto; text-overflow: clip; }
 .deckVariant .deckWaitingProduct { color: var(--deck-text-color); font-size: calc(clamp(12px, 4.96cqw, 28.8px) * var(--deck-text-scale)); }
 .deckVariant .deckWaitingRowsScrolling { animation-duration: var(--deck-waiting-duration); animation-direction: var(--deck-up-direction); }
 .deckVariant :is(.deckEmptyMessage, .deckWaitingCard > .deckEmptyMessage) { color: var(--deck-text-color) !important; }
