@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { type LiveOrder, useLiveCardBreak } from "@/app/useLiveCardBreak";
 import styles from "./new-overlay.module.css";
 
 type Props = {
   /** 관리자 화면에서는 9:16 비율로만 새 템플릿을 확인합니다. */
   preview?: boolean;
+};
+
+type RankingRow = {
+  rank: number;
+  youtubeNickname: string | null;
+  orderCount: number;
 };
 
 function nickname(value: string | null | undefined) {
@@ -18,9 +25,27 @@ function orderLabel(order: Pick<LiveOrder, "youtube_nickname" | "user_id" | "pro
 
 export default function NewOverlayFrame({ preview = false }: Props) {
   const { opening, waiting, hitCards } = useLiveCardBreak();
+  const [ranking, setRanking] = useState<RankingRow[]>([]);
   const queue = [...(opening ? [opening] : []), ...waiting].slice(0, 4);
   const activeOrder = opening ?? waiting[0] ?? null;
   const flowOrders = queue.length > 0 ? queue : activeOrder ? [activeOrder] : [];
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadRanking = () => {
+      fetch("/api/overlay-ranking", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error("ranking failed")))
+        .then((data: { ranking?: RankingRow[] }) => {
+          if (!cancelled) setRanking((data.ranking ?? []).slice(0, 3));
+        })
+        .catch(() => {
+          if (!cancelled) setRanking([]);
+        });
+    };
+    loadRanking();
+    const timer = window.setInterval(loadRanking, 30_000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, []);
 
   return (
     <main className={`${styles.shell} ${preview ? styles.previewShell : styles.liveShell}`} aria-label="망고TCG 신규 라이브 오버레이">
@@ -31,18 +56,18 @@ export default function NewOverlayFrame({ preview = false }: Props) {
       <section className={`${styles.panel} ${styles.queuePanel}`}>
         <header className={styles.panelHeader}>
           <span className={styles.crown}>♛</span>
-          <div><small>LIVE QUEUE</small><strong>오늘의 오픈 순서</strong></div>
-          <b>{queue.length}건</b>
+          <div><small>HALL OF FAME</small><strong>명예의 전당</strong></div>
+          <b>TOP 3</b>
         </header>
         <ol className={styles.queueList}>
-          {queue.map((order, index) => (
-            <li key={order.id} className={index === 0 ? styles.queueLead : undefined}>
-              <em>{index + 1}</em>
-              <span>{nickname(order.youtube_nickname) === "-" ? order.user_id : nickname(order.youtube_nickname)}</span>
-              <b>{order.product}</b>
+          {ranking.map((row) => (
+            <li key={row.rank} className={row.rank === 1 ? styles.queueLead : undefined}>
+              <em>{row.rank}</em>
+              <span>{nickname(row.youtubeNickname)}</span>
+              <b>{row.orderCount}건</b>
             </li>
           ))}
-          {queue.length === 0 && <li className={styles.emptyRow}>오픈 대기 주문 없음</li>}
+          {ranking.length === 0 && <li className={styles.emptyRow}>명예의 전당 집계 중</li>}
         </ol>
       </section>
 
