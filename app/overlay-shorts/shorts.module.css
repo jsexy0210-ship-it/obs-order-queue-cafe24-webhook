@@ -272,7 +272,7 @@
 .deckVariant .zoneCurrent .zoneBody { margin: min(4px, 1.5cqh); padding-top: min(3px, 1cqh); }
 .deckVariant .zoneCurrent .deckCardLayout { gap: min(clamp(5px, 1.35cqw, 11px), 2cqh); }
 .deckVariant .zoneCurrent :is(.deckOpenCard, .deckWaitingCard) { padding: min(clamp(5px, 1.35cqw, 11px), 1.8cqh); gap: min(4px, 1.2cqh); }
-.deckVariant .zoneCurrent :is(.deckCardHeader, .deckWaitingHeader) { font-size: calc(min(clamp(14px, 4cqw, 30px), 6cqh) * var(--deck-title-scale)); padding-block: min(3px, 1cqh); }
+.deckVariant .zoneCurrent :is(.deckCardHeader, .deckWaitingHeader) { font-size: calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale)); padding-block: min(3px, 1cqh); }
 .deckVariant .zoneCurrent .deckProductCard { padding: min(clamp(4px, 1cqw, 8px), 1.3cqh); }
 .deckVariant .zoneCurrent :is(.deckOpeningIdentity, .deckWaitingIdentity, .deckProductCard, .deckWaitingGroup > p) { column-gap: min(12px, 3cqh); }
 .deckVariant .zoneCurrent .deckWaitingGroup { gap: min(var(--deck-item-gap), 1.5cqh); padding-bottom: min(var(--deck-item-gap), 1.5cqh); }
