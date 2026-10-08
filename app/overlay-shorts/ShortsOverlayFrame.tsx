@@ -503,7 +503,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                       </div>
                     </div>
                   ) : id === "current" && variant === "deck" ? (
-                    <div className={styles.deckCardLayout}>
+                    <div className={styles.deckCardLayout} style={{ gridTemplateRows: `minmax(min(50%, calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale) * 1.5 + 28cqh)), ${deckAppearance.openRowHeight || 25}fr) minmax(min(50%, calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale) * 1.5 + 28cqh)), ${deckAppearance.waitingRowHeight || 25}fr)` }}>
                       <section key={openingOrder?.id ?? "empty-opening"} className={`${styles.deckOpenCard} ${openingOrder ? styles.deckOpenCardActive : styles.deckOpenCardEmpty}`}>
                         <header className={styles.deckCardHeader}>
                           <b className={styles.deckCardTitle}><span className={styles.deckTitleIcon} aria-hidden="true"><Image src={pikachuCard} alt="" width={28} height={40} sizes="40px" className={styles.deckCardIcon} /></span>{deckAppearance.openTitle}</b>
