@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type LiveOrder } from "@/app/useLiveCardBreak";
 import { useAdminLiveCardBreak } from "./useAdminLiveCardBreak";
+import { DEVELOPMENT_HOME_SAMPLES_ENABLED, getDevelopmentLiveOverlayReference } from "./developmentHomeSamples";
 import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import ShortsOverlayFrame from "@/app/overlay-shorts/ShortsOverlayFrame";
@@ -199,7 +200,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!editingOverlay) {
-      const saved = overlaySettings.newOverlay ?? DEFAULT_NEW_OVERLAY_SETTINGS;
+      const saved = getDevelopmentLiveOverlayReference(overlaySettings.newOverlay ?? DEFAULT_NEW_OVERLAY_SETTINGS);
       const legacyRanking = saved.zones.ranking.title === "VIP";
       setNewOverlaySettings(legacyRanking ? {
         ...saved,
@@ -1316,8 +1317,8 @@ export default function AdminPage() {
                 variant={overlayPreviewMode === "new" ? "deck" : "basic"}
                 editing={editingOverlay}
                 preview
-                previewOpeningOrder={overlayPreviewMode === "new" ? opening : undefined}
-                previewWaitingOrders={overlayPreviewMode === "new" ? waiting : undefined}
+                previewOpeningOrder={overlayPreviewMode === "new" ? DEVELOPMENT_HOME_SAMPLES_ENABLED ? null : opening : undefined}
+                previewWaitingOrders={overlayPreviewMode === "new" ? DEVELOPMENT_HOME_SAMPLES_ENABLED ? [] : waiting : undefined}
                 zoneIds={overlayPreviewMode === "animation" ? ORDER_ANIMATION_ZONE_IDS : BASIC_SHORTS_ZONE_IDS}
                 showAnimationPreview={overlayPreviewMode === "animation"}
                 previewOrderKind={selectedNewOrderCopy}
