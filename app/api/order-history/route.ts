@@ -44,8 +44,8 @@ export async function GET(request: Request) {
     const legacyRewardBalanceByGrade = await getDashboardLegacyRewardBalanceByGrade();
     return NextResponse.json({
       orders: current.filter((order) => order.created_at >= dashboardStartUtc)
-        .map(({ created_at, payment_method, paid_at, status, actual_amount }) => ({
-          created_at, payment_method, paid_at, status, actual_amount,
+        .map(({ created_at, payment_method, paid_at, status, actual_amount, points_spent_amount }) => ({
+          created_at, payment_method, paid_at, status, actual_amount, points_spent_amount,
         })),
       rewardEntries: getDashboardRewardEntries()
         .filter((entry) => !hiddenOrderIds.has(entry.external_order_id))
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     : getOrderHistory(hasMonthFilter ? { year, month } : undefined);
 
   let orders = localOrders.map((order) => ({
-    ...order, actual_amount: order.status === "cancelled" ? 0 : (order.actual_amount ?? order.unit_price * order.quantity),
+    ...order, points_spent_amount: order.source === "cafe24" ? null as number | null : 0, actual_amount: order.status === "cancelled" ? 0 : (order.actual_amount ?? order.unit_price * order.quantity),
   }));
   let syncError = false;
   if (hasMonthFilter) {

@@ -2,7 +2,7 @@ import { getCafe24OrderForReward, listCafe24Orders, type Cafe24RewardOrder } fro
 import { extractCafe24YoutubeNickname } from "./cafe24";
 import type { OrderRow } from "./store";
 
-export type CurrentOrder = OrderRow & { actual_amount: number; remote_only?: true };
+export type CurrentOrder = OrderRow & { actual_amount: number; points_spent_amount: number | null; remote_only?: true };
 
 const CACHE_MS = 60_000;
 const quarters = new Map<string, { expiresAt: number; orders: Cafe24RewardOrder[] }>();
@@ -64,6 +64,13 @@ function actualAmount(order: Cafe24RewardOrder, localAmount: number) {
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : localAmount;
 }
 
+function pointsSpentAmount(order: Cafe24RewardOrder): number | null {
+  const raw = order.actual_order_amount?.points_spent_amount;
+  if (raw == null || String(raw).trim() === "") return null;
+  const amount = Number(raw);
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : null;
+}
+
 function localActualAmount(order: OrderRow) {
   return order.actual_amount ?? order.unit_price * order.quantity;
 }
@@ -106,7 +113,7 @@ export async function currentOrderView(
   const current = visibleLocalOrders.map((order): CurrentOrder => {
     const remote = order.external_order_id ? remoteById.get(order.external_order_id) : undefined;
     if (!remote || order.source !== "cafe24") {
-      return { ...order, actual_amount: order.status === "cancelled" ? 0 : localActualAmount(order) };
+      return { ...order, actual_amount: order.status === "cancelled" ? 0 : localActualAmount(order), points_spent_amount: order.source === "cafe24" ? null : 0 };
     }
     const remoteDetail = details.get(remote.order_id!) ?? remote;
     const items = remoteDetail.items;
@@ -125,6 +132,7 @@ export async function currentOrderView(
       cancel_reason: remote.canceled === "T" ? order.cancel_reason ?? "cancelled" : null,
       cancelled_at: remote.canceled === "T" ? sqliteUtc(remote.cancel_date, order.cancelled_at) : null,
       actual_amount: actualAmount(remote, localActualAmount(order)),
+      points_spent_amount: pointsSpentAmount(remote),
     };
   });
 
@@ -157,6 +165,7 @@ export async function currentOrderView(
       timer_seconds: null,
       created_at: sqliteUtc(remote.order_date, new Date().toISOString().slice(0, 19).replace("T", " "))!,
       actual_amount: actualAmount(remote, 0),
+      points_spent_amount: pointsSpentAmount(remote),
       remote_only: true,
     });
   }

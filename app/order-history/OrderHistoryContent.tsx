@@ -14,6 +14,7 @@ type OrderRow = {
   quantity: number;
   unit_price: number;
   actual_amount: number;
+  points_spent_amount?: number | null;
   remote_only?: boolean;
   tier: string;
   status: "waiting" | "opening" | "done" | "cancelled";
@@ -329,6 +330,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   <th>주문번호</th>
                   <th>상품명</th>
                   <th>실결제액</th>
+                  <th>적립금 사용액</th>
                   <th>수량</th>
                   <th>유튜브 닉네임</th>
                   <th>구매자</th>
@@ -350,6 +352,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                       <td data-label="주문번호" className={styles.orderNumber}>{order.external_order_id ?? "-"}</td>
                       <td data-label="상품명" className={styles.product}>{order.product}</td>
                       <td data-label="실결제액">{formatPrice(order.actual_amount)}</td>
+                      <td data-label="적립금 사용액">{order.points_spent_amount == null ? "조회 불가" : formatPrice(order.points_spent_amount)}</td>
                       <td data-label="수량">{order.quantity}</td>
                       <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
                       <td data-label="구매자">{order.user_id}</td>
