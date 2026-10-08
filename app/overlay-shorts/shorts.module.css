@@ -179,7 +179,7 @@
 .zoneDeck > strong, .zoneDeck > .zoneBody { position: relative; z-index: 1; }
 .zoneDeck > strong { display: none; }
 .zoneDeck .zoneBody { display: block; height: 100%; margin: clamp(4px, 1cqw, 8px); padding: 0; }
-.deckCardLayout { display: grid; grid-template-rows: minmax(0, 1.15fr) minmax(0, .88fr); gap: clamp(5px, 1.35cqw, 11px); width: 100%; height: 100%; min-height: 0; }
+.deckCardLayout { display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: clamp(5px, 1.35cqw, 11px); width: 100%; height: 100%; min-height: 0; }
 .deckOpenCard { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(4px, 1.1cqw, 9px); min-width: 0; min-height: 0; overflow: hidden; padding: clamp(5px, 1.35cqw, 11px); border: clamp(2px, .55cqw, 4px) solid #ffe18a; border-radius: clamp(7px, 1.8cqw, 17px); background: linear-gradient(145deg, rgba(120,18,18,.97), rgba(46,7,12,.97) 60%, rgba(91,30,13,.97)); box-shadow: 0 0 6px #ffdc77, 0 0 15px rgba(255,63,38,.82), inset 0 0 13px rgba(255,219,114,.35); }
 .deckOpenCardActive { transform-origin: center; animation: deckCardFlip .75s cubic-bezier(.18,.8,.2,1) both, deckCardPulse 2.1s ease-in-out .75s infinite alternate; }
 .deckOpenCard::after { position: absolute; inset: -20%; pointer-events: none; content: ""; background: linear-gradient(110deg, transparent 40%, rgba(255,245,199,.32) 50%, transparent 60%); transform: translateX(-120%); animation: deckFrameShine 3.6s ease-in-out infinite; }
@@ -278,7 +278,7 @@
 .deckVariant .zoneCurrent .deckWaitingGroup { gap: min(var(--deck-item-gap), 1.5cqh); padding-bottom: min(var(--deck-item-gap), 1.5cqh); }
 .deckVariant .zoneCurrent .deckWaitingGroup > p { min-height: min(var(--deck-item-height), 10cqh); padding-block: min(5px, 1.5cqh); }
 .deckVariant .zoneCurrent :is(.deckOpeningIdentity, .deckWaitingIdentity) .currentOrderBadge { height: auto; padding: min(4px, 1cqh) min(7px, 2cqh); }
-.deckVariant .zoneCurrent :is(.deckProductCard, .deckWaitingGroup > p) { align-self: center; width: 100%; box-sizing: border-box; padding: min(clamp(4px, 1.1cqw, 9px), 2cqh); font-size: calc(min(clamp(11px, 3.8cqw, 28px), 5cqh) * var(--deck-text-scale)); line-height: 1.25; }
+.deckVariant .zoneCurrent :is(.deckProductCard, .deckWaitingGroup > p) { align-self: center; width: 100%; box-sizing: border-box; padding: min(clamp(4px, 1.1cqw, 9px), 2cqh); font-size: calc(min(clamp(22px, 7.6cqw, 56px), 10cqh) * var(--deck-text-scale)); line-height: 1.25; }
 .deckVariant .zoneCurrent :is(.deckProductCard, .deckWaitingGroup > p) .currentOrderProduct { font-size: inherit; font-weight: 900; line-height: inherit; }
 .deckVariant .zoneCurrent :is(.deckProductCard, .deckWaitingGroup > p) > .currentOrderBadge { min-width: 0; height: auto; padding: min(1px, .4cqh) min(4px, 1cqh); font-size: .8em; }
 .deckVariant .deckWaitingRowsScrolling { animation-duration: var(--deck-waiting-duration); animation-direction: var(--deck-up-direction); }
