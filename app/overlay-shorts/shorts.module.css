@@ -278,6 +278,9 @@
 .deckVariant .zoneCurrent .deckWaitingGroup { gap: min(var(--deck-item-gap), 1.5cqh); padding-bottom: min(var(--deck-item-gap), 1.5cqh); }
 .deckVariant .zoneCurrent .deckWaitingGroup > p { min-height: min(var(--deck-item-height), 10cqh); padding-block: min(5px, 1.5cqh); }
 .deckVariant .zoneCurrent :is(.deckOpeningIdentity, .deckWaitingIdentity) .currentOrderBadge { height: auto; padding: min(4px, 1cqh) min(7px, 2cqh); }
+.deckVariant .zoneCurrent :is(.deckProductCard, .deckWaitingGroup > p) { align-self: center; width: 100%; box-sizing: border-box; padding: min(clamp(4px, 1.1cqw, 9px), 2cqh); font-size: calc(min(clamp(11px, 3.8cqw, 28px), 5cqh) * var(--deck-text-scale)); line-height: 1.25; }
+.deckVariant .zoneCurrent :is(.deckProductCard, .deckWaitingGroup > p) .currentOrderProduct { font-size: inherit; font-weight: 900; line-height: inherit; }
+.deckVariant .zoneCurrent :is(.deckProductCard, .deckWaitingGroup > p) > .currentOrderBadge { min-width: 0; height: auto; padding: min(1px, .4cqh) min(4px, 1cqh); font-size: .8em; }
 .deckVariant .deckWaitingRowsScrolling { animation-duration: var(--deck-waiting-duration); animation-direction: var(--deck-up-direction); }
 .deckVariant :is(.deckEmptyMessage, .deckWaitingCard > .deckEmptyMessage) { color: var(--deck-text-color) !important; }
 .deckVariant .currentOrderBadgeFirst { background: linear-gradient(135deg, var(--deck-badge-first-color), #831843) !important; border-color: var(--deck-badge-first-color); }

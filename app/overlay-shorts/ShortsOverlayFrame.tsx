@@ -76,8 +76,8 @@ function rankingIcon(rank: number) {
   return rank === 1 ? "1" : rank === 2 ? "2" : "3";
 }
 
-function CurrentOrderProduct({ product, quantity, forceScroll = false, durationSeconds, quantitySeparator = " · ×", className = "" }: Pick<LiveOrder, "product" | "quantity"> & { forceScroll?: boolean; durationSeconds?: number; quantitySeparator?: string; className?: string }) {
-  const label = `${product}${quantitySeparator}${quantity}`;
+function CurrentOrderProduct({ product, quantity, forceScroll = false, durationSeconds, quantitySeparator = " · ×", prefix = "", className = "" }: Pick<LiveOrder, "product" | "quantity"> & { forceScroll?: boolean; durationSeconds?: number; quantitySeparator?: string; prefix?: string; className?: string }) {
+  const label = `${prefix}${product}${quantitySeparator}${quantity}`;
   const viewportRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [overflowing, setOverflowing] = useState(false);
@@ -509,11 +509,8 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                         </header>
                         {openingOrder ? <>
                           <div className={styles.deckProductCard}>
-                            <div className={styles.deckOpeningIdentity}>
-                              {nickname(openingOrder.youtube_nickname) !== "-" && currentOrderBadge(openingOrder)}
-                              <span className={styles.deckOpeningNickname}>{nickname(openingOrder.youtube_nickname)}</span>
-                            </div>
-                            <CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} quantitySeparator=" x " durationSeconds={zone.tickerDurationSeconds} />
+                            {nickname(openingOrder.youtube_nickname) !== "-" && currentOrderBadge(openingOrder)}
+                            <CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} prefix={nickname(openingOrder.youtube_nickname) === "-" ? "" : `${nickname(openingOrder.youtube_nickname)} `} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} />
                           </div>
                         </> : <p className={styles.deckEmptyMessage}>현재 오픈 중인 주문이 없습니다.</p>}
                       </section>
@@ -524,7 +521,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                             <div className={`${styles.deckWaitingRows} ${waitingOrders.length >= 3 ? styles.deckWaitingRowsScrolling : ""}`}>
                               {(waitingOrders.length >= 3 ? [false, true] : [false]).map((copy) => (
                                 <div className={styles.deckWaitingGroup} key={copy ? "deck-next-cycle" : "deck-current-cycle"} aria-hidden={copy || undefined}>
-                                  {waitingOrders.map((order) => <p key={`${order.id}-${copy ? "next" : "current"}`}><span className={styles.deckWaitingIdentity}>{nickname(order.youtube_nickname) !== "-" && currentOrderBadge(order)}<span className={styles.deckOpeningNickname}>{nickname(order.youtube_nickname)}</span></span><CurrentOrderProduct product={order.product} quantity={order.quantity} quantitySeparator=" x " durationSeconds={zone.tickerDurationSeconds} className={styles.deckWaitingProduct} /></p>)}
+                                  {waitingOrders.map((order) => <p key={`${order.id}-${copy ? "next" : "current"}`}>{nickname(order.youtube_nickname) !== "-" && currentOrderBadge(order)}<CurrentOrderProduct product={order.product} quantity={order.quantity} prefix={nickname(order.youtube_nickname) === "-" ? "" : `${nickname(order.youtube_nickname)} `} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} className={styles.deckWaitingProduct} /></p>)}
                                 </div>
                               ))}
                             </div>
