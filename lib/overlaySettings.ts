@@ -34,6 +34,8 @@ export type DeckAppearanceSettings = {
   waitingSeconds: number;
   itemGap: number;
   itemHeight: number;
+  openRowHeight: number;
+  waitingRowHeight: number;
 };
 
 export type ShortsZoneSettings = {
@@ -333,7 +335,7 @@ const DEFAULT_DECK_APPEARANCE: DeckAppearanceSettings = {
   badgeFirstColor: "#ff5368", badgeRepeatColor: "#27d7ae", badgeVipColor: "#ffe786",
   opacity: 100, backgroundOpacity: 98, titleOpacity: 100, titleScale: 100, textScale: 100,
   glow: true, shine: true, textBurst: true, cardFlip: true, effectSeconds: 3,
-  flowDirection: "up", waitingSeconds: 40, itemGap: 4, itemHeight: 0,
+  flowDirection: "up", waitingSeconds: 40, itemGap: 4, itemHeight: 0, openRowHeight: 0, waitingRowHeight: 0,
 };
 
 export function getDeckAppearance(id: ShortsZoneId, zone: ShortsZoneSettings): DeckAppearanceSettings {
@@ -355,6 +357,7 @@ export function getDeckAppearance(id: ShortsZoneId, zone: ShortsZoneSettings): D
   // 저장된 이전 기본색도 신규 주문 카드의 대비 높은 배색에 맞춥니다.
   return id === "current" ? {
     ...appearance,
+    waitingRowHeight: zone.deckAppearance?.waitingRowHeight ?? appearance.itemHeight,
     badgeFirstColor: appearance.badgeFirstColor.toLowerCase() === "#ff5368" ? defaults.badgeFirstColor : appearance.badgeFirstColor,
     badgeRepeatColor: appearance.badgeRepeatColor.toLowerCase() === "#27d7ae" ? defaults.badgeRepeatColor : appearance.badgeRepeatColor,
     badgeVipColor: appearance.badgeVipColor.toLowerCase() === "#ffe786" ? defaults.badgeVipColor : appearance.badgeVipColor,

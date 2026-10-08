@@ -58,6 +58,8 @@ export async function PUT(req: NextRequest) {
       waitingSeconds: clamp(input?.waitingSeconds ?? defaults.waitingSeconds, 1, 120),
       itemGap: clamp(input?.itemGap ?? defaults.itemGap, 0, 32),
       itemHeight: clamp(input?.itemHeight ?? defaults.itemHeight, 0, 100),
+      openRowHeight: clamp(input?.openRowHeight ?? defaults.openRowHeight, 0, 200),
+      waitingRowHeight: clamp(input?.waitingRowHeight ?? input?.itemHeight ?? defaults.waitingRowHeight, 0, 200),
     };
   };
 

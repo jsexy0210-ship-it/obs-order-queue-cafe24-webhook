@@ -404,6 +404,8 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
               "--deck-waiting-duration": `${deckAppearance.waitingSeconds}s`,
               "--deck-item-gap": `${deckAppearance.itemGap}px`,
               "--deck-item-height": `${deckAppearance.itemHeight}px`,
+              "--deck-open-row-height": `${deckAppearance.openRowHeight}px`,
+              "--deck-waiting-row-height": `${deckAppearance.waitingRowHeight}px`,
             } : {}),
             left: `${zone.x}%`, top: `${zone.y}%`, width: `${zone.width}%`, height: `${zone.height}%`,
             zIndex: zone.zIndex,
