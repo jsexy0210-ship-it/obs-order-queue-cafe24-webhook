@@ -100,7 +100,7 @@ export function getDevelopmentDashboardSamples() {
   return { orders, rewardEntries };
 }
 
-/** 2026-10-08 라이브 캡처의 화면 배치. 개발 미리보기에만 사용하며 저장하지 않습니다. */
+/** 2026-10-08 라이브 캡처의 배치와 확대한 주문 덱. 개발 미리보기에만 사용하며 저장하지 않습니다. */
 export function getDevelopmentLiveOverlayReference(profile: ShortsOverlaySettings): ShortsOverlaySettings {
   if (!DEVELOPMENT_HOME_SAMPLES_ENABLED) return profile;
   return {
@@ -109,7 +109,7 @@ export function getDevelopmentLiveOverlayReference(profile: ShortsOverlaySetting
       ...profile.zones,
       ranking: { ...profile.zones.ranking, x: 0, y: 0, width: 49.6495, height: 13.585 },
       hit: { ...profile.zones.hit, x: .350515, y: 13.585, width: 49.6495, height: 13.357 },
-      current: { ...profile.zones.current, x: 49.6495, y: 21.5379, width: 50.3505, height: 15.1351 },
+      current: { ...profile.zones.current, x: 49.6495, y: 21.5379, width: 50.3505, height: 22 },
     },
   };
 }
