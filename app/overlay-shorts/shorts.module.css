@@ -180,26 +180,21 @@
 .zoneDeck > strong { display: none; }
 .zoneDeck .zoneBody { display: block; height: 100%; margin: clamp(4px, 1cqw, 8px); padding: 0; }
 .deckCardLayout { display: grid; grid-template-rows: minmax(0, 1.15fr) minmax(0, .88fr); gap: clamp(5px, 1.35cqw, 11px); width: 100%; height: 100%; min-height: 0; }
-.deckOpenCard { position: relative; display: grid; grid-template-rows: auto minmax(0, .85fr) minmax(0, 1fr); gap: clamp(4px, 1.1cqw, 9px); min-width: 0; min-height: 0; overflow: hidden; padding: clamp(5px, 1.35cqw, 11px); border: clamp(2px, .55cqw, 4px) solid #ffe18a; border-radius: clamp(7px, 1.8cqw, 17px); background: linear-gradient(145deg, rgba(120,18,18,.97), rgba(46,7,12,.97) 60%, rgba(91,30,13,.97)); box-shadow: 0 0 6px #ffdc77, 0 0 15px rgba(255,63,38,.82), inset 0 0 13px rgba(255,219,114,.35); }
+.deckOpenCard { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(4px, 1.1cqw, 9px); min-width: 0; min-height: 0; overflow: hidden; padding: clamp(5px, 1.35cqw, 11px); border: clamp(2px, .55cqw, 4px) solid #ffe18a; border-radius: clamp(7px, 1.8cqw, 17px); background: linear-gradient(145deg, rgba(120,18,18,.97), rgba(46,7,12,.97) 60%, rgba(91,30,13,.97)); box-shadow: 0 0 6px #ffdc77, 0 0 15px rgba(255,63,38,.82), inset 0 0 13px rgba(255,219,114,.35); }
 .deckOpenCardActive { transform-origin: center; animation: deckCardFlip .75s cubic-bezier(.18,.8,.2,1) both, deckCardPulse 2.1s ease-in-out .75s infinite alternate; }
 .deckOpenCard::after { position: absolute; inset: -20%; pointer-events: none; content: ""; background: linear-gradient(110deg, transparent 40%, rgba(255,245,199,.32) 50%, transparent 60%); transform: translateX(-120%); animation: deckFrameShine 3.6s ease-in-out infinite; }
 .deckCardHeader, .deckWaitingHeader { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 5px; min-width: 0; padding: clamp(3px, .9cqw, 7px) clamp(5px, 1.2cqw, 9px); border: 1px solid rgba(255,238,174,.82); border-radius: 999px; background: linear-gradient(90deg, #ffd765, #f9a632 58%, #ffcf58); color: #57100d; font-size: clamp(9px, 2.65cqw, 21px); font-weight: 1000; line-height: 1.15; text-shadow: 0 1px rgba(255,255,255,.55); box-shadow: 0 0 7px rgba(255,223,123,.8); }
 .deckCardHeader > b, .deckWaitingHeader > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deckCardHeader > span:not(.currentOrderBadge) { color: #743719; font-size: .76em; }
 .deckCardHeader .currentOrderBadge { min-width: 0; height: auto; padding: 3px 7px; border: 1px solid rgba(255,255,255,.72); background: linear-gradient(135deg,#fff4c4,#f5bd40); color: #6b1512; font-size: clamp(8px, 2cqw, 15px); box-shadow: 0 0 6px rgba(255,246,198,.9); }
-.deckOpeningIdentity { position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-start; gap: clamp(12px, 3cqw, 24px); min-width: 0; overflow: hidden; color: #fff5d0; font-size: clamp(22px, 7.5cqw, 48px); font-weight: 1000; line-height: 1.1; text-align: left; text-shadow: 0 0 7px #ffb841, 0 2px 2px #230307; white-space: nowrap; }
+.deckOpeningIdentity { flex: 0 1 auto; max-width: 75%; position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-start; gap: clamp(12px, 3cqw, 24px); min-width: 0; overflow: hidden; color: #fff5d0; font-size: clamp(22px, 7.5cqw, 48px); font-weight: 1000; line-height: 1.1; text-align: left; text-shadow: 0 0 7px #ffb841, 0 2px 2px #230307; white-space: nowrap; }
 .deckOpeningIdentity > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.deckOpeningNickname { display: block; min-width: 0; overflow: hidden; text-overflow: clip; }
-.deckOpeningNicknameTrack { display: flex; width: max-content; }
-.deckOpeningNicknameItem { display: block; flex: 0 0 auto; }
-.deckOpeningNicknameItem > span { display: block; white-space: nowrap; }
-.deckOpeningNicknameScrolling .deckOpeningNicknameTrack { animation: currentOrderProductLoop var(--nickname-ticker-duration, 20s) linear infinite; will-change: transform; }
-.deckOpeningNicknameScrolling .deckOpeningNicknameItem { padding-right: 24px; }
+.deckOpeningNickname { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deckOpeningIdentity .currentOrderBadge { flex: 0 0 auto; min-width: 0; height: auto; padding: clamp(4px, 1cqw, 8px) clamp(7px, 1.6cqw, 13px); border: 1px solid currentColor; font-size: clamp(12px, 3cqw, 22px); }
-.deckProductCard { position: relative; z-index: 1; display: grid; grid-template-rows: minmax(0, 1fr); align-content: center; gap: 0; min-width: 0; min-height: 0; overflow: hidden; padding: clamp(4px, 1cqw, 8px); border: 1px solid #ffe28e; border-radius: clamp(5px, 1.4cqw, 13px); background: linear-gradient(130deg, rgba(25,3,8,.85), rgba(88,13,14,.78)); box-shadow: inset 0 0 9px rgba(255,186,69,.23); }
-.deckProductCard .currentOrderProduct { display: block; align-self: center; width: 100%; min-width: 0; color: #fff5d9; font-size: clamp(16px, 6.8cqw, 40px); font-style: normal; font-weight: 1000; text-align: center; text-shadow: 0 0 7px rgba(255,188,74,.9); }
+.deckProductCard { position: relative; z-index: 1; display: flex; align-items: center; gap: clamp(8px, 2cqw, 16px); min-width: 0; min-height: 0; overflow: hidden; padding: clamp(4px, 1cqw, 8px); border: 1px solid #ffe28e; border-radius: clamp(5px, 1.4cqw, 13px); background: linear-gradient(130deg, rgba(25,3,8,.85), rgba(88,13,14,.78)); box-shadow: inset 0 0 9px rgba(255,186,69,.23); }
+.deckProductCard .currentOrderProduct { display: block; flex: 1 1 0; align-self: center; width: auto; min-width: 0; overflow: hidden; color: #fff5d9; font-size: clamp(16px, 6.8cqw, 40px); font-style: normal; font-weight: 1000; text-align: center; text-shadow: 0 0 7px rgba(255,188,74,.9); }
 .deckProductCard .currentOrderProductTrack { display: flex; align-items: center; }
-.deckProductCard .currentOrderProductText { min-width: 100cqw; box-sizing: border-box; overflow: visible; text-align: center; text-overflow: clip; }
+.deckProductCard .currentOrderProductText { min-width: 0; box-sizing: border-box; overflow: visible; text-align: left; text-overflow: clip; }
 .deckOpenCardEmpty { display: grid; grid-template-rows: auto 1fr; }
 .deckLiveBadge { color: #743719; font-size: .76em; }
 .deckVariant .currentOrderBadgeFirst { border-color: #ff8798; background: linear-gradient(135deg, #ff5368, #b51f43) !important; color: #fff5f6 !important; box-shadow: 0 0 7px rgba(255,75,103,.82); }
@@ -214,11 +209,11 @@
 .deckWaitingRows { width: 100%; }
 .deckWaitingRowsScrolling { animation: waitingOrderLoop var(--waiting-ticker-duration, 20s) linear infinite reverse; }
 .deckWaitingGroup { display: grid; gap: 4px; padding-bottom: 4px; }
-.deckWaitingGroup > p { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 3px; min-width: 0; padding: 5px 7px; border: 1px solid rgba(255,200,92,.56); border-radius: 6px; background: rgba(12,6,5,.4); text-align: left; }
-.deckWaitingIdentity { display: flex; align-items: center; justify-content: flex-start; gap: clamp(10px, 2cqw, 18px); min-width: 0; overflow: hidden; color: #fff4d2; font-size: clamp(8px, 2cqw, 14.4px); font-weight: 900; white-space: nowrap; }
+.deckWaitingGroup > p { display: flex; align-items: center; gap: clamp(8px, 2cqw, 16px); min-width: 0; padding: 5px 7px; border: 1px solid rgba(255,200,92,.56); border-radius: 6px; background: rgba(12,6,5,.4); text-align: left; }
+.deckWaitingIdentity { flex: 0 1 auto; max-width: 75%; display: flex; align-items: center; justify-content: flex-start; gap: clamp(10px, 2cqw, 18px); min-width: 0; overflow: hidden; color: #fff4d2; font-size: clamp(8px, 2cqw, 14.4px); font-weight: 900; white-space: nowrap; }
 .deckWaitingIdentity > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .deckWaitingIdentity .currentOrderBadge { flex: 0 0 auto; font-size: clamp(8px, 2.08cqw, 14.4px); }
-.deckWaitingProduct { display: block; min-width: 0; overflow: hidden; color: #fff9e9; font-size: clamp(12px, 4.96cqw, 28.8px); font-style: normal; font-weight: 950; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.deckWaitingProduct { display: block; flex: 1 1 0; min-width: 0; overflow: hidden; color: #fff9e9; font-size: clamp(12px, 4.96cqw, 28.8px); font-style: normal; font-weight: 950; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 @keyframes deckOuterPulse { from { box-shadow: 0 0 5px rgba(255,57,41,.72), 0 0 12px rgba(246,178,51,.62), inset 0 0 12px rgba(255,191,75,.2); } to { box-shadow: 0 0 10px rgba(255,86,48,1), 0 0 24px rgba(255,197,69,.95), inset 0 0 17px rgba(255,218,117,.34); } }
 @keyframes deckCardPulse { from { box-shadow: 0 0 4px #ffdc77, 0 0 10px rgba(255,63,38,.62), inset 0 0 10px rgba(255,219,114,.22); } to { box-shadow: 0 0 9px #fff0a8, 0 0 19px rgba(255,63,38,.95), inset 0 0 17px rgba(255,219,114,.4); } }
 @keyframes deckFrameShine { 0%, 60%, 100% { transform: translateX(-130%); } 82% { transform: translateX(130%); } }
@@ -239,7 +234,7 @@
 .deckTitleIcon svg { display: block; width: 1em; height: 1em; filter: drop-shadow(0 0 4px currentColor); } .deckTitleIcon { flex: 0 0 auto; font-size: 1.15em; line-height: 1; color: var(--deck-icon-color); }
 .deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader, .deckCardHeader, .deckWaitingHeader) { background: linear-gradient(100deg, color-mix(in srgb, var(--deck-title-start) var(--deck-title-alpha), transparent), color-mix(in srgb, var(--deck-title-end) var(--deck-title-alpha), transparent)); color: var(--deck-title-color); border-color: var(--deck-border-color); text-shadow: 0 1px 3px rgba(0,0,0,.5), 0 0 6px rgba(var(--deck-theme-rgb),.6); }
 .deckVariant :is(.zoneDeckHit > strong, .hallOfFameHeader, .deckCardHeader, .deckWaitingHeader) { font-size: calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale)); }
-.deckVariant .zoneDeck.zoneCurrent { grid-template-rows: minmax(0, 1fr); }
+.deckVariant .zoneDeck.zoneCurrent { grid-template-rows: minmax(0, 1fr); container-type: size; }
 .deckVariant .zoneDeck.zoneCurrent .zoneBody { display: flex; height: auto; }
 .deckVariant .zoneDeck.zoneCurrent .deckCardLayout { flex: 1; height: auto; }
 .deckVariant .deckCardLayout:has(.deckOpenCardEmpty) { grid-template-rows: repeat(2, minmax(0, 1fr)); }
@@ -265,13 +260,24 @@
 .deckVariant :is(.deckOpenCard, .deckWaitingCard) { border-color: var(--deck-border-color); background: linear-gradient(135deg, color-mix(in srgb, var(--deck-background-start) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-middle) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-end) var(--deck-background-alpha), transparent)); box-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.82), inset 0 0 13px rgba(var(--deck-theme-rgb),.35); }
 .deckVariant .deckWaitingCard { background: linear-gradient(135deg, color-mix(in srgb, var(--deck-background-middle) var(--deck-background-alpha), transparent), color-mix(in srgb, var(--deck-background-end) var(--deck-background-alpha), transparent)); }
 .deckVariant .deckOpenCardActive { animation: deckCardFlip var(--deck-flip-duration) cubic-bezier(.18,.8,.2,1) both, hitDeckGlow var(--deck-effect-duration) ease-in-out var(--deck-flip-duration) infinite alternate; }
-.deckVariant .deckOpeningIdentity { color: var(--deck-nickname-color); font-size: calc(clamp(22px, 7.5cqw, 48px) * var(--deck-text-scale)); text-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.8), 0 2px 2px rgba(0,0,0,.6); }
-.deckVariant .deckProductCard .currentOrderProduct { color: var(--deck-text-color); font-size: calc(clamp(16px, 6.8cqw, 40px) * var(--deck-text-scale)); text-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.8); }
+.deckVariant .deckOpeningIdentity { color: var(--deck-nickname-color); font-size: calc(min(clamp(16px, 6.8cqw, 40px), 7cqh) * var(--deck-text-scale)); text-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.8), 0 2px 2px rgba(0,0,0,.6); }
+.deckVariant .deckProductCard .currentOrderProduct { color: var(--deck-text-color); font-size: calc(min(clamp(16px, 6.8cqw, 40px), 7cqh) * var(--deck-text-scale)); text-shadow: 0 0 7px rgba(var(--deck-theme-rgb),.8); }
 .deckVariant .deckWaitingGroup { gap: var(--deck-item-gap); padding-bottom: var(--deck-item-gap); }
 .deckVariant .deckWaitingGroup > p { min-height: var(--deck-item-height); }
-.deckVariant .deckWaitingIdentity { color: var(--deck-nickname-color); font-size: calc(clamp(8px, 2cqw, 14.4px) * var(--deck-text-scale)); }
-.deckVariant .deckWaitingIdentity > .deckOpeningNickname { flex: 1 1 auto; text-overflow: clip; }
-.deckVariant .deckWaitingProduct { color: var(--deck-text-color); font-size: calc(clamp(12px, 4.96cqw, 28.8px) * var(--deck-text-scale)); }
+.deckVariant .deckWaitingIdentity { color: var(--deck-nickname-color); font-size: calc(min(clamp(12px, 4.96cqw, 28.8px), 5cqh) * var(--deck-text-scale)); }
+.deckVariant :is(.deckOpeningIdentity, .deckWaitingIdentity) .currentOrderBadge { font-size: inherit; }
+.deckVariant .deckWaitingIdentity > .deckOpeningNickname { flex: 1 1 auto; }
+.deckVariant .deckWaitingProduct { color: var(--deck-text-color); font-size: calc(min(clamp(12px, 4.96cqw, 28.8px), 5cqh) * var(--deck-text-scale)); }
+/* 주문 덱은 세로 축소 시 글자와 내부 간격도 함께 줄입니다. */
+.deckVariant .zoneCurrent .zoneBody { margin: min(4px, 1.5cqh); padding-top: min(3px, 1cqh); }
+.deckVariant .zoneCurrent .deckCardLayout { gap: min(clamp(5px, 1.35cqw, 11px), 2cqh); }
+.deckVariant .zoneCurrent :is(.deckOpenCard, .deckWaitingCard) { padding: min(clamp(5px, 1.35cqw, 11px), 1.8cqh); gap: min(4px, 1.2cqh); }
+.deckVariant .zoneCurrent :is(.deckCardHeader, .deckWaitingHeader) { font-size: calc(min(clamp(14px, 4cqw, 30px), 6cqh) * var(--deck-title-scale)); padding-block: min(3px, 1cqh); }
+.deckVariant .zoneCurrent .deckProductCard { padding: min(clamp(4px, 1cqw, 8px), 1.3cqh); }
+.deckVariant .zoneCurrent :is(.deckOpeningIdentity, .deckWaitingIdentity, .deckProductCard, .deckWaitingGroup > p) { column-gap: min(12px, 3cqh); }
+.deckVariant .zoneCurrent .deckWaitingGroup { gap: min(var(--deck-item-gap), 1.5cqh); padding-bottom: min(var(--deck-item-gap), 1.5cqh); }
+.deckVariant .zoneCurrent .deckWaitingGroup > p { min-height: min(var(--deck-item-height), 10cqh); padding-block: min(5px, 1.5cqh); }
+.deckVariant .zoneCurrent :is(.deckOpeningIdentity, .deckWaitingIdentity) .currentOrderBadge { height: auto; padding: min(4px, 1cqh) min(7px, 2cqh); }
 .deckVariant .deckWaitingRowsScrolling { animation-duration: var(--deck-waiting-duration); animation-direction: var(--deck-up-direction); }
 .deckVariant :is(.deckEmptyMessage, .deckWaitingCard > .deckEmptyMessage) { color: var(--deck-text-color) !important; }
 .deckVariant .currentOrderBadgeFirst { background: linear-gradient(135deg, var(--deck-badge-first-color), #831843) !important; border-color: var(--deck-badge-first-color); }
