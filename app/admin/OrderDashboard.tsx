@@ -7,6 +7,7 @@ import { DEVELOPMENT_HOME_SAMPLES_ENABLED, getDevelopmentDashboardSamples } from
 type Order = {
   created_at: string;
   actual_amount: number;
+  points_spent_amount?: number | null;
   payment_method: string | null;
   paid_at: string | null;
   status: string;
@@ -170,6 +171,8 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
     const time = parseUtc(entry.order_created_at);
     return time >= rangeStart(range, now) && time <= now;
   });
+  const totalPointsSpent = amountOrders.reduce((total, order) => total + (order.points_spent_amount ?? 0), 0);
+  const unknownPointsSpentCount = amountOrders.filter((order) => order.points_spent_amount == null).length;
   const totalAmount = amountOrders.reduce((total, order) => total + order.actual_amount, 0);
   const cardCount = paymentOrders.filter(
       (order) => (order.payment_method ?? "").toLowerCase().split(",").includes("card")
@@ -218,6 +221,7 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
           <span>총 주문금액</span>
         </div>
         <strong>{totalAmount.toLocaleString("ko-KR")}원</strong>
+        <small>적립금 사용액 {totalPointsSpent.toLocaleString("ko-KR")}원{unknownPointsSpentCount > 0 && ` · ${unknownPointsSpentCount}건 조회 불가`}</small>
         <small>{RANGE_OPTIONS.find((option) => option.value === range)?.description} · 주문금액 추이</small>
         <div className={styles.lineChart} role="img" aria-label={`${range} 기간별 총 주문금액 선 그래프`}>
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

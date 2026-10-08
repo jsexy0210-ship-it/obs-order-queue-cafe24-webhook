@@ -316,5 +316,5 @@
 
 .deckVariant .zoneCurrent .deckProductCard.deckRowSized { font-size: calc(var(--deck-open-row-height) * .55 * var(--deck-text-scale)); }
 .deckVariant .zoneCurrent .deckWaitingGroup > p.deckRowSized { font-size: calc(var(--deck-waiting-row-height) * .55 * var(--deck-text-scale)); }
-.deckVariant .zoneCurrent :is(.deckProductCard.deckRowSized, .deckWaitingGroup > p.deckRowSized) { align-items: flex-start; padding-block: min(2px, .1em); line-height: 1.1; }
-.deckVariant .zoneCurrent .deckRowSized .currentOrderProduct { align-self: flex-start; }
+.deckVariant .zoneCurrent :is(.deckProductCard.deckRowSized, .deckWaitingGroup > p.deckRowSized) { align-items: center; padding-block: min(2px, .1em); line-height: 1.1; }
+.deckVariant .zoneCurrent .deckRowSized .currentOrderProduct { align-self: center; }
