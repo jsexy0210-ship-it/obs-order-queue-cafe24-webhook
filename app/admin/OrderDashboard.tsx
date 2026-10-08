@@ -222,6 +222,7 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
         </div>
         <strong>{totalAmount.toLocaleString("ko-KR")}원</strong>
         <small>적립금 사용액 {totalPointsSpent.toLocaleString("ko-KR")}원{unknownPointsSpentCount > 0 && ` · ${unknownPointsSpentCount}건 조회 불가`}</small>
+        <small>최종결제액 {unknownPointsSpentCount > 0 ? "조회 불가" : `${(totalAmount - totalPointsSpent).toLocaleString("ko-KR")}원`}</small>
         <small>{RANGE_OPTIONS.find((option) => option.value === range)?.description} · 주문금액 추이</small>
         <div className={styles.lineChart} role="img" aria-label={`${range} 기간별 총 주문금액 선 그래프`}>
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
