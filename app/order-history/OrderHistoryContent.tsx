@@ -335,7 +335,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                   <th>유튜브 닉네임</th>
                   <th>구매자</th>
                   <th>회원등급</th>
-                  <th>적립금</th>
+                  <th>적립금 지급액</th>
                   <th>상태</th>
                   <th>관리</th>
                   <th>결제방식</th>
@@ -357,7 +357,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                       <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
                       <td data-label="구매자">{order.user_id}</td>
                       <td data-label="회원등급">{order.tier || "-"}</td>
-                      <td data-label="적립금" className={styles.rewardCell}>
+                      <td data-label="적립금 지급액" className={styles.rewardCell}>
                         {!reward?.issue && !reward?.recover ? (
                           <span className={styles.rewardNone}>-</span>
                         ) : reward.recover ? (
