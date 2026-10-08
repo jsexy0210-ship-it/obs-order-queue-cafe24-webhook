@@ -216,7 +216,9 @@
 }
 
 .rowDeleteButton {
-  padding: 7px 12px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 7px 4px;
   border: none;
   border-radius: 6px;
   background: var(--delete-button-color);
