@@ -6,6 +6,8 @@ export const runtime = "nodejs";
 
 const clamp = (value: unknown, min: number, max: number) =>
   Math.min(max, Math.max(min, Number(value) || 0));
+const rowHeight = (value: unknown, fallback: number) =>
+  Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : fallback;
 const color = (value: unknown, fallback: string) =>
   typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
 const text = (value: unknown, fallback: string, max = 160) =>
@@ -58,8 +60,8 @@ export async function PUT(req: NextRequest) {
       waitingSeconds: clamp(input?.waitingSeconds ?? defaults.waitingSeconds, 1, 120),
       itemGap: clamp(input?.itemGap ?? defaults.itemGap, 0, 32),
       itemHeight: clamp(input?.itemHeight ?? defaults.itemHeight, 0, 100),
-      openRowHeight: clamp(input?.openRowHeight ?? defaults.openRowHeight, 0, 200),
-      waitingRowHeight: clamp(input?.waitingRowHeight ?? input?.itemHeight ?? defaults.waitingRowHeight, 0, 200),
+      openRowHeight: rowHeight(input?.openRowHeight ?? defaults.openRowHeight, defaults.openRowHeight),
+      waitingRowHeight: rowHeight(input?.waitingRowHeight ?? input?.itemHeight ?? defaults.waitingRowHeight, defaults.waitingRowHeight),
     };
   };
 

@@ -503,18 +503,18 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                       </div>
                     </div>
                   ) : id === "current" && variant === "deck" ? (
-                    <div className={styles.deckCardLayout} style={{ gridTemplateRows: `minmax(min(50%, calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale) * 1.5 + 28cqh)), ${openingOrder ? deckAppearance.openRowHeight || 25 : 25}fr) minmax(min(50%, calc(clamp(14px, 4cqw, 30px) * var(--deck-title-scale) * 1.5 + 28cqh)), ${waitingOrders.length ? deckAppearance.waitingRowHeight || 25 : 25}fr)` }}>
+                    <div className={styles.deckCardLayout}>
                       <section key={openingOrder?.id ?? "empty-opening"} className={`${styles.deckOpenCard} ${openingOrder ? styles.deckOpenCardActive : styles.deckOpenCardEmpty}`}>
                         <header className={styles.deckCardHeader}>
                           <b className={styles.deckCardTitle}><span className={styles.deckTitleIcon} aria-hidden="true"><Image src={pikachuCard} alt="" width={28} height={40} sizes="40px" className={styles.deckCardIcon} /></span>{deckAppearance.openTitle}</b>
                           <span className={styles.deckLiveBadge}>{openingOrder ? "진행 중" : "대기"}</span>
                         </header>
-                        {openingOrder ? <>
+                        {openingOrder ? <div className={styles.deckOpeningViewport}>
                           <div className={styles.deckProductCard}>
                             {nickname(openingOrder.youtube_nickname) !== "-" && currentOrderBadge(openingOrder)}
                             <CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} prefix={nickname(openingOrder.youtube_nickname) === "-" ? "" : `${nickname(openingOrder.youtube_nickname)} `} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} />
                           </div>
-                        </> : <p className={styles.deckEmptyMessage}>현재 오픈 중인 주문이 없습니다.</p>}
+                        </div> : <p className={styles.deckEmptyMessage}>현재 오픈 중인 주문이 없습니다.</p>}
                       </section>
                       <section className={styles.deckWaitingCard}>
                         <header className={styles.deckWaitingHeader}><b className={styles.deckCardTitle}><span className={styles.deckTitleIcon} aria-hidden="true"><Image src={luffyCard} alt="" width={28} height={40} sizes="40px" className={styles.deckCardIcon} /></span>{deckAppearance.waitingTitle}</b><em>{waitingOrders.length}건</em></header>
