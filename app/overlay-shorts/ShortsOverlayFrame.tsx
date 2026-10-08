@@ -110,33 +110,6 @@ function CurrentOrderProduct({ product, quantity, forceScroll = false, durationS
   </em>;
 }
 
-function OpeningOrderNickname({ label, durationSeconds }: { label: string; durationSeconds: number }) {
-  const viewportRef = useRef<HTMLSpanElement>(null);
-  const textRef = useRef<HTMLSpanElement>(null);
-  const [overflowing, setOverflowing] = useState(false);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    const text = textRef.current;
-    if (!viewport || !text) return;
-    const measure = () => {
-      const next = text.scrollWidth > viewport.clientWidth + 1;
-      setOverflowing((current) => current === next ? current : next);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(viewport);
-    observer.observe(text);
-    return () => observer.disconnect();
-  }, [label]);
-
-  return <span ref={viewportRef} className={`${styles.deckOpeningNickname} ${overflowing ? styles.deckOpeningNicknameScrolling : ""}`} style={{ "--nickname-ticker-duration": `${durationSeconds}s` } as CSSProperties}>
-    <span className={styles.deckOpeningNicknameTrack}>
-      <span className={styles.deckOpeningNicknameItem}><span ref={textRef}>{label}</span></span>
-      {overflowing && <span className={styles.deckOpeningNicknameItem} aria-hidden="true"><span>{label}</span></span>}
-    </span>
-  </span>;
-}
 export default function ShortsOverlayFrame({ settingsOverride, variant = "basic", editing = false, preview = false, zoneIds = SHORTS_ZONE_IDS, showAnimationPreview = false, previewOrderKind = "repeat", previewOpeningOrder, previewWaitingOrders, onZoneChange }: Props) {
   const live = useLiveCardBreak();
   const [ranking, setRanking] = useState<RankingRow[]>([]);
@@ -535,12 +508,12 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                           <span className={styles.deckLiveBadge}>{openingOrder ? "진행 중" : "대기"}</span>
                         </header>
                         {openingOrder ? <>
-                          <div className={styles.deckOpeningIdentity}>
-                            {nickname(openingOrder.youtube_nickname) !== "-" && currentOrderBadge(openingOrder)}
-                            <OpeningOrderNickname label={nickname(openingOrder.youtube_nickname)} durationSeconds={zone.tickerDurationSeconds} />
-                          </div>
                           <div className={styles.deckProductCard}>
-                            <CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} />
+                            <div className={styles.deckOpeningIdentity}>
+                              {nickname(openingOrder.youtube_nickname) !== "-" && currentOrderBadge(openingOrder)}
+                              <span className={styles.deckOpeningNickname}>{nickname(openingOrder.youtube_nickname)}</span>
+                            </div>
+                            <CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} quantitySeparator=" x " durationSeconds={zone.tickerDurationSeconds} />
                           </div>
                         </> : <p className={styles.deckEmptyMessage}>현재 오픈 중인 주문이 없습니다.</p>}
                       </section>
@@ -551,7 +524,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                             <div className={`${styles.deckWaitingRows} ${waitingOrders.length >= 3 ? styles.deckWaitingRowsScrolling : ""}`}>
                               {(waitingOrders.length >= 3 ? [false, true] : [false]).map((copy) => (
                                 <div className={styles.deckWaitingGroup} key={copy ? "deck-next-cycle" : "deck-current-cycle"} aria-hidden={copy || undefined}>
-                                  {waitingOrders.map((order) => <p key={`${order.id}-${copy ? "next" : "current"}`}><span className={styles.deckWaitingIdentity}>{nickname(order.youtube_nickname) !== "-" && currentOrderBadge(order)}<OpeningOrderNickname label={nickname(order.youtube_nickname)} durationSeconds={zone.tickerDurationSeconds} /></span><CurrentOrderProduct product={order.product} quantity={order.quantity} quantitySeparator=" x " durationSeconds={zone.tickerDurationSeconds} className={styles.deckWaitingProduct} /></p>)}
+                                  {waitingOrders.map((order) => <p key={`${order.id}-${copy ? "next" : "current"}`}><span className={styles.deckWaitingIdentity}>{nickname(order.youtube_nickname) !== "-" && currentOrderBadge(order)}<span className={styles.deckOpeningNickname}>{nickname(order.youtube_nickname)}</span></span><CurrentOrderProduct product={order.product} quantity={order.quantity} quantitySeparator=" x " durationSeconds={zone.tickerDurationSeconds} className={styles.deckWaitingProduct} /></p>)}
                                 </div>
                               ))}
                             </div>
