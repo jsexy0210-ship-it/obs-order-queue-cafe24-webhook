@@ -313,3 +313,8 @@
 .deckVariant .zoneCurrent :is(.deckCardHeader, .deckWaitingHeader) { align-self: start; }
 .deckVariant .zoneCurrent .deckOpeningViewport { display: grid; min-width: 0; min-height: 0; overflow: hidden; }
 .deckVariant .zoneCurrent .deckOpeningViewport .deckProductCard { align-self: safe center; }
+
+.deckVariant .zoneCurrent .deckProductCard.deckRowSized { font-size: calc(var(--deck-open-row-height) * .55 * var(--deck-text-scale)); }
+.deckVariant .zoneCurrent .deckWaitingGroup > p.deckRowSized { font-size: calc(var(--deck-waiting-row-height) * .55 * var(--deck-text-scale)); }
+.deckVariant .zoneCurrent :is(.deckProductCard.deckRowSized, .deckWaitingGroup > p.deckRowSized) { align-items: flex-start; padding-block: min(2px, .1em); line-height: 1.1; }
+.deckVariant .zoneCurrent .deckRowSized .currentOrderProduct { align-self: flex-start; }

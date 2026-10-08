@@ -510,7 +510,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                           <span className={styles.deckLiveBadge}>{openingOrder ? "진행 중" : "대기"}</span>
                         </header>
                         {openingOrder ? <div className={styles.deckOpeningViewport}>
-                          <div className={styles.deckProductCard}>
+                          <div className={`${styles.deckProductCard} ${deckAppearance.openRowHeight > 0 ? styles.deckRowSized : ""}`}>
                             {nickname(openingOrder.youtube_nickname) !== "-" && currentOrderBadge(openingOrder)}
                             <CurrentOrderProduct product={openingOrder.product} quantity={openingOrder.quantity} prefix={nickname(openingOrder.youtube_nickname) === "-" ? "" : `${nickname(openingOrder.youtube_nickname)} `} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} />
                           </div>
@@ -523,7 +523,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
                             <div className={`${styles.deckWaitingRows} ${waitingOrders.length >= 3 ? styles.deckWaitingRowsScrolling : ""}`}>
                               {(waitingOrders.length >= 3 ? [false, true] : [false]).map((copy) => (
                                 <div className={styles.deckWaitingGroup} key={copy ? "deck-next-cycle" : "deck-current-cycle"} aria-hidden={copy || undefined}>
-                                  {waitingOrders.map((order) => <p key={`${order.id}-${copy ? "next" : "current"}`}>{nickname(order.youtube_nickname) !== "-" && currentOrderBadge(order)}<CurrentOrderProduct product={order.product} quantity={order.quantity} prefix={nickname(order.youtube_nickname) === "-" ? "" : `${nickname(order.youtube_nickname)} `} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} className={styles.deckWaitingProduct} /></p>)}
+                                  {waitingOrders.map((order) => <p key={`${order.id}-${copy ? "next" : "current"}`} className={deckAppearance.waitingRowHeight > 0 ? styles.deckRowSized : undefined}>{nickname(order.youtube_nickname) !== "-" && currentOrderBadge(order)}<CurrentOrderProduct product={order.product} quantity={order.quantity} prefix={nickname(order.youtube_nickname) === "-" ? "" : `${nickname(order.youtube_nickname)} `} quantitySeparator=" x " forceScroll durationSeconds={zone.tickerDurationSeconds} className={styles.deckWaitingProduct} /></p>)}
                                 </div>
                               ))}
                             </div>
