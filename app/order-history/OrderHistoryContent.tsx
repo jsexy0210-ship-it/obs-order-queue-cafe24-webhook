@@ -354,7 +354,7 @@ export default function OrderHistoryContent({ onBack }: { onBack?: () => void })
                       <td data-label="상품명" className={styles.product}>{order.product}</td>
                       <td data-label="실결제액">{formatPrice(order.actual_amount)}</td>
                       <td data-label="적립금 사용액">{order.points_spent_amount == null ? "조회 불가" : formatPrice(order.points_spent_amount)}</td>
-                      <td data-label="최종결제액">{order.points_spent_amount == null ? "조회 불가" : formatPrice(order.actual_amount - order.points_spent_amount)}</td>
+                      <td data-label="최종결제액">{order.points_spent_amount == null ? "조회 불가" : <span className={styles.rewardBadge}>{formatPrice(order.actual_amount - order.points_spent_amount)}</span>}</td>
                       <td data-label="수량">{order.quantity}</td>
                       <td data-label="유튜브 닉네임">{order.youtube_nickname ?? "-"}</td>
                       <td data-label="구매자">{order.user_id}</td>
