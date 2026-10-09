@@ -1,3 +1,6 @@
+// 주문 토스트 종료: 기존 저장값은 보존하지만 설정 및 토스트 표시는 제공하지 않습니다.
+export const ORDER_TOASTS_ENABLED = false;
+
 export const SHORTS_ZONE_IDS = ["hit", "ranking", "current", "announcement"] as const;
 
 export type ShortsZoneId = (typeof SHORTS_ZONE_IDS)[number];

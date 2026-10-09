@@ -9,7 +9,7 @@ import { getDevelopmentLiveOverlayReference } from "./developmentHomeSamples";
 import GlobalLoadingOverlay from "@/app/GlobalLoadingOverlay";
 import OrderHistoryContent, { HitCardHistoryContent } from "@/app/order-history/OrderHistoryContent";
 import ShortsOverlayFrame from "@/app/overlay-shorts/ShortsOverlayFrame";
-import { DEFAULT_NEW_OVERLAY_SETTINGS, DEFAULT_OVERLAY_SETTINGS, getDeckAppearance, type DeckAppearanceSettings, type OverlaySettings, type ShortsOverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
+import { ORDER_TOASTS_ENABLED, DEFAULT_NEW_OVERLAY_SETTINGS, DEFAULT_OVERLAY_SETTINGS, getDeckAppearance, type DeckAppearanceSettings, type OverlaySettings, type ShortsOverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 import RewardSettingsPanel from "./RewardSettingsPanel";
 import RewardLedgerModal from "./RewardLedgerModal";
 import OrderDashboard, { DashboardRangePicker, type DashboardRange } from "./OrderDashboard";
@@ -345,7 +345,7 @@ export default function AdminPage() {
 
   // 최초 데이터 로드 후 무통장 신규 주문과 입금 완료 전환을 토스트로 표시합니다.
   useEffect(() => {
-    if (liveLoading) return;
+    if (!ORDER_TOASTS_ENABLED || liveLoading) return;
     const activeOrders = [
       ...pendingPayments.map((order) => ({ order, state: "pending" as const })),
       ...waiting.map((order) => ({ order, state: "paid" as const })),
@@ -1018,6 +1018,7 @@ export default function AdminPage() {
                 : "🔔 주문 알림 켜기"}
             </button>
           </div>
+          {ORDER_TOASTS_ENABLED && <>
           <div className={styles.settingRow}>
             <div>
               <h3>주문 접수 카드</h3>
@@ -1032,6 +1033,7 @@ export default function AdminPage() {
               주문 접수 {orderVisibleSetting ? "ON" : "OFF"}
             </button>
           </div>
+          </>}
           <div className={styles.settingRow}>
             <div>
               <h3>화면 모드</h3>
@@ -1224,18 +1226,7 @@ export default function AdminPage() {
                   >
                     기본 오버레이
                   </button>
-                  <button
-                    className={`${styles.overlayPreviewModeButton} ${overlayPreviewMode === "animation" ? styles.overlayPreviewModeActive : ""}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={overlayPreviewMode === "animation"}
-                    onClick={() => {
-                      navigateAdmin(ADMIN_ROUTES.orderAlerts);
-                      setSelectedShortsZone("announcement");
-                    }}
-                  >
-                    주문알림 설정
-                  </button>
+
                 </div>
                 <button
                   className={`${styles.modalActionButton} ${editingOverlay ? styles.modalActionActive : ""}`}
@@ -1560,7 +1551,7 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-      {toasts.length > 0 && (
+      {ORDER_TOASTS_ENABLED && toasts.length > 0 && (
         <div className={styles.toastStack} role="status" aria-live="polite">
           {toasts.map((toast) => (
             <div key={toast.eventKey} className={styles.toast}>
