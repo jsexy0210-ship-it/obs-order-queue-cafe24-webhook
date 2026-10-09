@@ -1162,7 +1162,7 @@ export default function AdminPage() {
                 <em>{h.card}</em>
               </span>
               <div className={styles.hitActions}>
-                <button type="button" className={styles.hitEdit} onClick={() => {
+                <button type="button" className={`${styles.hitDelete} ${styles.hitEdit}`} onClick={() => {
                   setEditingHitId(h.id);
                   setHitForm({ card: h.card, youtubeNickname: h.youtube_nickname ?? "" });
                   setShowHitRegistration(true);
