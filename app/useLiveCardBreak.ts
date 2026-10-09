@@ -15,6 +15,9 @@ export type LiveOrder = {
   quantity: number;
   unit_price: number;
   actual_amount?: number | null;
+  points_spent_amount?: number | null;
+  final_payment_amount?: number | null;
+  include_revenue?: boolean;
   tier: string;
   status: OrderStatus;
   prev_status: string | null;

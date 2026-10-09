@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { ADMIN_ROUTES } from "./adminRoutes";
 import { type LiveOrder } from "@/app/useLiveCardBreak";
 import { useAdminLiveCardBreak } from "./useAdminLiveCardBreak";
 import { getDevelopmentLiveOverlayReference } from "./developmentHomeSamples";
@@ -78,6 +79,14 @@ function isTodayInKorea(value: string | null) {
 
 export default function AdminPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const showHistory = pathname.startsWith(ADMIN_ROUTES.history);
+  const showRanking = pathname === ADMIN_ROUTES.ranking;
+  const showSettings = pathname === ADMIN_ROUTES.settings;
+  const showOverlayPreview = pathname.startsWith(ADMIN_ROUTES.overlay);
+  const showHitHistory = pathname === ADMIN_ROUTES.hitHistory;
+  const showRewardLedger = pathname === ADMIN_ROUTES.rewards;
+  const overlayPreviewMode = pathname === ADMIN_ROUTES.basicOverlay ? "basic" : pathname === ADMIN_ROUTES.orderAlerts ? "animation" : "new";
   const { opening, completedToday, manualOrders, waiting, pendingPayments, cancelledOrders, hitCards, overlaySettings, loading: liveLoading } = useAdminLiveCardBreak();
 
   const [form, setForm] = useState({
@@ -87,25 +96,21 @@ export default function AdminPage() {
     unitPrice: 15000,
     tier: "",
     youtubeNickname: "",
+    pointsSpentAmount: 0,
+    finalPaymentAmount: "",
+    includeRevenue: false,
   });
   const [hitForm, setHitForm] = useState({ card: "", youtubeNickname: "" });
-  const [showHistory, setShowHistory] = useState(false);
-  const [showRanking, setShowRanking] = useState(false);
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [dashboardRange, setDashboardRange] = useState<DashboardRange>("day");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [showHitHistory, setShowHitHistory] = useState(false);
   const [showHitRegistration, setShowHitRegistration] = useState(false);
-  const [showRewardLedger, setShowRewardLedger] = useState(false);
-  const [showOverlayPreview, setShowOverlayPreview] = useState(false);
   const [showLegacyOverlayMenu, setShowLegacyOverlayMenu] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [siteMenuOpen, setSiteMenuOpen] = useState(false);
   const [orderVisibleSetting, setOrderVisibleSetting] = useState(overlaySettings.orderVisible);
   const [savingOrderVisible, setSavingOrderVisible] = useState(false);
   const [editingOverlay, setEditingOverlay] = useState(false);
-  const [overlayPreviewMode, setOverlayPreviewMode] = useState<"basic" | "new" | "animation">("new");
   const [selectedShortsZone, setSelectedShortsZone] = useState<ShortsZoneId>("current");
   const [selectedNewOrderCopy, setSelectedNewOrderCopy] = useState<"first" | "repeat" | "vip">("first");
   const [shortsSettings, setShortsSettings] = useState<OverlaySettings>(DEFAULT_OVERLAY_SETTINGS);
@@ -214,25 +219,6 @@ export default function AdminPage() {
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
   }, []);
 
-  // 로그인 화면이 브라우저 기록에 남아 있어도, 대시보드에서 뒤로가기를 누르면
-  // 로그인 화면으로 이동시키지 않고 명시적인 로그아웃 확인을 거치게 합니다.
-  useEffect(() => {
-    const historyKey = "mangotcg-admin-back-guard";
-    if (!window.history.state?.[historyKey]) {
-      window.history.pushState({ ...window.history.state, [historyKey]: true }, "", window.location.href);
-    }
-
-    const handleBrowserBack = () => {
-      window.history.pushState({ ...window.history.state, [historyKey]: true }, "", window.location.href);
-      if (!window.confirm("로그아웃하시겠습니까?")) return;
-      void fetch("/api/admin/logout", { method: "POST" }).finally(() => {
-        window.location.replace("/admin/login");
-      });
-    };
-
-    window.addEventListener("popstate", handleBrowserBack);
-    return () => window.removeEventListener("popstate", handleBrowserBack);
-  }, []);
 
   function toggleTheme() {
     setTheme((current) => {
@@ -469,10 +455,9 @@ export default function AdminPage() {
 
   function closeOverlayPreview() {
     setEditingOverlay(false);
-    setOverlayPreviewMode("new");
     setSelectedShortsZone("current");
     setShowLegacyOverlayMenu(false);
-    setShowOverlayPreview(false);
+    navigateAdmin(ADMIN_ROUTES.home);
   }
 
   function updateDeckAppearance<K extends keyof DeckAppearanceSettings>(key: K, value: DeckAppearanceSettings[K]) {
@@ -599,38 +584,73 @@ export default function AdminPage() {
     window.location.reload();
   }
 
-  function goToDashboard() {
+  function navigateAdmin(path: string) {
     setMobileMenuOpen(false);
     setSiteMenuOpen(false);
-    setShowSettings(false);
-    setShowHistory(false);
-    setShowRanking(false);
-    setShowHitHistory(false);
-    setShowRewardLedger(false);
-    closeOverlayPreview();
-    router.replace("/admin");
-    router.refresh();
+    setShowManualOrder(false);
+    router.push(path);
   }
 
-  async function startOpening(id: number) {
-    if (!window.confirm("지금 카드를 오픈하시겠습니까?")) return;
+  function goToDashboard() {
+    setEditingOverlay(false);
+    setShowLegacyOverlayMenu(false);
+    setSelectedShortsZone("current");
+    if (pathname === ADMIN_ROUTES.home) router.refresh();
+    else navigateAdmin(ADMIN_ROUTES.home);
+  }
 
-    await fetch(`/api/orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+  const startOpening = useCallback(async (id: number) => {
+    if (!window.confirm("지금 카드를 오픈하시겠습니까?")) return false;
+    const response = await fetch(`/api/orders/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "opening", timerSeconds: DEFAULT_TIMER_SECONDS }),
     });
-  }
+    if (!response.ok) throw new Error("오픈 시작 처리에 실패했습니다.");
+    return true;
+  }, []);
 
-  async function completeOrder(id: number) {
-    if (!window.confirm("오픈 완료 처리하시겠습니까?")) return;
-
-    await fetch(`/api/orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+  const completeOrder = useCallback(async (id: number) => {
+    if (!window.confirm("오픈 완료 처리하시겠습니까?")) return false;
+    const response = await fetch(`/api/orders/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "done" }),
     });
-  }
+    if (!response.ok) throw new Error("오픈 완료 처리에 실패했습니다.");
+    return true;
+  }, []);
+
+  const enterActionRef = useRef<string | null>(null);
+  const enterPendingRef = useRef(false);
+  const enterOrderId = opening?.id ?? waiting[0]?.id;
+  const enterActionKey = enterOrderId === undefined ? null : `${opening ? "complete" : "start"}:${enterOrderId}`;
+
+  useEffect(() => {
+    enterActionRef.current = null;
+  }, [enterActionKey]);
+
+  useEffect(() => {
+    if (pathname !== ADMIN_ROUTES.home || showManualOrder || showHitRegistration || queueHistoryModal || mobileMenuOpen || siteMenuOpen) return;
+    const handleEnter = async (event: KeyboardEvent) => {
+      if (event.key !== "Enter" || event.repeat || event.isComposing || event.defaultPrevented || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest('input, textarea, select, button, a, [contenteditable]:not([contenteditable="false"]), [role="dialog"]')) return;
+      if (enterOrderId === undefined || !enterActionKey || enterPendingRef.current || enterActionRef.current === enterActionKey) return;
+      event.preventDefault();
+      enterPendingRef.current = true;
+      enterActionRef.current = enterActionKey;
+      try {
+        const accepted = await (opening ? completeOrder(enterOrderId) : startOpening(enterOrderId));
+        if (!accepted) enterActionRef.current = null;
+      } catch (error) {
+        enterActionRef.current = null;
+        window.alert(error instanceof Error ? error.message : "주문 처리에 실패했습니다.");
+      } finally {
+        enterPendingRef.current = false;
+      }
+    };
+    window.addEventListener("keydown", handleEnter);
+    return () => window.removeEventListener("keydown", handleEnter);
+  }, [pathname, showManualOrder, showHitRegistration, queueHistoryModal, mobileMenuOpen, siteMenuOpen, enterOrderId, enterActionKey, opening, completeOrder, startOpening]);
 
   async function confirmPendingPayment(order: LiveOrder) {
     const orderNumber = order.external_order_id ?? String(order.id);
@@ -661,13 +681,18 @@ export default function AdminPage() {
     }
     if (!window.confirm("상품을 추가하시겠습니까?")) return;
 
-    await fetch("/api/orders", {
+    const response = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
-    setForm({ userId: "", product: "", quantity: 1, unitPrice: 15000, tier: "", youtubeNickname: "" });
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      window.alert(result?.error ?? "주문 추가에 실패했습니다.");
+      return;
+    }
+    setForm({ userId: "", product: "", quantity: 1, unitPrice: 15000, tier: "", youtubeNickname: "", pointsSpentAmount: 0, finalPaymentAmount: "", includeRevenue: false });
     setShowManualOrder(false);
   }
 
@@ -701,6 +726,15 @@ export default function AdminPage() {
     router.refresh();
   }
 
+  function renderOrderFinancialBadges(order: LiveOrder) {
+    const points = order.points_spent_amount;
+    const finalPayment = order.final_payment_amount;
+    return <div className={styles.orderFinancialBadges}>
+      <span className={styles.pointsUsedBadge}>적립금 사용액 {points == null ? "조회 불가" : points.toLocaleString("ko-KR") + "원"}</span>
+      <span className={styles.finalPaymentBadge}>최종결제액 {finalPayment == null ? "조회 불가" : finalPayment.toLocaleString("ko-KR") + "원"}</span>
+    </div>;
+  }
+
   function renderWaitingRow(order: LiveOrder) {
     const payment = getPaymentBadge(order);
     return (
@@ -716,6 +750,7 @@ export default function AdminPage() {
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
           <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
         </div>
+        {renderOrderFinancialBadges(order)}
         <div className={styles.orderRowFooter}>
           <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
           {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
@@ -892,19 +927,19 @@ export default function AdminPage() {
               </div>
               <button className={styles.historyButton} onClick={() => {
                 setMobileMenuOpen(false);
-                setShowOverlayPreview(true);
+                navigateAdmin(ADMIN_ROUTES.overlay);
               }}>
                 📺 오버레이
               </button>
               <button className={styles.historyButton} onClick={() => {
                 setMobileMenuOpen(false);
-                setShowRanking(true);
+                navigateAdmin(ADMIN_ROUTES.ranking);
               }}>
                 🏆 주문랭킹
               </button>
               <button className={styles.historyButton} onClick={() => {
                 setMobileMenuOpen(false);
-                setShowHistory(true);
+                navigateAdmin(ADMIN_ROUTES.history);
               }}>
                 🗂️ 주문이력
               </button>
@@ -915,19 +950,11 @@ export default function AdminPage() {
             onClick={() => {
               setMobileMenuOpen(false);
               setSiteMenuOpen(false);
-              if (showOverlayPreview) {
-                closeOverlayPreview();
-                return;
+              if (showSettings || showHistory || showRanking || showOverlayPreview) {
+                goToDashboard();
+              } else {
+                navigateAdmin(ADMIN_ROUTES.settings);
               }
-              if (showSettings || showHistory || showRanking) {
-                setShowSettings(false);
-                setShowHistory(false);
-                setShowRanking(false);
-                setShowHitHistory(false);
-                setShowRewardLedger(false);
-                return;
-              }
-              setShowSettings(true);
             }}
             aria-pressed={showSettings}
           >
@@ -936,7 +963,7 @@ export default function AdminPage() {
           {showHistory && (
             <button className={styles.historyButton} onClick={() => {
               setMobileMenuOpen(false);
-              setShowRewardLedger(true);
+              navigateAdmin(ADMIN_ROUTES.rewards);
             }}>
               💰 적립금 원장
             </button>
@@ -944,7 +971,7 @@ export default function AdminPage() {
           {showHistory && (
             <button className={styles.historyButton} onClick={() => {
               setMobileMenuOpen(false);
-              setShowHitHistory(true);
+              navigateAdmin(ADMIN_ROUTES.hitHistory);
             }}>
               🃏 히트카드
             </button>
@@ -957,7 +984,7 @@ export default function AdminPage() {
       {showSettings ? (
         <section className={styles.settingsPage} aria-labelledby="settings-title">
           <div className={styles.pageTitleRow}>
-            <button className={styles.pageBackButton} onClick={() => setShowSettings(false)} aria-label="뒤로가기" title="뒤로가기">←</button>
+            <button className={styles.pageBackButton} onClick={() => navigateAdmin(ADMIN_ROUTES.home)} aria-label="뒤로가기" title="뒤로가기">←</button>
             <h2 id="settings-title">설정</h2>
           </div>
           <div className={styles.settingRow}>
@@ -1009,10 +1036,10 @@ export default function AdminPage() {
         </section>
       ) : showHistory ? (
         <section className={styles.historyPage} aria-label="주문 이력">
-          <OrderHistoryContent onBack={() => setShowHistory(false)} />
+          <OrderHistoryContent onBack={() => navigateAdmin(ADMIN_ROUTES.home)} />
         </section>
       ) : showRanking ? (
-        <OrderRankingPanel onBack={() => setShowRanking(false)} />
+        <OrderRankingPanel onBack={() => navigateAdmin(ADMIN_ROUTES.home)} />
       ) : (
       <>
       {!showOverlayPreview && (
@@ -1049,6 +1076,7 @@ export default function AdminPage() {
                 <span className={styles.orderDescription}>{opening.product} × {opening.quantity}</span>
                 <span className={styles.orderAmount}>{formatOrderAmount(opening)}</span>
               </div>
+              {renderOrderFinancialBadges(opening)}
               <div className={styles.orderRowFooter}>
                 {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
                 <div className={styles.rowActions}>
@@ -1160,7 +1188,7 @@ export default function AdminPage() {
                     role="tab"
                     aria-selected={overlayPreviewMode === "new"}
                     onClick={() => {
-                      setOverlayPreviewMode("new");
+                      navigateAdmin(ADMIN_ROUTES.overlay);
                       setSelectedShortsZone("current");
                     }}
                   >
@@ -1172,7 +1200,7 @@ export default function AdminPage() {
                     role="tab"
                     aria-selected={overlayPreviewMode === "basic"}
                     onClick={() => {
-                      setOverlayPreviewMode("basic");
+                      navigateAdmin(ADMIN_ROUTES.basicOverlay);
                       setSelectedShortsZone("hit");
                     }}
                   >
@@ -1184,7 +1212,7 @@ export default function AdminPage() {
                     role="tab"
                     aria-selected={overlayPreviewMode === "animation"}
                     onClick={() => {
-                      setOverlayPreviewMode("animation");
+                      navigateAdmin(ADMIN_ROUTES.orderAlerts);
                       setSelectedShortsZone("announcement");
                     }}
                   >
@@ -1351,11 +1379,11 @@ export default function AdminPage() {
       </>
       )}
       {showHitHistory && (
-        <div className={styles.modalOverlay} onClick={() => setShowHitHistory(false)}>
+        <div className={styles.modalOverlay} onClick={() => router.replace(ADMIN_ROUTES.history)}>
           <div className={`${styles.modalCard} ${styles.hitHistoryModal}`} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalTopBarWithTitle}>
               <h2 className={styles.modalTitle}>히트카드 이력</h2>
-              <button className={styles.modalCloseBtn} onClick={() => setShowHitHistory(false)}>
+              <button className={styles.modalCloseBtn} onClick={() => router.replace(ADMIN_ROUTES.history)}>
                 닫기 ✕
               </button>
             </div>
@@ -1364,11 +1392,11 @@ export default function AdminPage() {
         </div>
       )}
       {showRewardLedger && (
-        <div className={styles.modalOverlay} onClick={() => setShowRewardLedger(false)}>
+        <div className={styles.modalOverlay} onClick={() => router.replace(ADMIN_ROUTES.history)}>
           <div className={`${styles.modalCard} ${styles.rewardLedgerModal}`} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalTopBarWithTitle}>
               <h2 className={styles.modalTitle}>적립금 처리내역</h2>
-              <button className={styles.modalCloseBtn} onClick={() => setShowRewardLedger(false)}>
+              <button className={styles.modalCloseBtn} onClick={() => router.replace(ADMIN_ROUTES.history)}>
                 닫기 ✕
               </button>
             </div>
@@ -1464,16 +1492,29 @@ export default function AdminPage() {
               </div>
               <div className={styles.field}>
                 <label className={styles.fieldLabel}>구매수량</label>
-                <input type="number" min={1} placeholder="수량 입력" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} />
+                <input type="number" min={1} placeholder="수량 입력" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value), finalPaymentAmount: "" })} />
               </div>
               <div className={styles.field}>
                 <label className={styles.fieldLabel}>금액</label>
-                <input type="number" min={0} placeholder="금액 입력" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: Number(e.target.value) })} />
+                <input type="number" min={0} placeholder="금액 입력" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: Number(e.target.value), finalPaymentAmount: "" })} />
               </div>
               <div className={styles.field}>
                 <label className={styles.fieldLabel}>등급</label>
                 <input placeholder="등급 입력(선택)" value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value })} />
               </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="manual-points-used">적립금 사용액</label>
+                <input id="manual-points-used" type="number" min={0} step={1} value={form.pointsSpentAmount} onChange={(e) => setForm({ ...form, pointsSpentAmount: Number(e.target.value), finalPaymentAmount: "" })} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="manual-final-payment">최종결제액</label>
+                <input id="manual-final-payment" type="number" min={0} step={1} value={form.finalPaymentAmount === "" ? form.unitPrice * form.quantity - form.pointsSpentAmount : form.finalPaymentAmount} onChange={(e) => setForm({ ...form, finalPaymentAmount: e.target.value })} />
+              </div>
+              <label className={styles.zoneEnabledToggle}>
+                <input type="checkbox" checked={form.includeRevenue} onChange={(e) => setForm({ ...form, includeRevenue: e.target.checked })} />
+                <span className={styles.toggleTrack} aria-hidden="true"><i /></span>
+                매출 포함 <output>{form.includeRevenue ? "On" : "Off"}</output>
+              </label>
               <button type="submit">추가</button>
             </form>
             <section className={styles.manualOrderHistory} aria-label="직접 입력 주문 이력">

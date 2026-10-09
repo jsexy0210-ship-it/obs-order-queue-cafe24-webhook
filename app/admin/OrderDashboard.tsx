@@ -7,6 +7,8 @@ import { DEVELOPMENT_HOME_SAMPLES_ENABLED, getDevelopmentDashboardSamples } from
 type Order = {
   created_at: string;
   actual_amount: number;
+  source?: string;
+  include_revenue?: boolean;
   points_spent_amount?: number | null;
   payment_method: string | null;
   paid_at: string | null;
@@ -159,12 +161,12 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
 
   const amountOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
-    return order.status !== "cancelled" && Boolean(order.paid_at)
+    return order.status !== "cancelled" && order.include_revenue !== false && (order.source === "manual" ? order.include_revenue === true : Boolean(order.paid_at))
       && time >= rangeStart(range, now) && time <= now;
   });
   const paymentOrders = orders.filter((order) => {
     const time = parseUtc(order.created_at);
-    return order.status !== "cancelled" && Boolean(order.paid_at)
+    return order.status !== "cancelled" && order.include_revenue !== false && (order.source === "manual" ? order.include_revenue === true : Boolean(order.paid_at))
       && time >= rangeStart(range, now) && time <= now;
   });
   const currentRewards = rewardEntries.filter((entry) => {
@@ -181,7 +183,8 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
       !(order.payment_method ?? "").toLowerCase().split(",").includes("card")
       && (order.payment_method ?? "").toLowerCase().split(",").some((method) => BANK_DEPOSIT_METHODS.has(method))
     ).length;
-  const paymentCount = cardCount + bankCount;
+  const manualCount = paymentOrders.filter((order) => order.source === "manual").length;
+  const paymentCount = cardCount + bankCount + manualCount;
   const rewardTotal = currentRewards.reduce((total, entry) => total + entry.amount, 0);
   const rewardByGrade = grades.map((grade) => {
     const entries = currentRewards.filter((entry) => entry.grade_id === grade.id);
@@ -242,7 +245,7 @@ export default function OrderDashboard({ range }: { range: DashboardRange }) {
           <span>총 결제건수</span>
         </div>
         <strong>{paymentCount}건</strong>
-        <small>카드결제 {cardCount}건 · 무통장 {bankCount}건</small>
+        <small>카드결제 {cardCount}건 · 무통장 {bankCount}건{manualCount > 0 && ` · 직접입력 ${manualCount}건`}</small>
         <div className={styles.barChart} role="img" aria-label={`${range} 기간별 카드결제와 무통장 주문 건수 막대 그래프`}>
           {paymentSeries.map((point) => (
             <div

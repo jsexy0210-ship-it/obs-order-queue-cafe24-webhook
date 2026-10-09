@@ -1,3 +1,4 @@
+import { applyManualOrderFinancials } from "@/lib/adminOrderFinancials";
 import { NextResponse } from "next/server";
 import {
   getHitCardHistory,
@@ -37,15 +38,15 @@ export async function GET(request: Request) {
     }
     // 대시보드도 주문 이력과 같은 숨김 주문 기준으로 집계합니다.
     const hiddenOrderIds = getHiddenOrderHistoryIds();
-    const current = await currentOrderView(getOrderHistory(), cafe24Orders, hiddenOrderIds);
+    const current = applyManualOrderFinancials(await currentOrderView(getOrderHistory(), cafe24Orders, hiddenOrderIds));
     const orderDates = new Map(current.flatMap((order) => order.external_order_id
       ? [[order.external_order_id, order.created_at] as const] : []));
     const cumulativeReward = getDashboardCumulativeRewardBalance();
     const legacyRewardBalanceByGrade = await getDashboardLegacyRewardBalanceByGrade();
     return NextResponse.json({
       orders: current.filter((order) => order.created_at >= dashboardStartUtc)
-        .map(({ created_at, payment_method, paid_at, status, actual_amount, points_spent_amount }) => ({
-          created_at, payment_method, paid_at, status, actual_amount, points_spent_amount,
+        .map(({ created_at, payment_method, paid_at, status, actual_amount, points_spent_amount, source, include_revenue }) => ({
+          created_at, payment_method, paid_at, status, actual_amount, points_spent_amount, source, include_revenue,
         })),
       rewardEntries: getDashboardRewardEntries()
         .filter((entry) => !hiddenOrderIds.has(entry.external_order_id))
@@ -103,7 +104,7 @@ export async function GET(request: Request) {
     orders.flatMap((order) => order.external_order_id ? [order.external_order_id] : [])
   );
   const gradeNames = new Map<string, string>(getRewardSettings().grades.map((grade) => [grade.id, grade.name]));
-  const resolvedOrders = (await resolveOrderBuyerNames(orders)).map((order) => {
+  const resolvedOrders = (await resolveOrderBuyerNames(applyManualOrderFinancials(orders))).map((order) => {
     const issuedGradeId = order.external_order_id ? rewardSummaries[order.external_order_id]?.issue?.grade_id : undefined;
     // 과거 주문은 현재 회원등급이 아니라, 실제 적립금을 산정한 당시 원장 등급을 표시합니다.
     return issuedGradeId ? { ...order, tier: gradeNames.get(issuedGradeId) ?? order.tier } : order;
