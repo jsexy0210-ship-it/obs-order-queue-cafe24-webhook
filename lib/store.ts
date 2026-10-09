@@ -408,8 +408,9 @@ export function insertOrder(input: {
     )
   `);
 
+  let insertedOrderId: number;
   try {
-    stmt.run({
+    const result = stmt.run({
       source: input.source,
       externalOrderId: input.externalOrderId ?? null,
       userId: input.userId,
@@ -426,6 +427,7 @@ export function insertOrder(input: {
       easypayName: input.easypayName ?? null,
       paidAt: input.paid ? toSqliteUtc(input.paymentDate) : null,
     });
+    insertedOrderId = Number(result.lastInsertRowid);
   } catch (err) {
     // external_order_id UNIQUE 충돌 = 카페24가 같은 웹훅을 재전송한 경우 → 조용히 무시
     const message = err instanceof Error ? err.message : String(err);
@@ -434,6 +436,7 @@ export function insertOrder(input: {
   }
 
   broadcastUpdate();
+  return insertedOrderId;
 }
 
 /** Cafe24 품목 추가 이벤트에서 기존 주문 요약을 원본 주문 기준으로 갱신합니다. */

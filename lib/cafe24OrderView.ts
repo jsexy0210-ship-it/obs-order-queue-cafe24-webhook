@@ -64,7 +64,7 @@ function actualAmount(order: Cafe24RewardOrder, localAmount: number) {
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : localAmount;
 }
 
-function pointsSpentAmount(order: Cafe24RewardOrder): number | null {
+export function pointsSpentAmount(order: Cafe24RewardOrder): number | null {
   const raw = order.actual_order_amount?.points_spent_amount;
   if (raw == null || String(raw).trim() === "") return null;
   const amount = Number(raw);
