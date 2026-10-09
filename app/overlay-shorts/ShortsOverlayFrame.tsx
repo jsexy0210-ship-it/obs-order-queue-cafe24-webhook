@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { useLiveCardBreak, type LiveOrder } from "@/app/useLiveCardBreak";
-import { DEFAULT_NEW_OVERLAY_SETTINGS, getDeckAppearance, SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
+import { ORDER_TOASTS_ENABLED, DEFAULT_NEW_OVERLAY_SETTINGS, getDeckAppearance, SHORTS_ZONE_IDS, type OverlaySettings, type ShortsZoneId } from "@/lib/overlaySettings";
 import Image from "next/image";
 import pikachuCard from "./icons/pikachu-card.png";
 import luffyCard from "./icons/luffy-card.png";
@@ -173,7 +173,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
 
   // 관리 화면의 신규 주문 효과는 최신 실제 주문으로 미리봅니다.
   useEffect(() => {
-    if (!showAnimationPreview) {
+    if (!ORDER_TOASTS_ENABLED || !showAnimationPreview) {
       setPreviewOrder(null);
       return;
     }
@@ -195,7 +195,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
 
   // 첫 로드에서 이미 대기 중이던 주문은 재생하지 않습니다. 이후 새로 들어온 ID만 한 번 처리합니다.
   useEffect(() => {
-    if (live.loading) return;
+    if (!ORDER_TOASTS_ENABLED || live.loading) return;
     const visibleOrders = [...(live.opening ? [live.opening] : []), ...live.waiting];
     const known = seenOrderIds.current;
     if (!known) {
@@ -355,7 +355,7 @@ export default function ShortsOverlayFrame({ settingsOverride, variant = "basic"
   return (
     <div className={`${styles.shortsShell} ${variant === "deck" ? styles.deckVariant : ""} ${!preview && !editing ? styles.liveShell : ""}`} aria-label={editing || preview ? "YouTube Shorts 실제 비율 미리보기" : "망고TCG 라이브 오버레이"}>
       <div className={styles.videoStage} ref={stageRef}>
-        {zoneIds.map((id) => {
+        {zoneIds.filter((id) => ORDER_TOASTS_ENABLED || id !== "announcement").map((id) => {
           const orderEffectSettings = displayedOrderEffect
             ? settings.shorts.newOrder[displayedOrderEffect.kind]
             : settings.shorts.newOrder.repeat;
