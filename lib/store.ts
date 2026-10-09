@@ -564,6 +564,13 @@ export function addHitCard(userId: string, card: string, youtubeNickname?: strin
   broadcastUpdate();
 }
 
+export function updateHitCard(id: number, card: string, youtubeNickname: string | null) {
+  const result = db.prepare("UPDATE hit_cards SET card = ?, youtube_nickname = ? WHERE id = ?").run(card, youtubeNickname, id);
+  if (result.changes === 0) return false;
+  broadcastUpdate();
+  return true;
+}
+
 export function deleteHitCard(id: number) {
   db.prepare("DELETE FROM hit_cards WHERE id = ?").run(id);
   broadcastUpdate();

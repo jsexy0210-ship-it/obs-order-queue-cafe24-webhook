@@ -3797,3 +3797,7 @@
 .finalPaymentBadge { color: #63eda3; background: rgba(53,208,127,.16); }
 .page[data-theme="light"] .pointsUsedBadge { color: #6d28d9; }
 .page[data-theme="light"] .finalPaymentBadge { color: #166534; }
+
+.hitActions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.hitEdit { padding: 3px 8px; border: 1px solid rgba(167,139,250,.4); border-radius: 6px; background: rgba(139,92,246,.16); color: #ddd6fe; font-size: 11px; font-weight: 700; cursor: pointer; }
+.page[data-theme="light"] .hitEdit { color: #6d28d9; }

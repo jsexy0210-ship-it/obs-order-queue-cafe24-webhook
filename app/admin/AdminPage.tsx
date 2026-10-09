@@ -100,6 +100,8 @@ export default function AdminPage() {
     finalPaymentAmount: "",
     includeRevenue: false,
   });
+  const [editingHitId, setEditingHitId] = useState<number | null>(null);
+  const [savingHit, setSavingHit] = useState(false);
   const [hitForm, setHitForm] = useState({ card: "", youtubeNickname: "" });
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [dashboardRange, setDashboardRange] = useState<DashboardRange>("day");
@@ -698,19 +700,30 @@ export default function AdminPage() {
 
   async function addHit(e: FormEvent) {
     e.preventDefault();
-    if (!hitForm.card) {
+    if (!hitForm.card.trim()) {
       window.alert("카드명을 입력하세요.");
       return;
     }
-
-    await fetch("/api/hit-cards", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...hitForm, userId: "" }),
-    });
-
-    setHitForm({ card: "", youtubeNickname: "" });
-    setShowHitRegistration(false);
+    if (savingHit) return;
+    setSavingHit(true);
+    try {
+      const response = await fetch(editingHitId === null ? "/api/hit-cards" : `/api/hit-cards/${editingHitId}`, {
+        method: editingHitId === null ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...hitForm, card: hitForm.card.trim(), userId: "" }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error ?? "히트카드 저장에 실패했습니다.");
+      }
+      setHitForm({ card: "", youtubeNickname: "" });
+      setEditingHitId(null);
+      setShowHitRegistration(false);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "히트카드 저장에 실패했습니다.");
+    } finally {
+      setSavingHit(false);
+    }
   }
 
   async function removeHit(id: number) {
@@ -755,7 +768,7 @@ export default function AdminPage() {
           <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
           {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
           <div className={styles.rowActions}>
-            <button onClick={() => startOpening(order.id)}>오픈시작</button>
+            <button onClick={() => startOpening(order.id)}>오픈시작 (Enter)</button>
           </div>
         </div>
       </div>
@@ -1080,7 +1093,7 @@ export default function AdminPage() {
               <div className={styles.orderRowFooter}>
                 {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
                 <div className={styles.rowActions}>
-                  <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료</button>
+                  <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료 (Enter)</button>
                 </div>
               </div>
             </div>
@@ -1138,7 +1151,7 @@ export default function AdminPage() {
       <section className={styles.block}>
         <div className={styles.queueCardHeader}>
           <h2>HIT&amp;RGB</h2>
-          <button type="button" className={styles.queueHistoryButton} onClick={() => setShowHitRegistration(true)}>신규등록</button>
+          <button type="button" className={styles.queueHistoryButton} onClick={() => { setEditingHitId(null); setHitForm({ card: "", youtubeNickname: "" }); setShowHitRegistration(true); }}>신규등록</button>
         </div>
         {hitCards.length === 0 && <p className={styles.empty}>등록된 히트카드 이력 없음</p>}
         <ul className={styles.hitList}>
@@ -1148,9 +1161,14 @@ export default function AdminPage() {
                 {(h.youtube_nickname || h.user_id) && <b>◆ {h.youtube_nickname || h.user_id} -</b>}
                 <em>{h.card}</em>
               </span>
-              <button className={styles.hitDelete} onClick={() => removeHit(h.id)}>
-                삭제
-              </button>
+              <div className={styles.hitActions}>
+                <button type="button" className={styles.hitEdit} onClick={() => {
+                  setEditingHitId(h.id);
+                  setHitForm({ card: h.card, youtubeNickname: h.youtube_nickname ?? "" });
+                  setShowHitRegistration(true);
+                }}>수정</button>
+                <button type="button" className={styles.hitDelete} onClick={() => removeHit(h.id)}>삭제</button>
+              </div>
             </li>
           ))}
         </ul>
@@ -1440,7 +1458,7 @@ export default function AdminPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.modalTopBarWithTitle}>
-              <h2 className={styles.modalTitle} id="hit-registration-title">HIT&amp;RGB 등록</h2>
+              <h2 className={styles.modalTitle} id="hit-registration-title">HIT&amp;RGB {editingHitId === null ? "등록" : "수정"}</h2>
               <button className={styles.modalCloseBtn} onClick={() => setShowHitRegistration(false)}>
                 닫기 ✕
               </button>
@@ -1463,7 +1481,7 @@ export default function AdminPage() {
                   onChange={(event) => setHitForm({ ...hitForm, card: event.target.value })}
                 />
               </div>
-              <button type="submit">등록</button>
+              <button type="submit" disabled={savingHit}>{savingHit ? "저장 중…" : editingHitId === null ? "등록" : "저장"}</button>
             </form>
           </section>
         </div>
