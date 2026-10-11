@@ -740,16 +740,17 @@ export default function AdminPage() {
   }
 
   function renderOrderFinancialBadges(order: LiveOrder) {
+    const payment = getPaymentBadge(order);
     const points = order.points_spent_amount;
     const finalPayment = order.final_payment_amount;
     return <div className={styles.orderFinancialBadges}>
       <span className={styles.pointsUsedBadge}>적립금 사용액 {points == null ? "조회 불가" : points.toLocaleString("ko-KR") + "원"}</span>
       <span className={styles.finalPaymentBadge}>최종결제액 {finalPayment == null ? "조회 불가" : finalPayment.toLocaleString("ko-KR") + "원"}</span>
+      <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
     </div>;
   }
 
   function renderWaitingRow(order: LiveOrder) {
-    const payment = getPaymentBadge(order);
     return (
       <div className={`${styles.row} ${styles.queueOrderRow}`} key={order.id}>
         <div className={styles.orderIdentity}>
@@ -765,8 +766,6 @@ export default function AdminPage() {
         </div>
         {renderOrderFinancialBadges(order)}
         <div className={styles.orderRowFooter}>
-          <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
-          {payment.kind.startsWith("bank") && order.paid_at && <span className={styles.paidBadge}>입금 후</span>}
           <div className={styles.rowActions}>
             <button onClick={() => startOpening(order.id)}>오픈시작 (Enter)</button>
           </div>
@@ -817,8 +816,8 @@ export default function AdminPage() {
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
           <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
         </div>
+        {renderOrderFinancialBadges(order)}
         <div className={styles.orderRowFooter}>
-          <span className={styles.unpaidBadge}>입금 전</span>
           <div className={styles.rowActions}>
             <button
               className={styles.confirmPaymentButton}
@@ -1093,7 +1092,6 @@ export default function AdminPage() {
               </div>
               {renderOrderFinancialBadges(opening)}
               <div className={styles.orderRowFooter}>
-                {opening.paid_at && <span className={styles.paidBadge}>입금완료</span>}
                 <div className={styles.rowActions}>
                   <button className={styles.completeButton} onClick={() => completeOrder(opening.id)}>오픈완료 (Enter)</button>
                 </div>

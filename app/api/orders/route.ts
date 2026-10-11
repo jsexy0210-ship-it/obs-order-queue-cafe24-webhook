@@ -16,11 +16,12 @@ export async function GET() {
   const rewardSummaries = getRewardSummaries(
     [...state.pendingPayments, ...state.waiting].flatMap((order) => order.external_order_id ? [order.external_order_id] : [])
   );
-  const rows = await resolveAdminOrderFinancials([...(state.opening ? [state.opening] : []), ...state.waiting, ...manualOrders]);
+  const rows = await resolveAdminOrderFinancials([...(state.opening ? [state.opening] : []), ...state.waiting, ...state.pendingPayments, ...manualOrders]);
   const financials = new Map(rows.map((order) => [order.id, order]));
   return NextResponse.json({ ...state,
     opening: state.opening ? financials.get(state.opening.id) ?? state.opening : null,
     waiting: state.waiting.map((order) => financials.get(order.id) ?? order),
+    pendingPayments: state.pendingPayments.map((order) => financials.get(order.id) ?? order),
     completedToday, manualOrders: manualOrders.map((order) => financials.get(order.id) ?? order), rewardSummaries });
 }
 
