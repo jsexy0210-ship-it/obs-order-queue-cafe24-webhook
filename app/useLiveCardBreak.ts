@@ -27,6 +27,7 @@ export type LiveOrder = {
   completed_at: string | null;
   timer_seconds: number | null;
   youtube_nickname: string | null;
+  card_receipt_method?: string | null;
   paid_at: string | null;
   payment_method: string | null;
   payment_gateway_name: string | null;

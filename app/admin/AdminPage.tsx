@@ -739,6 +739,14 @@ export default function AdminPage() {
     router.refresh();
   }
 
+  function renderCardReceiptMethod(order: LiveOrder) {
+    return order.card_receipt_method ? (
+      <div className={styles.cardReceiptMethod}>
+        <span>카드 수령 방식</span> <strong>{order.card_receipt_method}</strong>
+      </div>
+    ) : null;
+  }
+
   function renderOrderFinancialBadges(order: LiveOrder) {
     const payment = getPaymentBadge(order);
     const points = order.points_spent_amount;
@@ -764,6 +772,7 @@ export default function AdminPage() {
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
           <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
         </div>
+        {renderCardReceiptMethod(order)}
         {renderOrderFinancialBadges(order)}
         <div className={styles.orderRowFooter}>
           <div className={styles.rowActions}>
@@ -816,6 +825,7 @@ export default function AdminPage() {
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
           <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
         </div>
+        {renderCardReceiptMethod(order)}
         {renderOrderFinancialBadges(order)}
         <div className={styles.orderRowFooter}>
           <div className={styles.rowActions}>
@@ -1090,6 +1100,7 @@ export default function AdminPage() {
                 <span className={styles.orderDescription}>{opening.product} × {opening.quantity}</span>
                 <span className={styles.orderAmount}>{formatOrderAmount(opening)}</span>
               </div>
+              {renderCardReceiptMethod(opening)}
               {renderOrderFinancialBadges(opening)}
               <div className={styles.orderRowFooter}>
                 <div className={styles.rowActions}>

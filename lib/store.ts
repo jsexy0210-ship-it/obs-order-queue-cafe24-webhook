@@ -27,6 +27,7 @@ export type OrderRow = {
   payment_gateway_name: string | null;
   easypay_name: string | null;
   youtube_nickname: string | null;
+  card_receipt_method?: string | null;
   timer_seconds: number | null;
   created_at: string;
   is_first_order?: boolean;
@@ -392,6 +393,7 @@ export function insertOrder(input: {
   actualAmount?: number | null;
   tier?: string;
   youtubeNickname?: string | null;
+  cardReceiptMethod?: string | null;
   paymentMethod?: string | null;
   paymentGatewayName?: string | null;
   easypayName?: string | null;
@@ -401,10 +403,10 @@ export function insertOrder(input: {
   const stmt = db.prepare(`
     INSERT INTO orders (
       source, external_order_id, user_id, member_id, product, product_image_url, quantity, unit_price, tier,
-      actual_amount, youtube_nickname, payment_method, payment_gateway_name, easypay_name, paid_at, status
+      actual_amount, youtube_nickname, card_receipt_method, payment_method, payment_gateway_name, easypay_name, paid_at, status
     ) VALUES (
       @source, @externalOrderId, @userId, @memberId, @product, @productImageUrl, @quantity, @unitPrice, @tier,
-      @actualAmount, @youtubeNickname, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting'
+      @actualAmount, @youtubeNickname, @cardReceiptMethod, @paymentMethod, @paymentGatewayName, @easypayName, @paidAt, 'waiting'
     )
   `);
 
@@ -422,6 +424,7 @@ export function insertOrder(input: {
       tier: input.tier ?? "",
       actualAmount: input.actualAmount ?? null,
       youtubeNickname: input.youtubeNickname ?? null,
+      cardReceiptMethod: input.cardReceiptMethod ?? null,
       paymentMethod: input.paymentMethod ?? null,
       paymentGatewayName: input.paymentGatewayName ?? null,
       easypayName: input.easypayName ?? null,
@@ -450,6 +453,7 @@ export function updateCafe24Order(input: {
   unitPrice: number;
   actualAmount?: number | null;
   youtubeNickname?: string | null;
+  cardReceiptMethod?: string | null;
   paymentMethod?: string | null;
   paymentGatewayName?: string | null;
   easypayName?: string | null;
@@ -459,6 +463,7 @@ export function updateCafe24Order(input: {
        user_id = ?, member_id = COALESCE(?, member_id), product = ?, product_image_url = COALESCE(?, product_image_url), quantity = ?, unit_price = ?,
        actual_amount = COALESCE(?, actual_amount),
        youtube_nickname = COALESCE(?, youtube_nickname),
+       card_receipt_method = COALESCE(?, card_receipt_method),
        payment_method = COALESCE(?, payment_method),
        payment_gateway_name = COALESCE(?, payment_gateway_name),
        easypay_name = COALESCE(?, easypay_name)
@@ -472,6 +477,7 @@ export function updateCafe24Order(input: {
     input.unitPrice,
     input.actualAmount ?? null,
     input.youtubeNickname ?? null,
+    input.cardReceiptMethod ?? null,
     input.paymentMethod ?? null,
     input.paymentGatewayName ?? null,
     input.easypayName ?? null,

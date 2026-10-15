@@ -1,3 +1,4 @@
+import { extractCafe24CardReceiptMethod } from "./cafe24";
 import { db } from "./db";
 import { getCafe24OrdersForMonths, pointsSpentAmount } from "./cafe24OrderView";
 import type { OrderRow } from "./store";
@@ -49,6 +50,8 @@ export async function resolveAdminOrderFinancials(orders: OrderRow[]) {
     getCafe24OrdersForMonths(year, [month]).catch(() => [])));
   const remote = new Map(pages.flat().map((order) => [order.order_id, order]));
   return applyManualOrderFinancials(orders.map((order) => ({ ...order,
+    card_receipt_method: order.card_receipt_method || (order.external_order_id
+      ? extractCafe24CardReceiptMethod(remote.get(order.external_order_id)?.additional_order_info_list) : null),
     points_spent_amount: order.external_order_id && remote.has(order.external_order_id)
       ? pointsSpentAmount(remote.get(order.external_order_id)!) : null,
   })));
