@@ -784,7 +784,6 @@ export default function AdminPage() {
   }
 
   function renderQueueHistoryRow(order: LiveOrder, kind: QueueHistoryKind) {
-    const payment = getPaymentBadge(order);
     const isOpeningHistory = kind === "opening";
     const isPendingHistory = kind === "pending";
     const timestamp = isOpeningHistory ? order.completed_at : order.created_at;
@@ -799,13 +798,15 @@ export default function AdminPage() {
             {formatCompletedTime(timestamp)}
           </time>
         </div>
+        {order.youtube_nickname && <span className={styles.ytBadge}>{formatYoutubeNickname(order.youtube_nickname)}</span>}
         <div className={styles.orderProductLine}>
           <span className={styles.orderDescription}>{order.product} × {order.quantity}</span>
           <span className={styles.orderAmount}>{formatOrderAmount(order)}</span>
         </div>
+        {renderCardReceiptMethod(order)}
+        {renderOrderFinancialBadges(order)}
         <div className={styles.orderRowFooter}>
           <span className={styles.completedOpeningBadge}>{isOpeningHistory ? "최종오픈" : isPendingHistory ? "입금 전" : "대기"}</span>
-          <span className={styles.paymentBadge} data-kind={payment.kind}>{payment.label}</span>
         </div>
       </div>
     );
