@@ -169,6 +169,9 @@ const orderColumns = db.prepare("PRAGMA table_info(orders)").all() as { name: st
 if (!orderColumns.some((col) => col.name === "completed_at")) {
   db.exec("ALTER TABLE orders ADD COLUMN completed_at TEXT");
 }
+if (!orderColumns.some((col) => col.name === "card_receipt_method")) {
+  db.exec("ALTER TABLE orders ADD COLUMN card_receipt_method TEXT");
+}
 if (!orderColumns.some((col) => col.name === "youtube_nickname")) {
   db.exec("ALTER TABLE orders ADD COLUMN youtube_nickname TEXT");
 }

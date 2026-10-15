@@ -7,6 +7,7 @@ type Cafe24Normalized = {
   quantity: number;
   unitPrice: number;
   youtubeNickname: string | null;
+  cardReceiptMethod: string | null;
   paymentMethod: string | null;
   paymentGatewayName: string | null;
   easypayName: string | null;
@@ -34,13 +35,8 @@ function pick(obj: any, keys: string[]): unknown {
  * "필드명  = 값" 형태의 문자열로 옵니다. 여러 항목이면 줄바꿈으로 구분됩니다.
  * 예: "유튜브 닉네임  = 재호"
  */
-/**
- * additional_order_info_list 안에서 "유튜브 닉네임" 항목의 값을 찾습니다.
- * 라벨은 쇼핑몰 설정에 따라 문구가 조금 달라질 수 있어 "유튜브"/"youtube"가 들어간 라벨을 폭넓게 찾습니다.
- */
-export function extractCafe24YoutubeNickname(raw: unknown): string | null {
-  const isYoutubeLabel = (value: unknown) => typeof value === "string"
-    && (value.includes("유튜브") || value.toLowerCase().includes("youtube"));
+/** 문자열·배열·객체 형태의 추가입력에서 라벨에 대응하는 값만 읽습니다. */
+function extractCafe24AdditionalInfo(raw: unknown, matchesLabel: (value: unknown) => boolean): string | null {
 
   if (typeof raw === "string") {
     for (const line of raw.split(/\r?\n/)) {
@@ -48,11 +44,11 @@ export function extractCafe24YoutubeNickname(raw: unknown): string | null {
       if (separator < 0) continue;
       const label = line.slice(0, separator).trim();
       const value = line.slice(separator + 1).trim();
-      if (isYoutubeLabel(label)) return value || null;
+      if (matchesLabel(label)) return value || null;
     }
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (parsed !== raw) return extractCafe24YoutubeNickname(parsed);
+      if (parsed !== raw) return extractCafe24AdditionalInfo(parsed, matchesLabel);
     } catch {
       return null;
     }
@@ -61,7 +57,7 @@ export function extractCafe24YoutubeNickname(raw: unknown): string | null {
 
   if (Array.isArray(raw)) {
     for (const item of raw) {
-      const found = extractCafe24YoutubeNickname(item);
+      const found = extractCafe24AdditionalInfo(item, matchesLabel);
       if (found) return found;
     }
     return null;
@@ -71,18 +67,28 @@ export function extractCafe24YoutubeNickname(raw: unknown): string | null {
     const entries = Object.entries(raw as Record<string, unknown>);
     const label = entries.find(([key]) => /(?:label|name|title|field|key)/i.test(key))?.[1];
     const value = entries.find(([key]) => /(?:value|answer|content|text)/i.test(key))?.[1];
-    if (isYoutubeLabel(label) && (typeof value === "string" || typeof value === "number")) {
+    if (matchesLabel(label) && (typeof value === "string" || typeof value === "number")) {
       return String(value).trim() || null;
     }
     for (const [key, nested] of entries) {
-      if (isYoutubeLabel(key) && (typeof nested === "string" || typeof nested === "number")) {
+      if (matchesLabel(key) && (typeof nested === "string" || typeof nested === "number")) {
         return String(nested).trim() || null;
       }
-      const found = extractCafe24YoutubeNickname(nested);
+      const found = extractCafe24AdditionalInfo(nested, matchesLabel);
       if (found) return found;
     }
   }
   return null;
+}
+
+export function extractCafe24YoutubeNickname(raw: unknown): string | null {
+  return extractCafe24AdditionalInfo(raw, value => typeof value === "string"
+    && (value.includes("유튜브") || value.toLowerCase().includes("youtube")));
+}
+
+export function extractCafe24CardReceiptMethod(raw: unknown): string | null {
+  return extractCafe24AdditionalInfo(raw, value => typeof value === "string"
+    && value.replace(/\s/g, "").includes("카드수령방식"));
 }
 
 /**
@@ -167,6 +173,7 @@ export function normalizeCafe24Order(payload: any): Cafe24Normalized | null {
     quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
     unitPrice: Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 15000,
     youtubeNickname,
+    cardReceiptMethod: extractCafe24CardReceiptMethod(additionalInfoRaw),
     paymentMethod,
     paymentGatewayName: paymentInfo.paymentGatewayName,
     easypayName: paymentInfo.easypayName,

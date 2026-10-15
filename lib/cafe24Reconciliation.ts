@@ -4,7 +4,7 @@ import {
   listCafe24Orders,
   type Cafe24RewardOrder,
 } from "./cafe24Admin";
-import { extractCafe24YoutubeNickname } from "./cafe24";
+import { extractCafe24YoutubeNickname, extractCafe24CardReceiptMethod } from "./cafe24";
 import { db } from "./db";
 import { broadcastUpdate } from "./events";
 
@@ -34,6 +34,7 @@ type ReconciliationOrder = {
   unitPrice: number;
   actualAmount: number;
   youtubeNickname: string | null;
+  cardReceiptMethod: string | null;
   paymentMethod: string | null;
   paidAt: string | null;
   createdAt: string;
@@ -98,6 +99,7 @@ function orderFromCafe24(order: Cafe24RewardOrder): ReconciliationOrder | null {
     unitPrice,
     actualAmount: amount,
     youtubeNickname: extractCafe24YoutubeNickname(order.additional_order_info_list),
+    cardReceiptMethod: extractCafe24CardReceiptMethod(order.additional_order_info_list),
     paymentMethod: paymentMethod(order),
     paidAt: paid ? sqliteUtc(order.payment_date) : null,
     createdAt: sqliteUtc(order.order_date, new Date().toISOString().slice(0, 19).replace("T", " "))!,
@@ -175,6 +177,7 @@ export async function reconcileCafe24Orders(input: ReconciliationInput): Promise
         unit_price = @unitPrice,
         actual_amount = @actualAmount,
         youtube_nickname = COALESCE(@youtubeNickname, youtube_nickname),
+        card_receipt_method = COALESCE(@cardReceiptMethod, card_receipt_method),
         payment_method = COALESCE(@paymentMethod, payment_method),
         paid_at = @paidAt,
         created_at = @createdAt,
@@ -191,10 +194,10 @@ export async function reconcileCafe24Orders(input: ReconciliationInput): Promise
     const insert = db.prepare(`
       INSERT INTO orders (
         source, external_order_id, user_id, member_id, product, quantity, unit_price, actual_amount,
-        youtube_nickname, payment_method, paid_at, status, cancel_reason, cancelled_at, created_at
+        youtube_nickname, card_receipt_method, payment_method, paid_at, status, cancel_reason, cancelled_at, created_at
       ) VALUES (
         'cafe24', @externalOrderId, @userId, @memberId, @product, @quantity, @unitPrice, @actualAmount,
-        @youtubeNickname, @paymentMethod, @paidAt, @status, @cancelReason, @cancelledAt, @createdAt
+        @youtubeNickname, @cardReceiptMethod, @paymentMethod, @paidAt, @status, @cancelReason, @cancelledAt, @createdAt
       )
     `);
 

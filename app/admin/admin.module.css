@@ -3802,3 +3802,7 @@
 .hitActions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 .hitEdit { background: #7550d9; }
 .hitEdit:hover { background: #6540c8; }
+
+.cardReceiptMethod { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; padding: 6px 8px; border-radius: 6px; background: rgba(56,189,248,.1); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.cardReceiptMethod > span { color: #7dd3fc; flex-shrink: 0; }
+.page[data-theme="light"] .cardReceiptMethod > span { color: #0369a1; }
