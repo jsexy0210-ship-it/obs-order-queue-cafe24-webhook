@@ -2667,8 +2667,8 @@
 .operationsGrid > .primaryBlock,
 .operationsGrid > .waitingOrdersBlock,
 .operationsGrid > .pendingPaymentsBlock {
-  height: 276px;
-  min-height: 276px;
+  height: 300px;
+  min-height: 300px;
 }
 .operationsSecondaryRow > .block { display: flex; flex-direction: column; }
 .operationsSecondaryRow .form { gap: 8px; }
